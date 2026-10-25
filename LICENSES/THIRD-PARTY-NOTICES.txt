@@ -1,0 +1,54 @@
+项目来源与第三方说明 / Project attribution and third-party notices
+
+本客户端自研代码按 GNU AGPL v3（仅版本 3，AGPL-3.0-only）授权，客户端软件源码即本项目的公开代码仓库 https://github.com/yuhongwei380/openvpn3-client （见仓库根目录 LICENSE 与 NOTICE）。
+This client's original code is licensed under AGPL-3.0-only; the client's
+own source is the project's public repository
+https://github.com/yuhongwei380/openvpn3-client (see LICENSE and NOTICE at
+the repository root).
+
+本客户端基于 OpenVPN 3 Core 二次开发，不是官方 OpenVPN Connect 产品。
+This client is derived from OpenVPN 3 Core and is not the official OpenVPN Connect product.
+
+OpenVPN 3 Core
+  Upstream: https://github.com/OpenVPN/openvpn3
+  Release and exact commit: config/openvpn3-release.json in the project;
+  bin/<platform>/ovpncli-build.json in the installed application resources.
+  Upstream dual license: MPL-2.0 or AGPL-3.0-only. This project exercises
+  the AGPL option: the combined work formed by this client and the
+  OpenVPN 3 Core engine it links against is conveyed under AGPL-3.0-only,
+  using the upstream additional permission to link against OpenSSL
+  (legal/licenses/openvpn3/LICENSES/openvpn3-openssl-exception.txt).
+  The Windows build applies minimal patches to cmake/FindCoreDeps.cmake;
+  they are recorded in build/windows/build-openvpn3.ps1 and form part of
+  the corresponding source.
+  Full upstream license texts: legal/licenses/openvpn3/LICENSES/.
+  Conveying model (AGPL section 6(d)): installers are conveyed from the
+  project's designated release location, with equivalent access to the
+  complete machine-readable corresponding source — this client's code,
+  the OpenVPN 3 Core checkout at the pinned tag/commit, and the build
+  patches — from the same or a clearly indicated network location at no
+  further charge, with clear directions maintained next to the object
+  code for as long as that installer version is offered.
+  No upstream endorsement or affiliation is implied.
+
+Windows TAP-Windows6
+  https://github.com/OpenVPN/tap-windows6
+  GPLv2; an independent component bundled alongside the client and loaded
+  as a kernel driver, not linked into the application. The tap-windows.h
+  header is used under its MIT option.
+  Driver, devcon, and additional notices: drivers/windows-x64/tap-windows6/.
+  The driver license and notices govern that component independently.
+
+OpenSSL
+  https://www.openssl.org/
+  OpenSSL 3.x is licensed under the Apache License, Version 2.0
+  (legal/licenses/Apache-2.0.txt).
+  Windows runtime license: bin/windows-x64/LICENSE.OpenSSL.txt.
+
+Tauri: https://github.com/tauri-apps/tauri (MIT)
+React: https://github.com/facebook/react (MIT)
+Inter 4.1: https://github.com/rsms/inter (SIL Open Font License 1.1)
+  Bundled font: InterVariable.woff2. Full license: legal/licenses/Inter-OFL.txt.
+Other dependencies retain their respective licenses and copyright notices.
+
+The user agreement does not replace or limit any applicable open-source license.

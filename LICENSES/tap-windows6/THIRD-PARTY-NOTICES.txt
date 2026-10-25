@@ -1,0 +1,17 @@
+TAP-Windows6 9.27.0 (tap0901), Windows 10/11 x64
+Copyright OpenVPN and the contributors identified in the upstream source.
+License: GNU General Public License version 2; see LICENSE.tap-windows6.txt.
+Upstream license texts are included alongside these files; source is available at the URL below.
+Source: https://github.com/OpenVPN/tap-windows6/tree/9.27.0
+The repository also vendors the unmodified src/tap-windows.h from this source
+release as the interface header used to compile the Windows VPN engine.
+Signed binaries: https://github.com/OpenVPN/tap-windows6/releases/tag/9.27.0
+
+Device Console (devcon.exe), distributed in the official TAP driver archive.
+Copyright Microsoft Corporation.
+License: Microsoft Public License; see LICENSE.devcon.txt.
+Source: https://github.com/OpenVPN/Windows-driver-samples/tree/master/setup/devcon
+
+The signed driver files are distributed unmodified. OpenVPN Connect is not
+required. The shared tap0901 driver and adapters are retained on app uninstall
+because other applications may use them.

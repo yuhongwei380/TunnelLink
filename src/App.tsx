@@ -1,0 +1,321 @@
+import { useEffect, useState } from 'react';
+import { listen } from '@tauri-apps/api/event';
+import {
+  ChevronRight,
+  Globe2,
+  Info,
+  LayoutDashboard,
+  ShieldCheck,
+  Terminal,
+  X,
+} from 'lucide-react';
+import { AboutDialog, AGREEMENT_REVISION } from './components/AboutDialog';
+import { AuthDialog } from './components/AuthDialog';
+import { ConnectionOverview } from './components/ConnectionOverview';
+import { ExitDialog } from './components/ExitDialog';
+import { LogsDialog } from './components/LogsDialog';
+import { useVpnConnection } from './hooks/useVpnConnection';
+import { getMessages } from './messages';
+import { mergeUiCopy, type Locale, type UiCopy } from './ui-copy';
+import release from '../config/openvpn3-release.json';
+import defaultUiCopy from '../config/ui-copy.json';
+
+export default function App() {
+  const [locale, setLocale] = useState<Locale>(() => {
+    const saved = localStorage.getItem('vpn-ui-locale');
+    return saved === 'zh' || saved === 'en'
+      ? saved
+      : navigator.language.toLowerCase().startsWith('zh')
+        ? 'zh'
+        : 'en';
+  });
+  const [uiCopy, setUiCopy] = useState<UiCopy>(() => defaultUiCopy);
+
+  const t = getMessages(locale, uiCopy);
+  const [logsOpen, setLogsOpen] = useState(false);
+  const [exitPromptOpen, setExitPromptOpen] = useState(false);
+  const [toast, setToast] = useState('');
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [agreementRequired, setAgreementRequired] = useState(false);
+  const [meta, setMeta] = useState({ name: '', version: '' });
+  const {
+    status,
+    stats,
+    statusError,
+    busy,
+    authOpen,
+    setAuthOpen,
+    authError,
+    credentials,
+    setCredentials,
+    toggle,
+    connect,
+  } = useVpnConnection(t, setToast);
+  const clientVersion = meta.version || release.version;
+  const isDesktop = Boolean(window.vpn);
+  const appTitle =
+    !meta.name ||
+    ['openvpnclient', 'openvpn-client', 'openvpn client'].includes(meta.name.toLowerCase())
+      ? t.appTitle
+      : meta.name;
+  const connected = status === 'CONNECTED';
+  const connecting = status === 'CONNECTING';
+  const connectionFailed = Boolean(statusError) && !connected && !connecting;
+  const engineStatusClass = !isDesktop
+    ? 'preview'
+    : connectionFailed
+      ? 'error'
+      : connecting
+        ? 'connecting'
+        : connected
+          ? 'active'
+          : 'ready';
+  const engineStatusLabel = !isDesktop
+    ? t.preview
+    : connectionFailed
+      ? t.engineError
+      : connecting
+        ? t.engineStarting
+        : connected
+          ? t.engineRunning
+          : t.engineReady;
+
+  useEffect(() => {
+    localStorage.setItem('vpn-ui-locale', locale);
+    document.documentElement.lang = locale === 'zh' ? 'zh-CN' : 'en';
+  }, [locale]);
+
+  useEffect(() => {
+    if (import.meta.env.DEV && window.location.hash.startsWith('#close-prompt')) {
+      setExitPromptOpen(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.vpn
+      ?.getUiCopy()
+      .then((copy) => setUiCopy(mergeUiCopy(defaultUiCopy, copy)))
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    document.title = appTitle;
+  }, [appTitle]);
+  useEffect(() => {
+    if (!isDesktop) return;
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    void listen('app-close-requested', () => {
+      setLogsOpen(false);
+      setAuthOpen(false);
+      setAboutOpen(false);
+      setExitPromptOpen(true);
+    })
+      .then((stop) => {
+        if (disposed) stop();
+        else unlisten = stop;
+      })
+      .catch(() => {});
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [isDesktop]);
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(''), 4000);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  useEffect(() => {
+    let active = true;
+    window.vpn
+      ?.getAppMeta()
+      .then((data) => {
+        if (!active) return;
+        setMeta(data);
+        // A DMG is installed by dragging the app; present terms at first launch.
+        if (
+          data.platform === 'macos' &&
+          localStorage.getItem('vpn-agreement-revision') !== AGREEMENT_REVISION
+        ) {
+          setAgreementRequired(true);
+          setAboutOpen(true);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleToggle = () => {
+    if (agreementRequired) {
+      setAboutOpen(true);
+      return;
+    }
+    void toggle();
+  };
+
+  const exitApp = async () => {
+    try {
+      await window.vpn?.exit();
+    } catch {
+      setToast(t.exitFailed);
+    }
+  };
+
+  return (
+    <div className="app-shell">
+      <aside className="sidebar">
+        <div className="brand">
+          <span className="brand-icon">
+            <ShieldCheck size={25} strokeWidth={1.8} />
+          </span>
+          <div>
+            <h1>{appTitle}</h1>
+            <p>{t.workspace}</p>
+          </div>
+        </div>
+        <div className="navigation-label">{t.workspaceNav}</div>
+        <nav className="primary-nav" aria-label={t.workspaceNav}>
+          <button
+            className="active"
+            onClick={() => setLogsOpen(false)}
+            aria-current="page"
+            title={t.connection}
+          >
+            <LayoutDashboard size={19} />
+            <span>{t.connection}</span>
+            <ChevronRight className="nav-chevron" size={15} />
+          </button>
+          <button
+            onClick={() => setLogsOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={logsOpen}
+            title={t.diagnostics}
+          >
+            <Terminal size={19} />
+            <span>{t.diagnostics}</span>
+            {Boolean(statusError) && <span className="error-dot" />}
+          </button>
+        </nav>
+        <div className="sidebar-bottom">
+          <div className="engine-card">
+            <div className="engine-heading">
+              <span className="eyebrow">{t.engine}</span>
+              <span className="engine-symbol">
+                <ShieldCheck size={16} />
+              </span>
+            </div>
+            <strong>OpenVPN 3</strong>
+            <div className="engine-meta">
+              <span>Core {release.version}</span>
+              <span className={`engine-state engine-${engineStatusClass}`}>
+                <i />
+                {engineStatusLabel}
+              </span>
+            </div>
+          </div>
+          <div className="sidebar-utility">
+            <button className="about-button" onClick={() => setAboutOpen(true)} title={t.about}>
+              <Info size={17} />
+              <span>{t.about}</span>
+              <ChevronRight size={14} />
+            </button>
+            <div className="sidebar-version">
+              <span>OpenVPN Client</span>
+              <span>v{clientVersion}</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <div className="workspace">
+        <header className="workspace-header">
+          <div className="breadcrumb">
+            <span>{t.workspace}</span>
+            <ChevronRight size={13} />
+            <strong>{t.connection}</strong>
+          </div>
+          <div className="header-actions">
+            <span className="runtime-label">
+              <span className={isDesktop ? 'runtime-dot' : 'preview-dot'} />
+              {isDesktop ? t.localClient : t.preview}
+            </span>
+            <span className="header-divider" />
+            <button
+              className="language-button"
+              onClick={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
+              aria-label={locale === 'zh' ? 'Switch to English' : '切换为中文'}
+              title={locale === 'zh' ? '切换至 English' : 'Switch to Chinese'}
+            >
+              <Globe2 size={17} />
+              {locale === 'zh' ? 'EN' : '中文'}
+            </button>
+          </div>
+        </header>
+
+        <main className="main-scroll" id="main-content">
+          <ConnectionOverview
+            status={status}
+            stats={stats}
+            statusError={statusError}
+            busy={busy}
+            clientVersion={clientVersion}
+            t={t}
+            onToggle={handleToggle}
+            onOpenLogs={() => setLogsOpen(true)}
+          />
+        </main>
+        {!isDesktop && (
+          <div className="preview-notice">
+            <Info size={13} />
+            {t.desktopOnly}
+          </div>
+        )}
+      </div>
+
+      {toast && (
+        <div className="toast" role="status">
+          <Info size={18} />
+          <span>{toast}</span>
+          <button aria-label={t.close} onClick={() => setToast('')}>
+            <X size={17} />
+          </button>
+        </div>
+      )}
+
+      <LogsDialog open={logsOpen} t={t} onClose={() => setLogsOpen(false)} onNotify={setToast} />
+      <ExitDialog
+        open={exitPromptOpen}
+        appTitle={appTitle}
+        status={status}
+        t={t}
+        onClose={() => setExitPromptOpen(false)}
+        onExit={exitApp}
+      />
+      <AuthDialog
+        open={authOpen}
+        credentials={credentials}
+        busy={busy}
+        authError={authError}
+        t={t}
+        onChange={setCredentials}
+        onConnect={connect}
+        onClose={() => setAuthOpen(false)}
+      />
+      <AboutDialog
+        open={aboutOpen}
+        agreementRequired={agreementRequired}
+        clientVersion={clientVersion}
+        t={t}
+        onClose={() => setAboutOpen(false)}
+        onAcceptAgreement={() => {
+          localStorage.setItem('vpn-agreement-revision', AGREEMENT_REVISION);
+          setAgreementRequired(false);
+          setAboutOpen(false);
+        }}
+      />
+    </div>
+  );
+}

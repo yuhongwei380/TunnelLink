@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "Local VPN interface; no filesystem or arbitrary shell access from the webview.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

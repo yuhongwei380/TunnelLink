@@ -1,0 +1,20 @@
+{
+  "bundle": {
+    "targets": ["nsis"],
+    "resources": {
+      "../native/bin/windows-x64/": "bin/windows-x64/",
+      "../native/drivers/windows-x64/": "drivers/windows-x64/",
+      "../build/windows/install-tap-driver.ps1": "windows/install-tap-driver.ps1"
+    },
+    "windows": {
+      "minimumWebview2Version": "111.0.0.0",
+      "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true },
+      "nsis": {
+        "installMode": "perMachine",
+        "installerHooks": "../build/windows/installer-hooks.nsh",
+        "displayLanguageSelector": true,
+        "languages": ["SimpChinese", "English"]
+      }
+    }
+  }
+}

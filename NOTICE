@@ -1,0 +1,51 @@
+openvpn3-client
+Copyright (C) 2026 yuhongwei380
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, version 3 of the License
+(AGPL-3.0-only). See LICENSE at the repository root.
+
+License option for the combined work: upstream OpenVPN 3 Core is
+dual-licensed AGPL-3.0-only OR MPL-2.0. This project exercises the
+AGPL option: the combined work formed by this client and the OpenVPN
+3 Core engine it links against is conveyed under AGPL-3.0-only, using
+the upstream additional permission to link against OpenSSL
+(LICENSES/openvpn3/LICENSES/openvpn3-openssl-exception.txt).
+
+The client software itself lives in this repository:
+https://github.com/yuhongwei380/openvpn3-client
+Dependency components remain copyrighted by their respective upstream
+projects and repositories; their license texts are preserved verbatim
+under LICENSES/.
+
+Complete corresponding source (AGPL section 6):
+- This client's full source: the public repository above.
+- OpenVPN 3 Core source at the exact pinned release tag and commit
+  recorded in config/openvpn3-release.json, and per shipped build in
+  the installed bin/<platform>/ovpncli-build.json.
+- Build-system patches applied to the upstream checkout
+  (cmake/FindCoreDeps.cmake OpenSSL/fmt link handling) are recorded in
+  build/windows/build-openvpn3.ps1 and form part of the corresponding
+  source.
+Conveying model (AGPL section 6(d)): this project conveys installers by
+offering access from a designated place (its public release page), and
+offers equivalent access to the Corresponding Source listed above from
+the same or a clearly indicated network location at no further charge,
+maintaining clear directions next to the object code as to where the
+Corresponding Source may be found, for as long as that installer
+version is offered.
+
+Independent, aggregated components keep their own licenses and are not
+combined into the AGPL work:
+- TAP-Windows6 driver: GPLv2 (LICENSES/tap-windows6/), loaded as a
+  separate kernel driver, not linked into the application; the
+  tap-windows.h interface header is used under its MIT option.
+- devcon: MS-PL, a separate helper executable.
+- OpenSSL 3.x: Apache-2.0 (LICENSES/Apache-2.0.txt).
+- Inter font: OFL-1.1; Tauri: MIT; React: MIT; Asio and fmt: see
+  LICENSES/LICENSE.Asio.txt and LICENSES/LICENSE.fmt.txt.
+
+OpenVPN is a trademark of OpenVPN Inc. This project is not affiliated
+with, sponsored, or endorsed by OpenVPN Inc, and is not the official
+OpenVPN Connect product.

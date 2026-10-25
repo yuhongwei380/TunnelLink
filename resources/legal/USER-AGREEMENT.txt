@@ -1,0 +1,48 @@
+用户协议与项目说明 / User Agreement and Project Notice
+协议版本 / Agreement revision: 2026-10-25
+
+1. 项目性质
+本客户端是基于 OpenVPN 3 Core 的二次开发项目，采用 Tauri 2 桌面框架。它不是 OpenVPN 官方 Connect 客户端，也不表示获得 OpenVPN 官方认证、支持或背书。OpenVPN 名称及相关商标属于其各自权利人。
+上游项目：https://github.com/OpenVPN/openvpn3
+本客户端及所用 OpenVPN 3 Core 的版本可在“关于与用户协议”中查看，精确发布标签和提交记录在安装目录内的 ovpncli-build.json 中。
+
+2. 使用范围与授权
+请仅连接您拥有访问权限的 VPN 网关，并遵守适用法律及所属组织的网络使用规定。网关账号、访问权限、服务器策略和网络服务由相应管理员提供。本客户端不提供 VPN 账号或保证服务器可用性。
+
+3. 系统与网络变更
+Windows 安装程序需要管理员权限，会安装或检查随包提供的 TAP 虚拟网卡驱动。macOS 使用系统提供的 utun 接口，连接时需要授权网络配置操作。连接 VPN 会根据服务器配置调整路由和 DNS；连接或断开期间网络可能短暂中断。卸载客户端会保留可能被其他软件共享的 Windows TAP 驱动。
+
+4. 凭据、设置与日志
+用户名及密码用于向您配置的 VPN 服务进行认证。选择“在此设备记住凭据”后，成功认证的凭据由操作系统凭据存储保存（Windows Credential Manager / macOS Keychain）。请勿在共享设备上启用此选项。取消该选项并成功连接后，客户端会删除此前保存的凭据。
+语言偏好保存在本机。客户端维护本次运行的诊断日志；日志可能包含网关地址、用户名、证书信息或其他网络信息。客户端会尝试遮蔽密码，但分享或复制日志前仍请检查敏感内容。本客户端没有内置向项目开发者发送诊断日志的功能。VPN 服务端的数据处理规则由其运营方另行提供。
+
+5. 开源软件及许可优先
+本客户端自研代码及与 OpenVPN 3 Core 链接形成的组合作品均按 GNU AGPL v3（仅版本 3）授权分发，并享有上游允许链接 OpenSSL 的附加许可；完整许可文本见随包的 legal/licenses/openvpn3 目录。客户端软件源码即本项目的公开代码仓库，所用 OpenVPN 3 Core 对应其固定的上游版本与提交（安装目录内 ovpncli-build.json）。本项目使用的其他组件、驱动的版权归各自上游项目，独立组件按各自许可证保留，见随包的第三方声明和许可证。
+本协议不限制您依据相关开源许可证享有的使用、修改、再分发或获取源码等权利。遇有不一致，以相应组件的开源许可证为准。安装包仅附带许可证和来源说明，不附带 OpenVPN 3 Core 源码压缩包。
+
+6. 服务与责任
+在适用法律允许的范围内，本软件按现状提供，不承诺连接持续可用、适用于特定用途或完全无错误。重要业务请保留适当的网络恢复方式。相应开源组件的保证免责和责任限制以其许可证为准。本条不排除适用法律不允许排除的权利或责任。
+
+安装向导中的“同意”表示您已阅读并接受上述使用条款。您也可以取消安装。已安装后，可随时从客户端底部的“关于与用户协议”重新查看本协议及项目说明。
+
+English
+
+1. Project identity
+This is a derivative client based on OpenVPN 3 Core, using Tauri 2. It is not the official OpenVPN Connect client and does not imply official certification, support, or endorsement. Trademarks belong to their respective owners. Upstream: https://github.com/OpenVPN/openvpn3. See About for versions and the installed ovpncli-build.json for the exact release tag and commit.
+
+2. Authorized use
+Connect only to VPN gateways you are authorized to access. Follow applicable laws and your organization's network policies. Your administrator supplies accounts, access rights, and server policies. This client does not provide accounts or guarantee server availability.
+
+3. System changes
+Windows installation requires administrator privileges and installs or checks the bundled TAP virtual network adapter driver. macOS uses the system utun interface and requests authorization for network configuration when connecting. VPN connections can change routes and DNS according to server settings and can briefly interrupt connectivity. Uninstalling the Windows client retains the potentially shared TAP driver.
+
+4. Credentials and diagnostics
+Credentials authenticate to your configured VPN service. If you select Remember credentials, successfully authenticated credentials are stored in Windows Credential Manager or macOS Keychain. Avoid this option on shared devices. A successful connection with this option disabled deletes previously saved credentials. Language preferences are local. Session diagnostics may contain gateway addresses, usernames, certificate details, or network information. The client attempts to redact passwords; check logs before sharing them. There is no built-in feature sending diagnostics to this project's developers. The VPN operator's separate data policies apply to its service.
+
+5. Open-source rights
+This client's original code, and the combined work formed by linking it with OpenVPN 3 Core, are distributed under GNU AGPL v3 (version 3 only), with the upstream additional permission to link against OpenSSL. Full license texts are in legal/licenses/openvpn3. The client's own source is the project's public source repository; the OpenVPN 3 Core it uses corresponds to the pinned upstream release and commit recorded in the installed ovpncli-build.json. Other components and drivers are copyrighted by their respective upstream projects; independent components remain under their own licenses. This agreement does not restrict rights granted by those licenses, including use, modification, redistribution, and access to source. Component licenses prevail in a conflict. This installer includes licenses and attribution, without an OpenVPN 3 Core source archive.
+
+6. Availability and liability
+To the extent permitted by applicable law, the software is provided as is, without promises of uninterrupted availability, fitness for a particular purpose, or error-free operation. Maintain suitable network recovery arrangements for critical work. Component license terms govern their warranty disclaimers and limitations of liability. Nothing here excludes rights or liabilities that applicable law does not permit excluding.
+
+Selecting I Agree in the installer confirms that you have read and accepted these terms. You may cancel installation. The agreement remains available in About & agreement in the client.

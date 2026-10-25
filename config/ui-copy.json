@@ -1,0 +1,36 @@
+{
+  "zh": {
+    "overview": {
+      "eyebrow": "OVERVIEW",
+      "title": "你的工作空间，随时连接。",
+      "description": "从这里安全接入企业网络，专注于重要的事。"
+    },
+    "connection": {
+      "label": "企业专属连接",
+      "disconnectedTitle": "让工作，\n安全连接。",
+      "disconnectedDescription": "连接企业网关，访问内部资源。",
+      "connectingTitle": "正在连接\n你的工作空间。",
+      "connectingDescription": "正在认证并建立加密隧道，请稍候。",
+      "connectedTitle": "已连接，\n安心开始工作。",
+      "connectedDescription": "VPN 隧道已建立，可以访问企业网络。",
+      "authenticationHint": "使用企业账号验证身份"
+    }
+  },
+  "en": {
+    "overview": {
+      "eyebrow": "OVERVIEW",
+      "title": "Your workspace, within reach.",
+      "description": "Secure access to your work network. More room to focus."
+    },
+    "connection": {
+      "label": "YOUR PRIVATE CONNECTION",
+      "disconnectedTitle": "Good work starts\nwith a connection.",
+      "disconnectedDescription": "Connect to your gateway to access work resources.",
+      "connectingTitle": "Bringing your\nworkspace closer.",
+      "connectingDescription": "Authenticating and setting up your encrypted tunnel.",
+      "connectedTitle": "Connected.\nMake yourself at work.",
+      "connectedDescription": "Your VPN tunnel is active. Your work network awaits.",
+      "authenticationHint": "Authenticate with your work account"
+    }
+  }
+}

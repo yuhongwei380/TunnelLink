@@ -1,0 +1,246 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  AlertCircle,
+  ArrowRight,
+  Copy,
+  LockKeyhole,
+  RefreshCw,
+  Search,
+  Terminal,
+  Trash2,
+  X,
+} from 'lucide-react';
+import { useDialog } from '../hooks/useDialog';
+import { filterLogs, formatLogs, isErrorLog, type LogEntry, type LogFilter } from '../logs';
+import type { Messages } from '../messages';
+
+type Props = {
+  open: boolean;
+  t: Messages;
+  onClose: () => void;
+  onNotify: (message: string) => void;
+};
+
+export function LogsDialog({ open, t, onClose, onNotify }: Props) {
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [logsError, setLogsError] = useState('');
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [query, setQuery] = useState('');
+  const [logFilter, setLogFilter] = useState<LogFilter>('all');
+  const logsPending = useRef(false);
+  const logsDialogRef = useDialog(open);
+  const isDesktop = Boolean(window.vpn);
+  const errorCount = logs.filter(isErrorLog).length;
+
+  const loadLogs = useCallback(async () => {
+    if (!window.vpn || logsPending.current) return;
+    logsPending.current = true;
+    setLogsLoading(true);
+    try {
+      const result = await window.vpn.getLogs();
+      if (!result.ok) throw new Error();
+      const entries = [...result.logs];
+      if (result.lastError) entries.push({ ts: '', source: 'status', line: result.lastError });
+      setLogs(entries);
+      setLogsError('');
+    } catch {
+      setLogsError(t.loadLogsFailed);
+    } finally {
+      setLogsLoading(false);
+      logsPending.current = false;
+    }
+  }, [t.loadLogsFailed]);
+
+  useEffect(() => {
+    if (!open) return;
+    void loadLogs();
+    const timer = window.setInterval(() => void loadLogs(), 1000);
+    return () => window.clearInterval(timer);
+  }, [open, loadLogs]);
+
+  const clearLogs = async () => {
+    if (!window.vpn) return;
+    try {
+      const result = await window.vpn.clearLogs();
+      if (!result.ok) throw new Error();
+      await loadLogs();
+    } catch {
+      onNotify(t.clearFailed);
+    }
+  };
+  const filteredLogs = filterLogs(logs, query, logFilter);
+  const visibleLogs = filteredLogs.slice(-8);
+  const copyLogs = async () => {
+    try {
+      await navigator.clipboard.writeText(formatLogs(filteredLogs));
+      onNotify(t.copied);
+    } catch {
+      onNotify(t.copyFailed);
+    }
+  };
+
+  return (
+    <dialog
+      ref={logsDialogRef}
+      className="logs-dialog"
+      aria-labelledby="logs-dialog-title"
+      onCancel={onClose}
+      onClose={onClose}
+    >
+      <div className="logs-dialog-heading">
+        <div>
+          <span className="eyebrow">DIAGNOSTICS</span>
+          <h2 id="logs-dialog-title">{t.logsTitle}</h2>
+          <p>{t.logsDesc}</p>
+        </div>
+        <button className="dialog-close" onClick={onClose} aria-label={t.close}>
+          <X size={20} />
+        </button>
+      </div>
+      <section className="logs-panel" aria-label={t.logsTitle}>
+        <div className="logs-panel-header">
+          <div>
+            <span className="logs-title-icon">
+              <Terminal size={18} />
+            </span>
+            <h3>{t.logStream}</h3>
+            <span className="count-badge">{logs.length}</span>
+          </div>
+          <span className="live-label">
+            {isDesktop ? (
+              <>
+                <i />
+                {t.live}
+              </>
+            ) : (
+              t.preview
+            )}
+          </span>
+        </div>
+        <div className="logs-controls">
+          <div className="log-filters" aria-label={t.logStream}>
+            <button aria-pressed={logFilter === 'all'} onClick={() => setLogFilter('all')}>
+              {t.allEvents}
+            </button>
+            <button aria-pressed={logFilter === 'errors'} onClick={() => setLogFilter('errors')}>
+              <AlertCircle size={14} />
+              {t.errorsOnly}
+              {errorCount > 0 && <span>{errorCount}</span>}
+            </button>
+          </div>
+          <div className="logs-toolbar">
+            <button
+              onClick={() => void loadLogs()}
+              disabled={!isDesktop || logsLoading}
+              title={t.refresh}
+              aria-label={t.refresh}
+            >
+              <RefreshCw size={16} className={logsLoading ? 'spin' : ''} />
+            </button>
+            <button
+              onClick={copyLogs}
+              disabled={!filteredLogs.length}
+              title={t.copy}
+              aria-label={t.copy}
+            >
+              <Copy size={16} />
+            </button>
+            <button
+              className="clear-button"
+              onClick={clearLogs}
+              disabled={!isDesktop || !logs.length}
+              title={t.clear}
+              aria-label={t.clear}
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        </div>
+        <div className="log-search-field">
+          <Search size={17} />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t.search}
+            aria-label={t.search}
+          />
+          {query && (
+            <button onClick={() => setQuery('')} aria-label={t.clearSearch}>
+              <X size={15} />
+            </button>
+          )}
+        </div>
+        {logsError && (
+          <div className="logs-error" role="alert">
+            <AlertCircle size={16} />
+            {logsError}
+          </div>
+        )}
+        <div className="log-column-labels" aria-hidden="true">
+          <span>{t.timestamp}</span>
+          <span>{t.source}</span>
+          <span>{t.message}</span>
+        </div>
+        <section className="log-console" aria-label={t.logStream}>
+          {!visibleLogs.length ? (
+            <div className="logs-empty">
+              <span className="empty-illustration">
+                <Terminal size={30} strokeWidth={1.4} />
+              </span>
+              <h3>{query ? t.noResults : logFilter === 'errors' ? t.noErrors : t.noLogs}</h3>
+              <p>
+                {!isDesktop
+                  ? t.logsUnavailable
+                  : query
+                    ? t.noMatchesDesc
+                    : logFilter === 'errors'
+                      ? t.noErrorsDesc
+                      : t.noLogsDesc}
+              </p>
+              {(query || logFilter !== 'all') && (
+                <button
+                  className="text-button"
+                  onClick={() => {
+                    setQuery('');
+                    setLogFilter('all');
+                  }}
+                >
+                  {t.resetFilters}
+                  <ArrowRight size={14} />
+                </button>
+              )}
+            </div>
+          ) : (
+            visibleLogs.map((entry, index) => (
+              <div
+                className={`log-entry ${isErrorLog(entry) ? 'log-error' : ''}`}
+                key={`${entry.ts}-${index}`}
+              >
+                <time dateTime={entry.ts || undefined} title={entry.ts}>
+                  {entry.ts ? entry.ts.replace('T', ' ').replace(/\.\d+Z$/, ' UTC') : '—'}
+                </time>
+                <span className="log-source">{entry.source}</span>
+                <p>
+                  {isErrorLog(entry) && <AlertCircle size={13} aria-label={t.errorsOnly} />}
+                  {entry.line}
+                </p>
+              </div>
+            ))
+          )}
+        </section>
+        <div className="logs-footnote">
+          <span>
+            {filteredLogs.length > visibleLogs.length
+              ? `${t.latestEvents} ${visibleLogs.length} / ${filteredLogs.length}`
+              : `${filteredLogs.length} ${t.events}`}
+          </span>
+          <span>
+            <LockKeyhole size={12} />
+            {t.logPrivacy}
+          </span>
+        </div>
+      </section>
+    </dialog>
+  );
+}

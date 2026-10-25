@@ -1,0 +1,40 @@
+[package]
+name = "openvpn-client"
+version = "3.11.8"
+description = "OpenVPN desktop client"
+edition = "2021"
+
+[lib]
+name = "openvpn_client"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "OpenVPNClient"
+path = "src/main.rs"
+test = false
+bench = false
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+tempfile = "3"
+keyring = { version = "3.6", features = ["apple-native", "windows-native"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.60", features = ["Win32_Foundation", "Win32_Security", "Win32_System_JobObjects", "Win32_System_Threading", "Win32_System_Console", "Win32_UI_WindowsAndMessaging"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
+panic = "abort"

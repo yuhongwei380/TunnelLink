@@ -1,0 +1,6 @@
+{
+  "version": "3.11.8",
+  "repository": "https://github.com/OpenVPN/openvpn3.git",
+  "ref": "release/3.11.8",
+  "commit": "4f3bdef73245d4ee9e8216c5d65baccc9568f6ef"
+}

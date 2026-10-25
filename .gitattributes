@@ -1,0 +1,8 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Shell entry points must work after checkout on both Windows and macOS.
+*.sh text eol=lf
+
+# Preserve the upstream license verbatim, including its existing trailing space.
+LICENSES/openvpn3/LICENSES/MPL-2.0.txt whitespace=-blank-at-eol

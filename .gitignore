@@ -1,0 +1,72 @@
+# Dependencies, caches and local temporary files
+node_modules/
+.cache/
+.vite/
+coverage/
+.acl-recovery/
+/tmp/
+/temp/
+__pycache__/
+*.pyc
+*.tmp
+*.temp
+*.tsbuildinfo
+*.log
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Frontend, native compiler and installer output; keep build/ scripts tracked
+/dist/
+/build/dist/
+target/
+/src-tauri/gen/
+CMakeFiles/
+CMakeCache.txt
+*.exe
+*.dll
+*.pdb
+*.obj
+*.o
+*.a
+*.lib
+*.dylib
+*.so
+*.so.*
+*.ilk
+*.exp
+*.idb
+*.pch
+*.msi
+*.msix
+*.dmg
+*.pkg
+*.app/
+
+# Build-generated installer agreement; the TXT is the editable source
+/resources/legal/USER-AGREEMENT.rtf
+
+# Downloaded/compiled runtime payloads; keep only directory placeholders
+/native/drivers/
+/native/bin/*
+!/native/bin/.gitkeep
+!/native/bin/macos/
+!/native/bin/windows-x64/
+/native/bin/macos/*
+!/native/bin/macos/.gitkeep
+/native/bin/windows-x64/*
+!/native/bin/windows-x64/.gitkeep
+
+# Local environment and private connection profiles
+.env*
+!.env.example
+*.ovpn
+!/config/client.ovpn
+
+# Headers downloaded by the native Windows engine build
+/third_party/
+
+# package-lock.json and src-tauri/Cargo.lock are intentional source inputs.
