@@ -1,4 +1,4 @@
-# OpenVPN Client
+# OpenVPN3 Client
 
 面向 Windows 和 macOS 的桌面 VPN 客户端，支持企业账号登录、中英文界面、系统凭据存储和连接日志。客户端基于 OpenVPN 3 Core 二次开发，并非官方 OpenVPN Connect 产品。
 
