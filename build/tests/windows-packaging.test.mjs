@@ -38,6 +38,21 @@ test('Windows resources keep build tools out of the installed runtime', async (t
   );
 });
 
+test('Windows packaging embeds the generated application icon', async () => {
+  const configDirectory = path.join(projectRoot, 'src-tauri');
+  const baseConfig = JSON.parse(
+    await fs.readFile(path.join(configDirectory, 'tauri.conf.json'), 'utf8'),
+  );
+  const windowsConfig = JSON.parse(
+    await fs.readFile(path.join(configDirectory, 'tauri.windows.conf.json'), 'utf8'),
+  );
+  assert.ok(baseConfig.bundle.icon.includes('icons/icon.ico'));
+  assert.deepEqual(windowsConfig.bundle.icon, ['icons/icon.ico']);
+  assert.equal(windowsConfig.bundle.windows.nsis.installerIcon, 'icons/icon.ico');
+  assert.equal(windowsConfig.bundle.windows.nsis.uninstallerIcon, 'icons/icon.ico');
+  await fs.access(path.join(configDirectory, 'icons/icon.ico'));
+});
+
 test('packaging accepts the matching engine, including PowerShell UTF-8 BOM metadata', async (t) => {
   const fixture = await engineFixture(t);
   await verifyWindowsEngine(fixture.directory);

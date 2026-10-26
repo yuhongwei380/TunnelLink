@@ -1,6 +1,7 @@
 {
   "bundle": {
     "targets": ["nsis"],
+    "icon": ["icons/icon.ico"],
     "resources": {
       "../native/bin/windows-x64/": "bin/windows-x64/",
       "../native/drivers/windows-x64/": "drivers/windows-x64/",
@@ -11,6 +12,8 @@
       "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true },
       "nsis": {
         "installMode": "perMachine",
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico",
         "installerHooks": "../build/windows/installer-hooks.nsh",
         "displayLanguageSelector": true,
         "languages": ["SimpChinese", "English"]
