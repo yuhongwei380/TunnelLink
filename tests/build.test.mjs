@@ -144,6 +144,15 @@ test('OS selection is automatic and unsupported hosts fail without prompting', (
   assert.throws(() => detectPlatform(undefined, 'linux'), /Unsupported OS/);
 });
 
+test('Windows dependency setup resolves the shared OpenSSL helper', async () => {
+  const setupScript = await fs.readFile(
+    path.join(projectRoot, 'scripts/windows/setup.ps1'),
+    'utf8',
+  );
+  assert.match(setupScript, /\.\.\/\.\.\/build\/windows\/openssl\.ps1/);
+  await fs.access(path.join(projectRoot, 'build/windows/openssl.ps1'));
+});
+
 test('upstream revisions must be complete pinned commits', async (t) => {
   const f = await fixture(t);
   await fs.writeFile(
