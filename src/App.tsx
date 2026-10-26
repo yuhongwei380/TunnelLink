@@ -136,20 +136,24 @@ export default function App() {
     let active = true;
     const desktop = window.vpn;
     if (!desktop) return;
-    Promise.all([desktop.getAppMeta(), desktop.getInstallationState()])
-      .then(([data, installation]) => {
+    Promise.allSettled([desktop.getAppMeta(), desktop.getInstallationState()]).then(
+      ([metaResult, installationResult]) => {
         if (!active) return;
-        setMeta(data);
-        const needsInstall = data.platform === 'macos' && installation.needsInstall;
+        const data = metaResult.status === 'fulfilled' ? metaResult.value : null;
+        const installation =
+          installationResult.status === 'fulfilled' ? installationResult.value : null;
+        if (data) setMeta(data);
+        const platform = installation?.platform ?? data?.platform;
+        const needsInstall = installation?.needsInstall === true;
         const needsAgreement =
-          data.platform === 'macos' &&
+          platform === 'macos' &&
           localStorage.getItem('vpn-agreement-revision') !== AGREEMENT_REVISION;
         setInstallRequired(needsInstall);
         setAgreementRequired(needsAgreement);
         if (needsInstall) setInstallPromptOpen(true);
         else if (needsAgreement) setAboutOpen(true);
-      })
-      .catch(() => {});
+      },
+    );
     return () => {
       active = false;
     };

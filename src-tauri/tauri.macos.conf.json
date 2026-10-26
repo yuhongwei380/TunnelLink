@@ -2,6 +2,13 @@
   "bundle": {
     "targets": ["app", "dmg"],
     "resources": { "../native/bin/macos/": "bin/macos/" },
-    "macOS": { "minimumSystemVersion": "13.3" }
+    "macOS": {
+      "minimumSystemVersion": "13.3",
+      "dmg": {
+        "windowSize": { "width": 660, "height": 400 },
+        "appPosition": { "x": 180, "y": 170 },
+        "applicationFolderPosition": { "x": 480, "y": 170 }
+      }
+    }
   }
 }

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { prepareTauri } from '../prepare-tauri.mjs';
 import {
   parseDependencies,
@@ -10,6 +11,8 @@ import {
   verifyMacRuntime,
   targetMacArchitectures,
 } from '../macos/verify-runtime.mjs';
+
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 async function fixture(t, definitions) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'openvpn-mac-test-'));
@@ -60,6 +63,20 @@ test('macOS targets use Tauri architecture names and reject unknown targets', ()
   assert.deepEqual(targetMacArchitectures('universal'), ['x86_64', 'arm64']);
   assert.throws(() => targetMacArchitectures('ia32'), /Unsupported macOS/);
   assert.throws(() => targetMacArchitectures(4), /Unsupported macOS/);
+});
+
+test('macOS DMG presents the standard Applications drag target', async () => {
+  const config = JSON.parse(
+    await fs.readFile(path.join(projectRoot, 'src-tauri/tauri.macos.conf.json'), 'utf8'),
+  );
+  assert.deepEqual(config.bundle.macOS.dmg, {
+    windowSize: { width: 660, height: 400 },
+    appPosition: { x: 180, y: 170 },
+    applicationFolderPosition: { x: 480, y: 170 },
+  });
+  const nativeSource = await fs.readFile(path.join(projectRoot, 'src-tauri/src/lib.rs'), 'utf8');
+  assert.match(nativeSource, /resource_dir\(\)/);
+  assert.match(nativeSource, /app_install_to_applications/);
 });
 
 test('bundled transitive libraries validate while system libraries remain external', async (t) => {

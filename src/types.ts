@@ -47,6 +47,7 @@ export type AppMeta = {
 
 export type InstallationState = {
   needsInstall: boolean;
+  platform: string;
 };
 
 export interface DesktopApi {

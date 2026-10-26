@@ -59,11 +59,28 @@ fn app_get_meta(app: tauri::AppHandle) -> serde_json::Value {
 }
 
 #[cfg(target_os = "macos")]
-fn macos_app_bundle() -> Option<PathBuf> {
+fn macos_app_bundle(app: &tauri::AppHandle) -> Option<PathBuf> {
+    // Tauri's resource directory is stable even when macOS launches an app
+    // through a disk-image mount or an app-translocation path. Fall back to
+    // current_exe for development builds that do not have a resource bundle.
+    if let Ok(resources) = app.path().resource_dir() {
+        if let Some(contents) = resources.parent() {
+            if contents.file_name().is_some_and(|name| name == "Contents") {
+                if let Some(bundle) = contents.parent() {
+                    if bundle
+                        .extension()
+                        .is_some_and(|extension| extension == "app")
+                    {
+                        return Some(bundle.to_path_buf());
+                    }
+                }
+            }
+        }
+    }
     let executable = std::env::current_exe().ok()?;
     executable
         .ancestors()
-        .find(|path| path.to_string_lossy().ends_with(".app"))
+        .find(|path| path.extension().is_some_and(|extension| extension == "app"))
         .map(Path::to_path_buf)
 }
 
@@ -79,16 +96,19 @@ fn macos_app_is_installed(bundle: &Path) -> bool {
 }
 
 #[tauri::command]
-fn app_get_installation_state() -> serde_json::Value {
+fn app_get_installation_state(app: tauri::AppHandle) -> serde_json::Value {
     #[cfg(target_os = "macos")]
     {
-        let needs_install = macos_app_bundle()
+        let needs_install = macos_app_bundle(&app)
             .map(|bundle| !macos_app_is_installed(&bundle))
             .unwrap_or(false);
-        return serde_json::json!({ "needsInstall": needs_install });
+        return serde_json::json!({ "needsInstall": needs_install, "platform": "macos" });
     }
     #[cfg(not(target_os = "macos"))]
-    serde_json::json!({ "needsInstall": false })
+    {
+        let _ = app;
+        serde_json::json!({ "needsInstall": false, "platform": std::env::consts::OS })
+    }
 }
 
 #[tauri::command]
@@ -98,7 +118,7 @@ fn app_install_to_applications(
 ) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     {
-        let bundle = macos_app_bundle().ok_or_else(|| {
+        let bundle = macos_app_bundle(&app).ok_or_else(|| {
             "Unable to locate the application bundle. Open the app from a macOS .app package."
                 .to_string()
         })?;

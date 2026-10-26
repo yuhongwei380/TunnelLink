@@ -119,7 +119,7 @@ export const MESSAGES = {
     noMatchesDesc: '试试其他关键词，或重置筛选查看全部事件。',
     installTitle: '将客户端移到“应用程序”？',
     installDesc:
-      '你正在从磁盘映像运行客户端。将它复制到“应用程序”文件夹后，今后可以像其他 macOS 软件一样从 Launchpad 或“应用程序”中打开。',
+      '你正在从“应用程序”文件夹外运行客户端。将它复制到“应用程序”后，今后可以像其他 macOS 软件一样从 Launchpad 或“应用程序”中打开。',
     installNow: '复制到“应用程序”',
     installLater: '稍后再说',
     installing: '正在复制…',
@@ -248,7 +248,7 @@ export const MESSAGES = {
     noMatchesDesc: 'Try another keyword, or reset filters to see all events.',
     installTitle: 'Move the client to Applications?',
     installDesc:
-      'You are running the client from a disk image. Copy it to Applications so you can open it later like other macOS apps from Launchpad or Applications.',
+      'You are running the client outside Applications. Copy it to Applications so you can open it later like other macOS apps from Launchpad or Applications.',
     installNow: 'Copy to Applications',
     installLater: 'Not now',
     installing: 'Copying…',
