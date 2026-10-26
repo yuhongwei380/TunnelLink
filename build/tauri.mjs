@@ -32,6 +32,15 @@ if (args[0] === 'cargo') {
     windowsHide: true,
   });
   if (sync.status !== 0) process.exit(sync.status ?? 1);
+  // Keep the native desktop resources in lockstep with the canonical SVG.
+  // Tauri otherwise reuses a stale ICO when packaging a Windows executable.
+  const icons = spawnSync(process.execPath, [path.join(root, 'build/generate-icons.mjs')], {
+    cwd: root,
+    env,
+    stdio: 'inherit',
+    windowsHide: true,
+  });
+  if (icons.status !== 0) process.exit(icons.status ?? 1);
   command = process.execPath;
   commandArgs = [path.join(root, 'node_modules/@tauri-apps/cli/tauri.js'), ...args];
 }

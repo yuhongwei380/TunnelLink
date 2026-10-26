@@ -3,6 +3,10 @@ mod vpn;
 mod windows_process;
 pub mod worker;
 
+#[cfg(target_os = "macos")]
+use std::path::{Path, PathBuf};
+#[cfg(target_os = "macos")]
+use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, Manager};
 use vpn::Controller;
@@ -54,6 +58,82 @@ fn app_get_meta(app: tauri::AppHandle) -> serde_json::Value {
     serde_json::json!({ "name": app.package_info().name, "version": app.package_info().version.to_string(), "platform": std::env::consts::OS })
 }
 
+#[cfg(target_os = "macos")]
+fn macos_app_bundle() -> Option<PathBuf> {
+    let executable = std::env::current_exe().ok()?;
+    executable
+        .ancestors()
+        .find(|path| path.to_string_lossy().ends_with(".app"))
+        .map(Path::to_path_buf)
+}
+
+#[cfg(target_os = "macos")]
+fn macos_app_is_installed(bundle: &Path) -> bool {
+    if bundle.parent() == Some(Path::new("/Applications")) {
+        return true;
+    }
+    match (std::env::var_os("HOME"), bundle.parent()) {
+        (Some(home), Some(parent)) => PathBuf::from(home).join("Applications") == parent,
+        _ => false,
+    }
+}
+
+#[tauri::command]
+fn app_get_installation_state() -> serde_json::Value {
+    #[cfg(target_os = "macos")]
+    {
+        let needs_install = macos_app_bundle()
+            .map(|bundle| !macos_app_is_installed(&bundle))
+            .unwrap_or(false);
+        return serde_json::json!({ "needsInstall": needs_install });
+    }
+    #[cfg(not(target_os = "macos"))]
+    serde_json::json!({ "needsInstall": false })
+}
+
+#[tauri::command]
+fn app_install_to_applications(
+    app: tauri::AppHandle,
+    approval: tauri::State<'_, ExitApproval>,
+) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let bundle = macos_app_bundle().ok_or_else(|| {
+            "Unable to locate the application bundle. Open the app from a macOS .app package."
+                .to_string()
+        })?;
+        let name = bundle
+            .file_name()
+            .ok_or_else(|| "Unable to determine the application name.".to_string())?;
+        let target = Path::new("/Applications").join(name);
+        let copy = Command::new("/usr/bin/ditto")
+            .arg("--rsrc")
+            .arg("--extattr")
+            .arg(&bundle)
+            .arg(&target)
+            .status()
+            .map_err(|error| format!("Unable to copy the app: {error}"))?;
+        if !copy.success() {
+            return Err("macOS did not allow copying the app to Applications.".to_string());
+        }
+        let open = Command::new("/usr/bin/open")
+            .arg(&target)
+            .status()
+            .map_err(|error| format!("Unable to reopen the copied app: {error}"))?;
+        if !open.success() {
+            return Err("The copied app could not be opened from Applications.".to_string());
+        }
+        approval.0.store(true, Ordering::SeqCst);
+        app.exit(0);
+        return Ok(());
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (app, approval);
+        Err("Moving the app to Applications is only available on macOS.".to_string())
+    }
+}
+
 #[tauri::command]
 fn app_get_ui_copy(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
     const DEFAULT_UI_COPY: &[u8] = include_bytes!("../../config/ui-copy.json");
@@ -102,6 +182,8 @@ pub fn run() {
             vpn_clear_logs,
             vpn_get_saved_credentials,
             app_get_meta,
+            app_get_installation_state,
+            app_install_to_applications,
             app_get_ui_copy,
             app_exit
         ])

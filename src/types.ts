@@ -45,6 +45,10 @@ export type AppMeta = {
   platform: string;
 };
 
+export type InstallationState = {
+  needsInstall: boolean;
+};
+
 export interface DesktopApi {
   connect(options: ConnectOptions): Promise<CommandResult>;
   disconnect(): Promise<CommandResult>;
@@ -53,6 +57,8 @@ export interface DesktopApi {
   getLogs(): Promise<LogsResult>;
   clearLogs(): Promise<{ ok: boolean }>;
   getAppMeta(): Promise<AppMeta>;
+  getInstallationState(): Promise<InstallationState>;
+  installToApplications(): Promise<void>;
   getUiCopy(): Promise<unknown>;
   exit(): Promise<void>;
 }

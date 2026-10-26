@@ -117,6 +117,14 @@ export const MESSAGES = {
     securityNote: '凭据通过本机客户端提交至配置的网关。',
     legalSubtitle: '了解你的客户端，以及开源软件的来源。',
     noMatchesDesc: '试试其他关键词，或重置筛选查看全部事件。',
+    installTitle: '将客户端移到“应用程序”？',
+    installDesc:
+      '你正在从磁盘映像运行客户端。将它复制到“应用程序”文件夹后，今后可以像其他 macOS 软件一样从 Launchpad 或“应用程序”中打开。',
+    installNow: '复制到“应用程序”',
+    installLater: '稍后再说',
+    installing: '正在复制…',
+    installFailed: '无法复制到“应用程序”文件夹，请确认有权限后重试。',
+    installNote: '复制完成后，客户端会自动重新打开。',
   },
   en: {
     appTitle: 'OpenVPN Client',
@@ -238,6 +246,14 @@ export const MESSAGES = {
     securityNote: 'Credentials are sent by the desktop client to your configured gateway.',
     legalSubtitle: 'Your client, its origins, and the open source behind it.',
     noMatchesDesc: 'Try another keyword, or reset filters to see all events.',
+    installTitle: 'Move the client to Applications?',
+    installDesc:
+      'You are running the client from a disk image. Copy it to Applications so you can open it later like other macOS apps from Launchpad or Applications.',
+    installNow: 'Copy to Applications',
+    installLater: 'Not now',
+    installing: 'Copying…',
+    installFailed: 'Unable to copy to Applications. Check your permissions and try again.',
+    installNote: 'The client will reopen automatically after copying finishes.',
   },
 } as const;
 

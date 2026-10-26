@@ -11,6 +11,8 @@ if (isTauri()) {
     getLogs: () => invoke('vpn_get_logs'),
     clearLogs: () => invoke('vpn_clear_logs'),
     getAppMeta: () => invoke('app_get_meta'),
+    getInstallationState: () => invoke('app_get_installation_state'),
+    installToApplications: () => invoke('app_install_to_applications'),
     getUiCopy: () => invoke('app_get_ui_copy'),
     exit: () => invoke('app_exit'),
   };

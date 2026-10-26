@@ -4,21 +4,30 @@
 
 Windows 安装包在 Windows 本机构建；macOS 应用与 DMG 在 Mac 上构建，并分别验证 Apple Silicon 和 Intel 目标。当前发布目标为 Windows x64 和 macOS，不提供 Linux 安装包。
 
+## 统一入口
+
+仓库根目录的 `node install.mjs` 是面向私有配置的统一构建入口。它自动识别当前操作系统，把当前工作树复制到隔离的 `.work/<平台>/source`，在编译前替换缓存中的 `config/client.ovpn`，然后调用本页后面的 Windows 或 macOS 原生打包脚本。每次构建都会在 `dist/<平台>/<构建编号>/` 生成独立安装包和 `build-info.json`，记录源码版本、配置哈希和安装包哈希。
+
+发布本仓库的新打包逻辑后，直接从包含该提交的工作树执行统一入口即可；构建目录不会把 `.git`、私有配置、依赖缓存或旧安装包复制进去。
+
+统一入口要求 Node.js 22+，Windows 构建要求 x64 Node.js 和 Windows 主机，macOS 构建要求 Intel 或 Apple Silicon Mac。首次构建可自动准备缺少的工具；使用 `--no-auto-install-deps` 跳过自动安装。`--prepare-only` 只复制当前源码并替换私有配置，不安装依赖、不编译。平台专用参数和缓存目录见仓库根目录的 `README.md`。
+
 ## 构建链与输出
 
 平台专用脚本分别保存在 `build/windows/` 和 `build/macos/`；`build/` 根目录只保留通用脚本。
 
-| 入口或目录                                                    | 用途                                                        |
-| ------------------------------------------------------------- | ----------------------------------------------------------- |
-| `build/windows/`                                              | Windows 引擎编译、驱动准备、NSIS 安装钩子、安装包构建与验证 |
-| `build/macos/`                                                | macOS 引擎编译、应用/DMG 构建与运行库验证                   |
-| `build/tests/`                                                | 构建与打包测试、前端逻辑测试及共享夹具                      |
-| `build/tauri.mjs`                                             | 选择 Rust 工具链、同步元数据并启动 Tauri CLI                |
-| `build/collect-tauri.mjs`                                     | 归集当前版本安装包并生成哈希记录                            |
-| `build/sync-branding.mjs`、`build/prepare-agreement.mjs`      | 同步应用名称和版本，生成安装器协议 RTF                      |
-| `build/openvpn3-release.mjs`、`build/record-engine-build.mjs` | 版本、源码提交、引擎哈希与许可记录                          |
-| `build/prepare-tauri.mjs`                                     | 调用对应平台的资源校验和签名逻辑                            |
-| `build/verify-desktop-stack.mjs`                              | 检查 Tauri 依赖、配置与旧运行时遗留                         |
+| 入口或目录                                                    | 用途                                                         |
+| ------------------------------------------------------------- | ------------------------------------------------------------ |
+| `build/windows/`                                              | Windows 引擎编译、驱动准备、NSIS 安装钩子、安装包构建与验证  |
+| `build/macos/`                                                | macOS 引擎编译、应用/DMG 构建与运行库验证                    |
+| `install.mjs`、`scripts/`、`tests/`                           | 统一依赖准备、隔离源码快照、私有配置替换、产物归集与回归测试 |
+| `build/tests/`                                                | 构建与打包测试、前端逻辑测试及共享夹具                       |
+| `build/tauri.mjs`                                             | 选择 Rust 工具链、同步元数据并启动 Tauri CLI                 |
+| `build/collect-tauri.mjs`                                     | 归集当前版本安装包并生成哈希记录                             |
+| `build/sync-branding.mjs`、`build/prepare-agreement.mjs`      | 同步应用名称和版本，生成安装器协议 RTF                       |
+| `build/openvpn3-release.mjs`、`build/record-engine-build.mjs` | 版本、源码提交、引擎哈希与许可记录                           |
+| `build/prepare-tauri.mjs`                                     | 调用对应平台的资源校验和签名逻辑                             |
+| `build/verify-desktop-stack.mjs`                              | 检查 Tauri 依赖、配置与旧运行时遗留                          |
 
 这些 Node.js 脚本只在构建机运行，安装包不携带 Node.js 或 Electron 运行时。
 
@@ -117,6 +126,8 @@ npm run dist:mac
 引擎和动态库位于 `native/bin/macos/`。打包前校验依赖路径、架构及版本，修正链接和签名均在构建机完成；打包后再次检查运行库。`.app` 和 DMG 由 Tauri 生成，DMG 归集到 `build/dist/`。终端用户不需要 Homebrew、`otool` 或 `install_name_tool`。
 
 发布签名使用 `APPLE_SIGNING_IDENTITY`，公证凭据在 Mac 的 Tauri 构建环境中配置；未配置签名身份时只做本地 ad-hoc 签名。macOS 产物需要在 Mac 上完成构建和实机验证。
+
+交付给用户的 DMG 采用 macOS 常见的拖拽安装方式：用户可以把应用拖入“应用程序”后启动；如果从 DMG 直接打开，客户端会检测到应用尚未安装并显示复制提示。用户确认后，应用通过 macOS 的 `ditto` 复制到 `/Applications`，打开复制后的应用并退出当前实例。用户选择稍后时仍可继续查看协议，但下次从未安装位置启动仍会再次提示。
 
 ## 验证安装包
 

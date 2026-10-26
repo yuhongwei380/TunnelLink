@@ -3,6 +3,9 @@
   "private": true,
   "version": "3.11.8",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite --port=35198 --strictPort --host=127.0.0.1",
     "tauri:dev": "node build/tauri.mjs dev",
@@ -10,9 +13,9 @@
     "preview": "vite preview",
     "tauri": "node build/tauri.mjs",
     "clean": "rimraf dist build/dist",
-    "format": "prettier --write src build docs README.md index.html vite.config.ts tsconfig.json package.json .prettierrc.json",
-    "format:check": "prettier --check src build docs README.md index.html vite.config.ts tsconfig.json package.json .prettierrc.json",
-    "check": "npm run format:check && npm run lint && npm run check:stack && npm run test:ui && npm run test:packaging",
+    "format": "prettier --write src build scripts tests README.md docs install.mjs index.html vite.config.ts tsconfig.json package.json .prettierrc.json",
+    "format:check": "prettier --check src build scripts tests README.md docs install.mjs index.html vite.config.ts tsconfig.json package.json .prettierrc.json",
+    "check": "npm run format:check && npm run lint && npm run check:stack && npm run test:ui && npm run test:packaging && npm run test:unified",
     "lint": "tsc --noEmit",
     "check:stack": "node build/verify-desktop-stack.mjs",
     "check:native": "node build/tauri.mjs cargo check --manifest-path src-tauri/Cargo.toml",
@@ -29,6 +32,9 @@
     "prepare:driver:win": "node build/windows/prepare-driver.mjs",
     "package:win": "powershell -NoProfile -ExecutionPolicy Bypass -File build/windows/package.ps1",
     "package:mac": "bash build/macos/package.sh",
+    "package:unified": "node install.mjs",
+    "setup:unified": "node install.mjs --prepare-only",
+    "test:unified": "node --test tests/*.test.mjs",
     "dist:win": "node build/tauri.mjs build --target x86_64-pc-windows-msvc --bundles nsis",
     "dist:mac": "node build/tauri.mjs build --bundles app,dmg",
     "verify:installer:win": "powershell -NoProfile -ExecutionPolicy Bypass -File build/windows/verify-installer.ps1",

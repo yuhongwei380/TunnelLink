@@ -14,6 +14,7 @@ import { AppLogo } from './components/AppLogo';
 import { AuthDialog } from './components/AuthDialog';
 import { ConnectionOverview } from './components/ConnectionOverview';
 import { ExitDialog } from './components/ExitDialog';
+import { InstallDialog } from './components/InstallDialog';
 import { LogsDialog } from './components/LogsDialog';
 import { useVpnConnection } from './hooks/useVpnConnection';
 import { getMessages } from './messages';
@@ -38,6 +39,9 @@ export default function App() {
   const [toast, setToast] = useState('');
   const [aboutOpen, setAboutOpen] = useState(false);
   const [agreementRequired, setAgreementRequired] = useState(false);
+  const [installPromptOpen, setInstallPromptOpen] = useState(false);
+  const [installRequired, setInstallRequired] = useState(false);
+  const [installBusy, setInstallBusy] = useState(false);
   const [meta, setMeta] = useState({ name: '', version: '' });
   const {
     status,
@@ -109,6 +113,7 @@ export default function App() {
       setLogsOpen(false);
       setAuthOpen(false);
       setAboutOpen(false);
+      setInstallPromptOpen(false);
       setExitPromptOpen(true);
     })
       .then((stop) => {
@@ -129,19 +134,20 @@ export default function App() {
 
   useEffect(() => {
     let active = true;
-    window.vpn
-      ?.getAppMeta()
-      .then((data) => {
+    const desktop = window.vpn;
+    if (!desktop) return;
+    Promise.all([desktop.getAppMeta(), desktop.getInstallationState()])
+      .then(([data, installation]) => {
         if (!active) return;
         setMeta(data);
-        // A DMG is installed by dragging the app; present terms at first launch.
-        if (
+        const needsInstall = data.platform === 'macos' && installation.needsInstall;
+        const needsAgreement =
           data.platform === 'macos' &&
-          localStorage.getItem('vpn-agreement-revision') !== AGREEMENT_REVISION
-        ) {
-          setAgreementRequired(true);
-          setAboutOpen(true);
-        }
+          localStorage.getItem('vpn-agreement-revision') !== AGREEMENT_REVISION;
+        setInstallRequired(needsInstall);
+        setAgreementRequired(needsAgreement);
+        if (needsInstall) setInstallPromptOpen(true);
+        else if (needsAgreement) setAboutOpen(true);
       })
       .catch(() => {});
     return () => {
@@ -150,11 +156,32 @@ export default function App() {
   }, []);
 
   const handleToggle = () => {
+    if (installRequired) {
+      setInstallPromptOpen(true);
+      return;
+    }
     if (agreementRequired) {
       setAboutOpen(true);
       return;
     }
     void toggle();
+  };
+
+  const closeInstallPrompt = () => {
+    if (installBusy) return;
+    setInstallPromptOpen(false);
+    if (agreementRequired) setAboutOpen(true);
+  };
+
+  const installToApplications = async () => {
+    if (!window.vpn) return;
+    setInstallBusy(true);
+    try {
+      await window.vpn.installToApplications();
+    } catch {
+      setInstallBusy(false);
+      setToast(t.installFailed);
+    }
   };
 
   const exitApp = async () => {
@@ -302,6 +329,14 @@ export default function App() {
         onChange={setCredentials}
         onConnect={connect}
         onClose={() => setAuthOpen(false)}
+      />
+      <InstallDialog
+        open={installPromptOpen}
+        appTitle={appTitle}
+        busy={installBusy}
+        t={t}
+        onClose={closeInstallPrompt}
+        onInstall={() => void installToApplications()}
       />
       <AboutDialog
         open={aboutOpen}
