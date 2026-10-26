@@ -75,7 +75,8 @@ npm run tauri:dev
 
 - 颜色、布局、响应式规则与动效统一维护在 `src/index.css`。主色为 `#155EEF`，连接面板为 `#0B1F3A`，隧道强调色为 `#0E9F9A`；状态分别使用绿色、橙色和红色，并保留文字说明。
 - 默认窗口为 1080 × 860，最小为 380 × 640，支持调整大小及最大化；窄窗口折叠导航。连接页保留一个主要连接操作、真实隧道状态、会话数据、网关信息和诊断入口。
-- Inter 字体离线打包，中文使用 PingFang SC 或 Microsoft YaHei，图标使用 Lucide。字体许可保存在 `LICENSES/Inter-OFL.txt`；可编辑图标源文件为 `resources/brand/app-icon.svg`，桌面图标位于 `src-tauri/icons/`。
+- Inter 字体离线打包，中文使用 PingFang SC 或 Microsoft YaHei，功能图标使用 Lucide。字体许可保存在 `LICENSES/Inter-OFL.txt`。
+- 项目 Logo 的唯一源文件为 `resources/brand/app-icon.svg`，侧栏、关于窗口和 favicon 共用该 SVG。修改后运行 `npm run icons:generate`，同步生成 `src-tauri/icons/` 中的桌面 PNG、Windows ICO 与 macOS ICNS。
 - 页面、弹窗和交互过渡控制在 180–240ms，并遵循 `prefers-reduced-motion: reduce`。隧道示意仅在正在连接时播放连接动效，`ConnectionVisual` 不代表测量得到的网络拓扑。
 - 弹窗使用原生 `dialog` 和键盘焦点管理，表单保留可见标签、错误和状态提示。登录、日志、协议与退出弹窗共用界面样式。
 

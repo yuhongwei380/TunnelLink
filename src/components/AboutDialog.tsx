@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Check, FileText, Info, ShieldCheck, X } from 'lucide-react';
+import { Check, FileText, Info, X } from 'lucide-react';
+import { AppLogo } from './AppLogo';
 import { useDialog } from '../hooks/useDialog';
 import type { Messages } from '../messages';
 import release from '../../config/openvpn3-release.json';
@@ -40,9 +41,7 @@ export function AboutDialog({
       onClose={onClose}
     >
       <div className="about-header">
-        <span className="brand-icon">
-          <ShieldCheck size={27} strokeWidth={1.7} />
-        </span>
+        <AppLogo />
         <div>
           <span className="eyebrow">OPENVPN CLIENT</span>
           <h2 id="about-title">{t.about}</h2>

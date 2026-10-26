@@ -1,12 +1,141 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="title description">
+  <title id="title">OpenVPNClient</title>
+  <desc id="description">蓝青渐变的正圆圆环，切口采用带轻微圆弧过渡的小倒角。平面方框数据流从八点半方向进入，平缓延伸后向右上方流出。</desc>
   <defs>
-    <linearGradient id="bg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1024" y2="1024">
-      <stop offset="0" stop-color="#3B82F6"/>
-      <stop offset="1" stop-color="#0B2E6B"/>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0A0E17" />
+      <stop offset="100%" stop-color="#05070C" />
     </linearGradient>
+    <linearGradient id="ringUpper" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1D4ED8" />
+      <stop offset="45%" stop-color="#00B4D8" />
+      <stop offset="100%" stop-color="#22EFD8" />
+    </linearGradient>
+    <linearGradient id="ringLower" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#312E81" />
+      <stop offset="45%" stop-color="#1D4ED8" />
+      <stop offset="100%" stop-color="#00D2FF" />
+    </linearGradient>
+    <linearGradient id="packetCyan" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#38BDF8" />
+    </linearGradient>
+    <linearGradient id="packetMint" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06B6D4" />
+      <stop offset="100%" stop-color="#6EE7B7" />
+    </linearGradient>
+    <linearGradient id="packetBright" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#ECFDF5" />
+    </linearGradient>
+    <filter id="ringShadow" x="0" y="0" width="512" height="512" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#000000" flood-opacity="0.35" />
+    </filter>
+    <filter id="streamGlow" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur" />
+      <feOffset in="blur" dy="2" result="offsetBlur" />
+      <feFlood flood-color="#22D3EE" flood-opacity="0.2" result="glowColor" />
+      <feComposite in="glowColor" in2="offsetBlur" operator="in" result="softGlow" />
+      <feMerge>
+        <feMergeNode in="softGlow" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <path id="flow-centerline" d="M 32 283 C 74 294 128 296 170 296 C 240 296 352 260 480 100" />
+    <mask id="b-upper-ring-cut-profile" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512" style="mask-type:luminance">
+      <rect x="0" y="0" width="512" height="512" fill="white" />
+      <path d="M -60 -55 L 60 -55 L 60 37 L 25.712637 20 A 156 156 0 0 0 26.932212 4.598399 A 1.5 1.5 0 0 0 26.493524 3.493524 L 23.43934 0.43934 A 1.5 1.5 0 0 0 22.37868 0 L -22.37868 0 A 1.5 1.5 0 0 0 -23.43934 0.43934 L -26.668772 3.668772 A 1.5 1.5 0 0 0 -27.106545 4.66089 A 102 102 0 0 1 -28.980002 20 L -60 37 Z" transform="matrix(-0.987688 0.156434 -0.156434 -0.987688 120.588204 284.180046)" fill="black" />
+      <path d="M -60 -55 L 60 -55 L 60 37 L 25.712637 20 A 156 156 0 0 0 26.932212 4.598399 A 1.5 1.5 0 0 0 26.493524 3.493524 L 23.43934 0.43934 A 1.5 1.5 0 0 0 22.37868 0 L -22.37868 0 A 1.5 1.5 0 0 0 -23.43934 0.43934 L -26.668772 3.668772 A 1.5 1.5 0 0 0 -27.106545 4.66089 A 102 102 0 0 1 -28.980002 20 L -60 37 Z" transform="matrix(0.848048 -0.529919 -0.529919 -0.848048 357.398204 195.640415)" fill="black" />
+    </mask>
+    <mask id="b-lower-ring-cut-profile" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512" style="mask-type:luminance">
+      <rect x="0" y="0" width="512" height="512" fill="white" />
+      <path d="M -60 -55 L 60 -55 L 60 37 L 25.712637 20 A 156 156 0 0 0 26.932212 4.598399 A 1.5 1.5 0 0 0 26.493524 3.493524 L 23.43934 0.43934 A 1.5 1.5 0 0 0 22.37868 0 L -22.37868 0 A 1.5 1.5 0 0 0 -23.43934 0.43934 L -26.668772 3.668772 A 1.5 1.5 0 0 0 -27.106545 4.66089 A 102 102 0 0 1 -28.980002 20 L -60 37 Z" transform="matrix(0.961262 -0.275637 0.275637 0.961262 372.002759 228.442781)" fill="black" />
+      <path d="M -60 -55 L 60 -55 L 60 37 L 25.712637 20 A 156 156 0 0 0 26.932212 4.598399 A 1.5 1.5 0 0 0 26.493524 3.493524 L 23.43934 0.43934 A 1.5 1.5 0 0 0 22.37868 0 L -22.37868 0 A 1.5 1.5 0 0 0 -23.43934 0.43934 L -26.668772 3.668772 A 1.5 1.5 0 0 0 -27.106545 4.66089 A 102 102 0 0 1 -28.980002 20 L -60 37 Z" transform="matrix(-0.93358 0.358368 0.358368 0.93358 127.568125 310.229465)" fill="black" />
+    </mask>
   </defs>
-  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
-  <path d="M512 168L768 264V540C768 698 664 806 512 872C360 806 256 698 256 540V264L512 168Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="40" stroke-linejoin="round"/>
-  <circle cx="512" cy="472" r="92" fill="url(#bg)"/>
-  <path d="M470 548L450 682C478 706 546 706 574 682L554 548Z" fill="url(#bg)" stroke="url(#bg)" stroke-width="36" stroke-linejoin="round"/>
+  <rect x="24" y="24" width="464" height="464" rx="108" fill="url(#bg)" stroke="#1E293B" stroke-width="3" />
+  <g id="lower-ring" filter="url(#ringShadow)">
+    <circle cx="248" cy="264" r="129" fill="none" stroke="url(#ringLower)" stroke-width="54" stroke-linecap="butt" stroke-dasharray="394.008079 416.522826" stroke-dashoffset="-774.507309" mask="url(#b-lower-ring-cut-profile)" />
+  </g>
+  <g id="inlet-data-stream" opacity="0.85">
+    <rect x="34" y="281.070071" width="4" height="4" rx="0.48" fill="#1E3A8A" opacity="0.4" />
+    <rect x="46" y="284.667953" width="5" height="5" rx="0.6" fill="#1E40AF" opacity="0.5" />
+    <rect x="56" y="281.938397" width="4" height="4" rx="0.48" fill="#1D4ED8" opacity="0.45" />
+    <rect x="64" y="288.029516" width="6" height="6" rx="0.72" fill="#1D4ED8" opacity="0.6" />
+    <rect x="74" y="284.835774" width="5" height="5" rx="0.6" fill="#2563EB" opacity="0.55" />
+    <rect x="82" y="290.583015" width="7" height="7" rx="0.84" fill="#1D4ED8" opacity="0.7" />
+    <rect x="92" y="287.006945" width="6" height="6" rx="0.72" fill="#0369A1" opacity="0.65" />
+    <rect x="98" y="294.517738" width="5" height="5" rx="0.6" fill="#1E40AF" opacity="0.6" />
+    <rect x="108" y="289.299873" width="8" height="8" rx="0.96" fill="#0369A1" opacity="0.8" />
+    <rect x="118" y="295.471745" width="7" height="7" rx="0.84" fill="#1D4ED8" opacity="0.75" />
+    <rect x="126" y="288.065484" width="9" height="9" rx="1.08" fill="#0284C7" opacity="0.85" />
+    <rect x="136" y="297.090471" width="6" height="6" rx="0.72" fill="#0369A1" opacity="0.7" />
+    <rect x="142" y="289.667714" width="10" height="10" rx="1.2" fill="#0EA5E9" opacity="0.9" />
+    <rect x="154" y="298.416574" width="8" height="8" rx="0.96" fill="#0284C7" opacity="0.8" />
+    <rect x="158" y="288.34737" width="7" height="7" rx="0.84" fill="#38BDF8" opacity="0.75" />
+  </g>
+  <g id="upper-ring" filter="url(#ringShadow)">
+    <circle cx="248" cy="264" r="129" fill="none" stroke="url(#ringUpper)" stroke-width="54" stroke-linecap="butt" stroke-dasharray="353.481533 457.049371" stroke-dashoffset="-385.00218" mask="url(#b-upper-ring-cut-profile)" />
+  </g>
+  <g id="core-data-stream" filter="url(#streamGlow)">
+    <rect x="168" y="291.274563" width="11" height="11" rx="1.32" fill="#0284C7" />
+    <rect x="176" y="281.181656" width="9" height="9" rx="1.08" fill="#38BDF8" opacity="0.9" />
+    <rect x="184" y="299.392436" width="7" height="7" rx="0.84" fill="#0369A1" opacity="0.85" />
+    <rect x="188" y="286.425049" width="13" height="13" rx="1.56" fill="url(#packetCyan)" />
+    <rect x="198" y="299.686627" width="9" height="9" rx="1.08" fill="#0EA5E9" opacity="0.9" />
+    <rect x="204" y="278.430841" width="10" height="10" rx="1.2" fill="#38BDF8" />
+    <rect x="208" y="285.55104" width="12" height="12" rx="1.44" fill="url(#packetCyan)" />
+    <rect x="218" y="300.441941" width="8" height="8" rx="0.96" fill="#0284C7" opacity="0.85" />
+    <rect x="224" y="274.656781" width="12" height="12" rx="1.44" fill="#22D3EE" />
+    <rect x="232" y="288.97048" width="14" height="14" rx="1.68" fill="url(#packetCyan)" />
+    <rect x="242" y="266.533594" width="11" height="11" rx="1.32" fill="#38BDF8" />
+    <rect x="246.8" y="277.721927" width="14.4" height="14.4" rx="1.728" fill="url(#packetCyan)" />
+    <rect x="248" y="298.557458" width="9" height="9" rx="1.08" fill="#0284C7" opacity="0.8" />
+    <rect x="258" y="256.808031" width="14" height="14" rx="1.68" fill="url(#packetCyan)" />
+    <rect x="268" y="274.743211" width="16" height="16" rx="1.92" fill="url(#packetMint)" />
+    <rect x="266" y="292.853355" width="10" height="10" rx="1.2" fill="#0EA5E9" opacity="0.9" />
+    <rect x="274" y="244.370615" width="11" height="11" rx="1.32" fill="#67E8F9" opacity="0.85" />
+    <rect x="279.45" y="255.904209" width="17.1" height="17.1" rx="2.052" fill="url(#packetMint)" />
+    <rect x="286" y="284.683683" width="13" height="13" rx="1.56" fill="#06B6D4" />
+    <rect x="292" y="235.220878" width="15" height="15" rx="1.8" fill="url(#packetMint)" />
+    <rect x="304" y="258.138773" width="18" height="18" rx="2.16" fill="url(#packetCyan)" />
+    <rect x="304" y="280.169066" width="11" height="11" rx="1.32" fill="#22D3EE" />
+    <rect x="309.6" y="234.178872" width="16.8" height="16.8" rx="2.016" fill="url(#packetCyan)" />
+    <rect x="312" y="222.452017" width="10" height="10" rx="1.2" fill="#6EE7B7" opacity="0.85" />
+    <rect x="322" y="271.527563" width="14" height="14" rx="1.68" fill="#34D399" />
+    <rect x="328" y="209.067201" width="14" height="14" rx="1.68" fill="#34D399" />
+    <rect x="329.65" y="221.857184" width="20.7" height="20.7" rx="2.2" fill="url(#packetMint)" />
+    <rect x="338" y="256.660486" width="16" height="16" rx="1.92" fill="url(#packetCyan)" />
+    <rect x="342" y="193.447482" width="12" height="12" rx="1.44" fill="#A7F3D0" opacity="0.9" />
+    <rect x="347" y="204.151287" width="22" height="22" rx="2.2" fill="url(#packetBright)" />
+    <rect x="356" y="243.592397" width="19" height="19" rx="2.2" fill="url(#packetMint)" />
+    <rect x="354" y="269.65691" width="11" height="11" rx="1.32" fill="#38BDF8" opacity="0.85" />
+    <rect x="358" y="177.592397" width="15" height="15" rx="1.8" fill="url(#packetBright)" />
+    <rect x="366.75" y="185.92629" width="22.5" height="22.5" rx="2.2" fill="url(#packetMint)" />
+    <rect x="368.8" y="223.97629" width="18.4" height="18.4" rx="2.2" fill="url(#packetCyan)" />
+    <rect x="374" y="258.020965" width="14" height="14" rx="1.68" fill="#34D399" />
+    <rect x="372" y="159.319506" width="13" height="13" rx="1.56" fill="#6EE7B7" />
+    <rect x="392" y="215.080413" width="21" height="21" rx="2.2" fill="url(#packetBright)" />
+    <rect x="394" y="248.552393" width="12" height="12" rx="1.44" fill="#A7F3D0" opacity="0.9" />
+    <rect x="388.5" y="163.446785" width="27" height="27" rx="2.2" fill="url(#packetBright)" />
+    <rect x="390" y="140.142212" width="16" height="16" rx="1.92" fill="url(#packetMint)" />
+    <rect x="407.2" y="193.930915" width="21.6" height="21.6" rx="2.2" fill="url(#packetMint)" />
+    <rect x="414" y="233.422681" width="15" height="15" rx="1.8" fill="#22D3EE" opacity="0.9" />
+    <rect x="410" y="122.313623" width="12" height="12" rx="1.44" fill="#A7F3D0" />
+    <rect x="417.5" y="136.702796" width="29" height="29" rx="2.2" fill="url(#packetBright)" />
+    <rect x="428.1" y="175.954614" width="19.8" height="19.8" rx="2.2" fill="url(#packetMint)" />
+    <rect x="434" y="214.083074" width="13" height="13" rx="1.56" fill="#6EE7B7" opacity="0.85" />
+    <rect x="426" y="105.321559" width="14" height="14" rx="1.68" fill="#ECFDF5" />
+    <rect x="404" y="98.485014" width="8" height="8" rx="0.96" fill="#6EE7B7" opacity="0.7" />
+    <rect x="446.5" y="113.429231" width="19" height="19" rx="2.2" fill="url(#packetBright)" />
+    <rect x="454" y="158.79678" width="15" height="15" rx="1.8" fill="#FFFFFF" />
+    <rect x="456" y="190.991185" width="10" height="10" rx="1.2" fill="#34D399" opacity="0.8" />
+    <rect x="444" y="88.669122" width="10" height="10" rx="1.2" fill="#FFFFFF" opacity="0.9" />
+    <rect x="468" y="134.256295" width="9" height="9" rx="1.08" fill="#A7F3D0" opacity="0.85" />
+    <rect x="472" y="94.705324" width="8" height="8" rx="0.96" fill="#ECFDF5" opacity="0.9" />
+    <rect x="468" y="168.905241" width="6" height="6" rx="0.72" fill="#6EE7B7" opacity="0.6" />
+    <rect x="462" y="75.608527" width="5" height="5" rx="0.6" fill="#FFFFFF" opacity="0.7" />
+    <rect x="482" y="110.375" width="5" height="5" rx="0.6" fill="#FFFFFF" opacity="0.6" />
+  </g>
 </svg>

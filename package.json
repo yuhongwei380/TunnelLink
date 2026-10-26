@@ -23,6 +23,7 @@
     "test:macos-packaging": "node --test build/tests/macos-packaging.test.mjs",
     "test:packaging:integration": "node --test build/tests/integration/*.test.mjs",
     "sync:branding": "node build/sync-branding.mjs",
+    "icons:generate": "node build/generate-icons.mjs",
     "build:openvpn3:win": "powershell -ExecutionPolicy Bypass -File build/windows/build-openvpn3.ps1",
     "build:openvpn3:mac": "bash build/macos/build-openvpn3.sh",
     "prepare:driver:win": "node build/windows/prepare-driver.mjs",

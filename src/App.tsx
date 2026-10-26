@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { AboutDialog, AGREEMENT_REVISION } from './components/AboutDialog';
+import { AppLogo } from './components/AppLogo';
 import { AuthDialog } from './components/AuthDialog';
 import { ConnectionOverview } from './components/ConnectionOverview';
 import { ExitDialog } from './components/ExitDialog';
@@ -168,9 +169,7 @@ export default function App() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <span className="brand-icon">
-            <ShieldCheck size={25} strokeWidth={1.8} />
-          </span>
+          <AppLogo />
           <div>
             <h1>{appTitle}</h1>
             <p>{t.workspace}</p>
