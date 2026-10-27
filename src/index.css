@@ -4132,3 +4132,144 @@ dialog::backdrop {
     font-size: 8px;
   }
 }
+
+/* Keep the fixed 800 × 480 desktop window readable without vertical overflow. */
+@media (min-width: 561px) and (max-width: 900px) and (max-height: 560px) {
+  .app-shell {
+    width: calc(100% - 16px);
+    height: calc(100% - 16px);
+    margin: 8px;
+    border-radius: 18px;
+  }
+  .app-header {
+    flex-basis: 72px;
+    padding: 0 18px;
+  }
+  .app-header-brand {
+    gap: 10px;
+  }
+  .app-header-brand .brand-icon {
+    width: 34px;
+    height: 34px;
+  }
+  .app-header-brand h1 {
+    font-size: 21px;
+  }
+  .app-header > .language-button {
+    min-width: 58px;
+    min-height: 34px;
+    font-size: 14px;
+  }
+  .app-header > .language-button svg {
+    width: 17px;
+    height: 17px;
+  }
+  .app-body > .sidebar {
+    width: 180px;
+    flex: 0 0 180px;
+    padding: 20px 14px 18px;
+  }
+  .app-body .primary-nav {
+    gap: 10px;
+  }
+  .app-body .primary-nav button {
+    min-height: 50px;
+    padding: 0 12px;
+    gap: 10px;
+    border-radius: 12px;
+    font-size: 16px;
+  }
+  .app-body .primary-nav button svg {
+    width: 22px;
+    height: 22px;
+  }
+  .app-body .about-button {
+    min-height: 42px;
+    font-size: 16px;
+  }
+  .connection-page {
+    padding: 16px 20px 8px;
+  }
+  .connection-page .connection-card {
+    min-height: 170px;
+    height: 170px;
+    padding: 19px 22px 17px;
+    border-radius: 16px;
+  }
+  .connection-page .connection-copy h3 {
+    font-size: 27px;
+  }
+  .connection-page .connection-security-icon {
+    top: 27px;
+    right: 26px;
+  }
+  .connection-page .connection-security-icon svg {
+    width: 34px;
+    height: 34px;
+  }
+  .connection-page .connection-action-row {
+    margin-top: 8px;
+  }
+  .connection-page .connection-action-row .status-badge {
+    min-height: 18px;
+    margin-bottom: 8px;
+    font-size: 15px;
+  }
+  .connection-page .connection-action-row .status-badge i {
+    width: 9px;
+    height: 9px;
+    margin-right: 7px;
+  }
+  .connection-page .connection-action-row .connection-action {
+    min-height: 48px;
+    border-radius: 11px;
+    font-size: 20px;
+  }
+  .connection-page .connection-action-row .connection-action svg {
+    width: 21px;
+    height: 21px;
+  }
+  .connection-page .details-card {
+    margin-top: 12px;
+    padding: 10px 14px 5px;
+    border-radius: 16px;
+  }
+  .connection-page .details-card-main .panel-heading .eyebrow {
+    font-size: 17px;
+  }
+  .connection-page .details-card-main .gateway-identity {
+    margin-top: 3px;
+  }
+  .connection-page .details-card-main .gateway-identity h3 {
+    font-size: 19px;
+  }
+  .connection-page .details-card-session {
+    margin-top: 10px;
+    padding-top: 8px;
+  }
+  .connection-page .details-card-session .metric-card {
+    padding: 0 13px;
+  }
+  .connection-page .details-card-session .metric-card .metric-label {
+    font-size: 14px;
+  }
+  .connection-page .details-card-session .metric-card > strong,
+  .connection-page .details-card:not(.is-connected) .metric-card > strong {
+    margin-top: 3px;
+    font-size: 19px;
+  }
+  .connection-page .details-card-footer {
+    margin-top: 8px;
+    padding-top: 4px;
+  }
+  .connection-page .details-card-footer .support-log-button {
+    min-height: 24px;
+    font-size: 12px;
+  }
+  .connection-page .workspace-footer {
+    padding-top: 8px;
+  }
+  .connection-page .workspace-copyright {
+    font-size: 10px;
+  }
+}
