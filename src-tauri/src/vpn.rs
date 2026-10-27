@@ -30,6 +30,8 @@ struct Data {
     started: Option<Instant>,
     last_error: String,
     logs: VecDeque<Log>,
+    assigned_ip: Option<String>,
+    gateway_addr: Option<String>,
 }
 impl Default for Data {
     fn default() -> Self {
@@ -38,6 +40,8 @@ impl Default for Data {
             started: None,
             last_error: String::new(),
             logs: VecDeque::new(),
+            assigned_ip: None,
+            gateway_addr: None,
         }
     }
 }
@@ -81,6 +85,46 @@ fn connected(line: &str) -> bool {
                 == Some("CONNECTED")
         })
 }
+fn is_ipv4(token: &str) -> bool {
+    let token = token.trim_matches(|c: char| c == '"' || c == '\'');
+    let parts: Vec<&str> = token.split('.').collect();
+    parts.len() == 4
+        && parts
+            .iter()
+            .all(|part| !part.is_empty() && part.len() <= 3 && part.parse::<u8>().is_ok())
+}
+
+// The assigned virtual IPv4 appears in ovpn3 core signalling events; the
+// ifconfig form covers OpenVPN-style PUSH_REPLY lines as a fallback.
+fn extract_assigned_ip(line: &str) -> Option<String> {
+    if let Some(pos) = line.find("CONNECTED_VPN_IPV4_ADDRESS") {
+        if let Some(token) = line[pos + "CONNECTED_VPN_IPV4_ADDRESS".len()..]
+            .split_whitespace()
+            .find(|token| is_ipv4(token))
+        {
+            return Some(token.trim_matches(|c: char| c == '"' || c == '\'').to_string());
+        }
+    }
+    let token = line
+        .find("ifconfig ")
+        .and_then(|pos| line[pos + "ifconfig ".len()..].split_whitespace().next())?
+        .trim_matches(|c: char| c == '"' || c == '\'');
+    (is_ipv4(token) && token != "0.0.0.0").then(|| token.to_string())
+}
+
+// "EVENT: CONNECTED <user>@<host>:<port>" carries the gateway endpoint.
+fn extract_gateway(line: &str) -> Option<String> {
+    let payload = line.split_once("CONNECTED ")?.1.trim();
+    if payload.is_empty() || payload.starts_with('_') {
+        return None;
+    }
+    let endpoint = payload.rsplit_once('@')?.1.trim();
+    (!endpoint.is_empty()
+        && endpoint.len() <= 253
+        && endpoint.chars().all(|c| !c.is_whitespace() && c != '\0'))
+        .then(|| endpoint.to_string())
+}
+
 fn fatal_error(line: &str) -> Option<String> {
     let lower = line.to_ascii_lowercase();
     let message = if lower.contains("auth_failed") || lower.contains("authentication failed") {
@@ -144,6 +188,8 @@ impl Controller {
             data.state = "CONNECTING";
             data.started = None;
             data.last_error.clear();
+            data.assigned_ip = None;
+            data.gateway_addr = None;
             data.log("system", "Connection requested (Tauri / OpenVPN 3).");
         }
         let cancel = Arc::new(AtomicBool::new(false));
@@ -159,6 +205,8 @@ impl Controller {
             let mut data = controller.data.lock().unwrap();
             data.state = "DISCONNECTED";
             data.started = None;
+            data.assigned_ip = None;
+            data.gateway_addr = None;
             data.log("system", "Connection stopped.");
         });
         *session = Some(Session { cancel, thread });
@@ -178,12 +226,16 @@ impl Controller {
         let mut data = self.data.lock().unwrap();
         data.state = "DISCONNECTED";
         data.started = None;
+        data.assigned_ip = None;
+        data.gateway_addr = None;
         json!({ "ok": true, "state": "DISCONNECTED" })
     }
     pub fn status(&self) -> Value {
         let data = self.data.lock().unwrap();
         json!({ "state": data.state, "uptime": data.started.map(|t| t.elapsed().as_secs()).unwrap_or(0),
-            "bytesIn": 0, "bytesOut": 0, "metricsAvailable": false, "lastError": data.last_error, "engine": "openvpn3" })
+            "bytesIn": 0, "bytesOut": 0, "metricsAvailable": false,
+            "assignedIp": data.assigned_ip, "gatewayAddress": data.gateway_addr,
+            "lastError": data.last_error, "engine": "openvpn3" })
     }
     pub fn logs(&self) -> Value {
         let data = self.data.lock().unwrap();
@@ -299,6 +351,12 @@ impl Controller {
                 }
                 let mut data = self.data.lock().unwrap();
                 data.log("engine", line.replace(&options.password, "[redacted]"));
+                if let Some(ip) = extract_assigned_ip(&line) {
+                    data.assigned_ip = Some(ip);
+                }
+                if let Some(endpoint) = extract_gateway(&line) {
+                    data.gateway_addr = Some(endpoint);
+                }
                 if let Some(error) = fatal_error(&line) {
                     data.error(error.replace(&options.password, "[redacted]"));
                     cancel.store(true, Ordering::SeqCst);
@@ -325,10 +383,14 @@ impl Controller {
                 } else if line.contains("EVENT: RECONNECTING") {
                     data.state = "CONNECTING";
                     data.started = None;
+                    data.assigned_ip = None;
+                    data.gateway_addr = None;
                     deadline = Instant::now() + Duration::from_secs(45);
                 } else if line.contains("EVENT: DISCONNECTED") {
                     data.state = "DISCONNECTED";
                     data.started = None;
+                    data.assigned_ip = None;
+                    data.gateway_addr = None;
                     cancel.store(true, Ordering::SeqCst);
                 }
             }
@@ -402,6 +464,36 @@ mod tests {
         ] {
             assert!(!connected(line), "{line}");
         }
+    }
+    #[test]
+    fn address_extraction_covers_core_events_and_push_fallbacks() {
+        assert_eq!(
+            extract_assigned_ip("EVENT: CONNECTED_VPN_IPV4_ADDRESS 10.8.0.6 10.8.0.1").as_deref(),
+            Some("10.8.0.6")
+        );
+        assert_eq!(
+            extract_assigned_ip(
+                "PUSH: Received control message: PUSH_REPLY,ifconfig 10.8.0.2 255.255.255.0"
+            )
+            .as_deref(),
+            Some("10.8.0.2")
+        );
+        assert_eq!(extract_assigned_ip("WARNING: ifconfig parsing failed"), None);
+        assert_eq!(
+            extract_assigned_ip("EVENT: CONNECTED_VPN_IPV4_ADDRESS [unavailable]"),
+            None
+        );
+        assert_eq!(
+            extract_gateway("EVENT: CONNECTED demo@vpn.example.com:1194").as_deref(),
+            Some("vpn.example.com:1194")
+        );
+        assert_eq!(
+            extract_gateway("EVENT: CONNECTED a@b@example.org:443").as_deref(),
+            Some("example.org:443")
+        );
+        assert_eq!(extract_gateway("EVENT: CONNECTED_TUNNEL"), None);
+        assert_eq!(extract_gateway("EVENT: DISCONNECTED"), None);
+        assert_eq!(extract_gateway("EVENT: CONNECTED "), None);
     }
     #[test]
     fn driver_and_auth_failures_are_actionable_but_warnings_are_not_fatal() {

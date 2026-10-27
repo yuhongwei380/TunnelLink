@@ -14,15 +14,15 @@
       {
         "label": "main",
         "title": "OpenVPNClient",
-        "width": 1200,
-        "height": 700,
-        "minWidth": 1200,
-        "minHeight": 700,
-        "maxWidth": 1200,
-        "maxHeight": 700,
+        "width": 800,
+        "height": 467,
+        "minWidth": 800,
+        "minHeight": 467,
+        "maxWidth": 800,
+        "maxHeight": 467,
         "resizable": false,
         "maximizable": false,
-        "backgroundColor": "#f7fafc"
+        "backgroundColor": "#ffffff"
       }
     ],
     "security": {

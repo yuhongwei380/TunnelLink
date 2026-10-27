@@ -1417,7 +1417,7 @@ dialog::backdrop {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 22px;
+  margin-bottom: 14px;
 }
 .auth-icon {
   display: grid;
@@ -1461,14 +1461,14 @@ dialog::backdrop {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.7;
-  margin-bottom: 25px;
+  margin-bottom: 16px;
 }
 .auth-dialog form > label:not(.remember-label) {
   display: block;
   color: #334764;
   font-size: 12px;
   font-weight: 600;
-  margin: 18px 0 8px;
+  margin: 14px 0 6px;
 }
 .input-with-icon {
   position: relative;
@@ -1563,7 +1563,7 @@ dialog::backdrop {
   flex-shrink: 0;
 }
 .remember-hint {
-  margin: 0 0 22px 25px;
+  margin: 0 0 14px 25px;
   font-size: 10px;
 }
 .submit-button {
@@ -1615,8 +1615,8 @@ dialog::backdrop {
   display: flex;
   align-items: center;
   gap: 7px;
-  margin-top: 22px;
-  padding-top: 19px;
+  margin-top: 16px;
+  padding-top: 14px;
   border-top: 1px solid var(--line);
   font-size: 10px;
   color: #526b8b;
@@ -1630,8 +1630,50 @@ dialog::backdrop {
   line-height: 1.7;
   margin-top: 10px;
 }
+.auth-dialog {
+  /* Wide dialog: at 640 px the form fits the fixed window without scrolling,
+     so no scrollbar appears in the first place. */
+  max-width: 640px;
+  max-height: calc(100% - 16px);
+}
 .about-dialog {
   max-width: 600px;
+}
+/* When a dialog does need to scroll (long error text, short screens),
+   keep the thumb inset inside the rounded card instead of hugging the
+   border, so it never looks like it spills out of the dialog. */
+.auth-dialog,
+.about-dialog,
+.install-dialog,
+.exit-dialog {
+  scrollbar-width: thin;
+  scrollbar-color: #c9d4e2 transparent;
+}
+.auth-dialog::-webkit-scrollbar,
+.about-dialog::-webkit-scrollbar,
+.install-dialog::-webkit-scrollbar,
+.exit-dialog::-webkit-scrollbar {
+  width: 10px;
+}
+.auth-dialog::-webkit-scrollbar-track,
+.about-dialog::-webkit-scrollbar-track,
+.install-dialog::-webkit-scrollbar-track,
+.exit-dialog::-webkit-scrollbar-track {
+  background: transparent;
+}
+.auth-dialog::-webkit-scrollbar-thumb,
+.about-dialog::-webkit-scrollbar-thumb,
+.install-dialog::-webkit-scrollbar-thumb,
+.exit-dialog::-webkit-scrollbar-thumb {
+  background: #c9d4e2;
+  border: 3px solid #fff;
+  border-radius: 999px;
+}
+.auth-dialog::-webkit-scrollbar-thumb:hover,
+.about-dialog::-webkit-scrollbar-thumb:hover,
+.install-dialog::-webkit-scrollbar-thumb:hover,
+.exit-dialog::-webkit-scrollbar-thumb:hover {
+  background: #9caec3;
 }
 .install-dialog {
   width: min(500px, calc(100vw - 40px));
@@ -3448,14 +3490,11 @@ dialog::backdrop {
 .app-shell {
   display: flex;
   flex-direction: column;
-  width: calc(100% - 48px);
-  height: calc(100% - 40px);
+  width: 100%;
+  height: 100%;
   min-width: 0;
   min-height: 0;
-  margin: 20px 24px;
   overflow: hidden;
-  border: 2px solid #e0e0e0;
-  border-radius: 28px;
   background: #fff;
 }
 .app-header {
@@ -3728,6 +3767,30 @@ dialog::backdrop {
   font-weight: 700;
   letter-spacing: -0.4px;
 }
+.connection-page .details-card-main .gateway-net {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin-top: 10px;
+}
+.connection-page .details-card-main .gateway-net-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+.connection-page .details-card-main .gateway-net-item span {
+  color: #6a6a6a;
+  font-size: 20px;
+  white-space: nowrap;
+}
+.connection-page .details-card-main .gateway-net-item strong {
+  color: #171717;
+  font-size: 21px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
 .connection-page .details-card-session {
   min-width: 0;
   margin-top: 28px;
@@ -3821,11 +3884,6 @@ dialog::backdrop {
 }
 
 @media (max-width: 900px) {
-  .app-shell {
-    width: calc(100% - 28px);
-    height: calc(100% - 24px);
-    margin: 12px 14px;
-  }
   .app-header {
     flex-basis: 104px;
     padding: 0 22px;
@@ -3854,12 +3912,6 @@ dialog::backdrop {
 }
 
 @media (max-width: 560px) {
-  .app-shell {
-    width: calc(100% - 16px);
-    height: calc(100% - 16px);
-    margin: 8px;
-    border-radius: 19px;
-  }
   .app-header {
     flex-basis: 84px;
     padding: 0 18px;
@@ -4133,18 +4185,12 @@ dialog::backdrop {
   }
 }
 
-/* Fixed 1200 × 700 desktop window, rendered at 100% zoom (no webview zoom).
-   Proportions follow common desktop-client conventions: sidebar + dashboard
-   frame that fits 1366 × 768 screens, ~40 px click targets, 14–24 px type
-   steps. Everything — page, dialogs, buttons — is sized natively so the
-   layout never overflows the fixed frame. */
+/* Fixed 800 × 467 desktop window shown at a 2/3 webview zoom: CSS still
+   sees a ~1200 × 650 viewport, so this block carries the full desktop
+   design (sidebar + dashboard proportions, common client conventions)
+   and the zoom shrinks buttons, dialogs and type by the same 2/3 ratio.
+   Everything — page, dialogs, buttons — stays inside the fixed frame. */
 @media (min-width: 1001px) and (max-height: 720px) {
-  .app-shell {
-    width: calc(100% - 28px);
-    height: calc(100% - 28px);
-    margin: 14px;
-    border-radius: 22px;
-  }
   .app-header {
     flex-basis: 100px;
     padding: 0 24px;
@@ -4199,7 +4245,7 @@ dialog::backdrop {
     padding: 24px 28px 8px 20px;
   }
   .connection-page .connection-card {
-    min-height: 224px;
+    min-height: 212px;
     height: auto;
     max-height: none;
     padding: 24px 26px 18px;
@@ -4252,6 +4298,16 @@ dialog::backdrop {
   .connection-page .details-card-main .gateway-identity h3 {
     font-size: 24px;
   }
+  .connection-page .details-card-main .gateway-net {
+    gap: 4px 24px;
+    margin-top: 6px;
+  }
+  .connection-page .details-card-main .gateway-net-item span {
+    font-size: 14px;
+  }
+  .connection-page .details-card-main .gateway-net-item strong {
+    font-size: 15px;
+  }
   .connection-page .details-card-session {
     margin-top: 16px;
     padding-top: 14px;
@@ -4276,7 +4332,7 @@ dialog::backdrop {
     font-size: 13px;
   }
   .connection-page .workspace-footer {
-    padding-top: 12px;
+    padding-top: 8px;
   }
   .connection-page .workspace-copyright {
     font-size: 13px;

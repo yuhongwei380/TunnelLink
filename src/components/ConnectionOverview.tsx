@@ -119,6 +119,16 @@ export function ConnectionOverview({
               <p>{t.gatewayDesc}</p>
             </div>
           </div>
+          <div className="gateway-net">
+            <div className="gateway-net-item">
+              <span>{t.assignedIp}</span>
+              <strong>{stats.assignedIp || '—'}</strong>
+            </div>
+            <div className="gateway-net-item">
+              <span>{t.gatewayAddress}</span>
+              <strong>{stats.gatewayAddress || '—'}</strong>
+            </div>
+          </div>
           <div className="gateway-detail">
             <span>{t.protocol}</span>
             <strong>

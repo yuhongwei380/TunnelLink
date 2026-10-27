@@ -19,11 +19,15 @@ export type VpnStats = {
   bytesIn: number;
   bytesOut: number;
   metricsAvailable: boolean;
+  assignedIp: string | null;
+  gatewayAddress: string | null;
 };
 
-export type VpnStatus = Omit<VpnStats, 'metricsAvailable'> & {
+export type VpnStatus = Omit<VpnStats, 'metricsAvailable' | 'assignedIp' | 'gatewayAddress'> & {
   state: VpnState;
   metricsAvailable?: boolean;
+  assignedIp?: string | null;
+  gatewayAddress?: string | null;
   lastError?: string;
 };
 

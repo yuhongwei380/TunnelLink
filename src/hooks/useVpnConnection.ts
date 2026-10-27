@@ -14,6 +14,8 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
     bytesIn: 0,
     bytesOut: 0,
     metricsAvailable: false,
+    assignedIp: null,
+    gatewayAddress: null,
   });
   const [statusError, setStatusError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -63,6 +65,8 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
         bytesIn: data.bytesIn,
         bytesOut: data.bytesOut,
         metricsAvailable: data.metricsAvailable === true,
+        assignedIp: data.assignedIp ?? null,
+        gatewayAddress: data.gatewayAddress ?? null,
       });
       setStatusError(data.lastError || connectionErrorOverride.current);
     } catch {
