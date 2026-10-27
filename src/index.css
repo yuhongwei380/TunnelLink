@@ -3443,3 +3443,548 @@ dialog::backdrop {
     padding: 0 7px;
   }
 }
+
+/* Screenshot-aligned application frame and connection overview. */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  width: calc(100% - 48px);
+  height: calc(100% - 40px);
+  min-width: 0;
+  min-height: 0;
+  margin: 20px 24px;
+  overflow: hidden;
+  border: 2px solid #e0e0e0;
+  border-radius: 28px;
+  background: #fff;
+}
+.app-header {
+  display: flex;
+  flex: 0 0 132px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 28px;
+  border-bottom: 1px solid #ededed;
+  background: #fff;
+}
+.app-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.app-header-brand .brand-icon {
+  width: 48px;
+  height: 48px;
+}
+.app-header-brand h1 {
+  overflow: hidden;
+  color: #121212;
+  font-size: clamp(23px, 2.1vw, 31px);
+  font-weight: 750;
+  letter-spacing: -0.8px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-header > .language-button {
+  flex: 0 0 auto;
+  min-width: 70px;
+  min-height: 42px;
+  padding: 0 8px;
+  color: #5d5d5d;
+  font-size: 18px;
+  font-weight: 450;
+}
+.app-header > .language-button svg {
+  color: #38a7e8;
+  width: 21px;
+  height: 21px;
+}
+.app-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+.app-body > .sidebar {
+  width: 295px;
+  flex: 0 0 295px;
+  padding: 40px 0 28px 24px;
+  border: 0;
+  background: #fff;
+}
+.app-body .primary-nav {
+  gap: 17px;
+}
+.app-body .primary-nav button {
+  min-height: 70px;
+  padding: 0 26px;
+  gap: 16px;
+  border: 0;
+  border-radius: 16px;
+  color: #5e5e5e;
+  font-size: 22px;
+  font-weight: 450;
+}
+.app-body .primary-nav button:hover {
+  background: #f5f7fb;
+  color: #222;
+}
+.app-body .primary-nav button.active {
+  color: #2164db;
+  background: #e8efff;
+  font-weight: 550;
+}
+.app-body .primary-nav button.active::before {
+  display: none;
+}
+.app-body .primary-nav button svg {
+  width: 28px;
+  height: 28px;
+}
+.app-body .primary-nav .nav-chevron {
+  display: none;
+}
+.app-body .sidebar-bottom {
+  padding-top: 0;
+}
+.app-body .sidebar-utility {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.app-body .about-button {
+  min-height: 54px;
+  margin: 0;
+  padding: 0;
+  border-radius: 11px;
+  color: #666;
+  font-size: 21px;
+  font-weight: 450;
+}
+.app-body .about-button:hover {
+  color: #2164db;
+  background: #f5f7fb;
+}
+.app-body .about-button > svg {
+  display: none;
+}
+.app-body .about-button > span {
+  display: block;
+}
+.app-body .workspace {
+  min-width: 0;
+  min-height: 0;
+}
+.app-body .workspace-header {
+  display: none;
+}
+.app-body .main-scroll {
+  min-height: 0;
+}
+.connection-page {
+  display: flex;
+  flex-direction: column;
+  max-width: none;
+  height: 100%;
+  min-height: 100%;
+  padding: 40px 40px 20px 24px;
+}
+.connection-page .page-heading {
+  display: none;
+}
+.connection-page .connection-card {
+  display: block;
+  flex: 0 0 auto;
+  min-height: 304px;
+  padding: 38px 32px 32px;
+  border: 0;
+  border-radius: 24px;
+  background: #102b53;
+  box-shadow: none;
+}
+.connection-page .connection-copy {
+  min-width: 0;
+}
+.connection-page .connection-copy h3 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(29px, 2.8vw, 39px);
+  font-weight: 720;
+  letter-spacing: -1px;
+  line-height: 1.15;
+}
+.connection-page .connection-state-copy {
+  display: none;
+}
+.connection-page .connection-security-icon {
+  position: absolute;
+  top: 50px;
+  right: 38px;
+  display: grid;
+  place-items: center;
+  color: #8eb6ff;
+}
+.connection-page .connection-visual {
+  display: none;
+}
+.connection-page .connection-action-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  margin-top: 24px;
+}
+.connection-page .connection-action-row .status-badge {
+  order: -1;
+  align-self: flex-start;
+  min-height: 26px;
+  margin: 0 0 26px;
+  padding: 0;
+  border: 0;
+  color: #b1bfd4;
+  background: transparent;
+  font-size: 21px;
+  font-weight: 450;
+}
+.connection-page .connection-action-row .status-badge i {
+  width: 13px;
+  height: 13px;
+  margin-right: 10px;
+  background: #a5b5cc;
+  box-shadow: none;
+}
+.connection-page .connection-action-row .connection-action {
+  width: 100%;
+  min-width: 0;
+  min-height: 76px;
+  margin: 0;
+  justify-content: center;
+  gap: 13px;
+  border: 0;
+  border-radius: 15px;
+  color: #fff;
+  background: #2161ed;
+  font-size: 28px;
+  font-weight: 650;
+}
+.connection-page .connection-action-row .connection-action:hover:not(:disabled) {
+  background: #2e6cf0;
+}
+.connection-page .connection-action-row .connection-action.secondary-action {
+  color: #fff;
+  background: #2161ed;
+  border: 0;
+}
+.connection-page .connection-action-row .connection-action svg {
+  width: 28px;
+  height: 28px;
+}
+.connection-page .details-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto auto;
+  flex: 0 0 auto;
+  min-width: 0;
+  margin-top: 24px;
+  padding: 26px 24px 16px;
+  border: 2px solid #e1e1e1;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: none;
+}
+.connection-page .details-card-main {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+.connection-page .details-card-main .panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.connection-page .details-card-main .panel-heading .eyebrow {
+  color: #6a6a6a;
+  font-size: 25px;
+  font-weight: 420;
+  letter-spacing: 0;
+}
+.connection-page .details-card-main .managed-badge {
+  display: none;
+}
+.connection-page .details-card-main .gateway-identity {
+  margin: 8px 0 0;
+}
+.connection-page .details-card-main .gateway-icon,
+.connection-page .details-card-main .gateway-identity p,
+.connection-page .details-card-main .gateway-detail {
+  display: none;
+}
+.connection-page .details-card-main .gateway-identity h3 {
+  color: #171717;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+}
+.connection-page .details-card-session {
+  min-width: 0;
+  margin-top: 28px;
+  padding-top: 25px;
+  border-top: 1px solid #e7e7e7;
+}
+.connection-page .details-card-session .section-caption {
+  display: none;
+}
+.connection-page .details-card-session .metrics-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+}
+.connection-page .details-card-session .metric-card {
+  min-width: 0;
+  padding: 0 22px;
+  border: 0;
+  border-left: 1px solid #ececec;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.connection-page .details-card-session .metric-card:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.connection-page .details-card-session .metric-card .metric-label {
+  color: #6d6d6d;
+  font-size: 21px;
+  font-weight: 400;
+}
+.connection-page .details-card-session .metric-card .metric-icon,
+.connection-page .details-card-session .metric-card > small {
+  display: none;
+}
+.connection-page .details-card-session .metric-card > strong,
+.connection-page .details-card-session .metric-card > strong.time-value {
+  margin-top: 8px;
+  color: #1f1f1f;
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.6px;
+}
+.connection-page .details-card:not(.is-connected) .metric-card {
+  opacity: 0.58;
+}
+.connection-page .details-card:not(.is-connected) .metric-card > strong {
+  color: #444;
+  font-size: 28px;
+}
+.connection-page .details-card-footer {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  margin-top: 24px;
+  padding-top: 11px;
+  border-top: 1px solid #ededed;
+}
+.connection-page .details-card-log-copy {
+  display: none;
+}
+.connection-page .details-card-footer .support-log-button {
+  min-height: 32px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: #666;
+  font-size: 14px;
+  font-weight: 450;
+}
+.connection-page .details-card-footer .support-log-button:hover {
+  color: #2164db;
+  background: transparent;
+}
+.connection-page .workspace-footer {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  margin-top: auto;
+  padding: 18px 0 0;
+}
+.connection-page .workspace-copyright {
+  color: #777;
+  font-size: 14px;
+  text-align: center;
+}
+.connection-page .connection-error {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    width: calc(100% - 28px);
+    height: calc(100% - 24px);
+    margin: 12px 14px;
+  }
+  .app-header {
+    flex-basis: 104px;
+    padding: 0 22px;
+  }
+  .app-body > .sidebar {
+    width: 205px;
+    flex-basis: 205px;
+    padding: 30px 17px 22px;
+  }
+  .app-body .primary-nav button {
+    min-height: 58px;
+    padding: 0 17px;
+    font-size: 18px;
+  }
+  .connection-page {
+    padding: 28px 28px 16px;
+  }
+  .connection-page .connection-card {
+    min-height: 270px;
+    padding: 30px 26px 26px;
+  }
+  .connection-page .connection-action-row .connection-action {
+    min-height: 64px;
+    font-size: 23px;
+  }
+}
+
+@media (max-width: 560px) {
+  .app-shell {
+    width: calc(100% - 16px);
+    height: calc(100% - 16px);
+    margin: 8px;
+    border-radius: 19px;
+  }
+  .app-header {
+    flex-basis: 84px;
+    padding: 0 18px;
+  }
+  .app-header-brand {
+    gap: 10px;
+  }
+  .app-header-brand .brand-icon {
+    width: 37px;
+    height: 37px;
+  }
+  .app-header-brand h1 {
+    font-size: 19px;
+  }
+  .app-header > .language-button {
+    min-width: 55px;
+    font-size: 14px;
+  }
+  .app-body {
+    flex-direction: column;
+  }
+  .app-body > .sidebar {
+    width: 100%;
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    padding: 10px 16px 0;
+    border-bottom: 1px solid #ededed;
+  }
+  .app-body .primary-nav {
+    flex-direction: row;
+    gap: 14px;
+    width: auto;
+  }
+  .app-body .primary-nav button {
+    min-height: 43px;
+    padding: 0 4px 9px;
+    border-radius: 0;
+    border-bottom: 2px solid transparent;
+    font-size: 13px;
+  }
+  .app-body .primary-nav button.active {
+    background: transparent;
+    border-bottom-color: #2164db;
+  }
+  .app-body .primary-nav button svg {
+    width: 19px;
+    height: 19px;
+  }
+  .app-body .sidebar-bottom {
+    margin-left: auto;
+  }
+  .app-body .about-button {
+    min-height: 42px;
+    font-size: 13px;
+  }
+  .connection-page {
+    padding: 18px 14px 12px;
+  }
+  .connection-page .connection-card {
+    min-height: 226px;
+    padding: 24px 18px 18px;
+    border-radius: 17px;
+  }
+  .connection-page .connection-copy h3 {
+    font-size: 28px;
+  }
+  .connection-page .connection-security-icon {
+    top: 27px;
+    right: 21px;
+  }
+  .connection-page .connection-security-icon svg {
+    width: 33px;
+    height: 33px;
+  }
+  .connection-page .connection-action-row {
+    margin-top: 17px;
+  }
+  .connection-page .connection-action-row .status-badge {
+    margin-bottom: 15px;
+    font-size: 15px;
+  }
+  .connection-page .connection-action-row .connection-action {
+    min-height: 55px;
+    border-radius: 11px;
+    font-size: 20px;
+  }
+  .connection-page .details-card {
+    margin-top: 14px;
+    padding: 18px 15px 10px;
+    border-radius: 16px;
+  }
+  .connection-page .details-card-main .panel-heading .eyebrow {
+    font-size: 18px;
+  }
+  .connection-page .details-card-main .gateway-identity h3 {
+    font-size: 20px;
+  }
+  .connection-page .details-card-session {
+    margin-top: 18px;
+    padding-top: 17px;
+  }
+  .connection-page .details-card-session .metric-card {
+    padding: 0 8px;
+  }
+  .connection-page .details-card-session .metric-card .metric-label {
+    font-size: 13px;
+  }
+  .connection-page .details-card-session .metric-card > strong,
+  .connection-page .details-card:not(.is-connected) .metric-card > strong {
+    margin-top: 5px;
+    font-size: 18px;
+  }
+  .connection-page .details-card-footer {
+    margin-top: 15px;
+    padding-top: 7px;
+  }
+  .connection-page .details-card-footer .support-log-button {
+    min-height: 27px;
+    font-size: 11px;
+  }
+  .connection-page .workspace-footer {
+    padding-top: 12px;
+  }
+  .connection-page .workspace-copyright {
+    font-size: 10px;
+  }
+}

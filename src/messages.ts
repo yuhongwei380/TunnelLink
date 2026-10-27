@@ -16,7 +16,7 @@ export const MESSAGES = {
     disconnect: '断开连接',
     cancel: '取消连接',
     duration: '会话时长',
-    gateway: '目标网关',
+    gateway: '连接网关',
     gatewayName: 'Demo 环境网关',
     managed: '管理员配置',
     download: '已接收',

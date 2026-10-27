@@ -1,14 +1,6 @@
 import { useEffect, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
-import {
-  ChevronRight,
-  Globe2,
-  Info,
-  LayoutDashboard,
-  ShieldCheck,
-  Terminal,
-  X,
-} from 'lucide-react';
+import { ChevronRight, Globe2, Info, LayoutDashboard, Terminal, X } from 'lucide-react';
 import { AboutDialog, AGREEMENT_REVISION } from './components/AboutDialog';
 import { AppLogo } from './components/AppLogo';
 import { AuthDialog } from './components/AuthDialog';
@@ -173,102 +165,76 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
+      <header className="app-header">
+        <div className="app-header-brand">
           <AppLogo />
-          <div>
-            <h1>{appTitle}</h1>
-            <p>{t.workspace}</p>
-          </div>
+          <h1>{appTitle}</h1>
         </div>
-        <div className="navigation-label">{t.workspaceNav}</div>
-        <nav className="primary-nav" aria-label={t.workspaceNav}>
-          <button
-            className="active"
-            onClick={() => setLogsOpen(false)}
-            aria-current="page"
-            title={t.connection}
-          >
-            <LayoutDashboard size={19} />
-            <span>{t.connection}</span>
-            <ChevronRight className="nav-chevron" size={15} />
-          </button>
-          <button
-            onClick={() => setLogsOpen(true)}
-            aria-haspopup="dialog"
-            aria-expanded={logsOpen}
-            title={t.diagnostics}
-          >
-            <Terminal size={19} />
-            <span>{t.diagnostics}</span>
-            {Boolean(statusError) && <span className="error-dot" />}
-          </button>
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="engine-card">
-            <div className="engine-heading">
-              <span className="eyebrow">{t.engine}</span>
-              <span className="engine-symbol">
-                <ShieldCheck size={16} />
-              </span>
-            </div>
-            <strong>OpenVPN 3</strong>
-            <div className="engine-meta">
-              <span>Core {release.version}</span>
-            </div>
-          </div>
-          <div className="sidebar-utility">
-            <button className="about-button" onClick={() => setAboutOpen(true)} title={t.about}>
-              <Info size={17} />
-              <span>{t.about}</span>
-              <ChevronRight size={14} />
-            </button>
-          </div>
-        </div>
-      </aside>
+        <button
+          className="language-button"
+          onClick={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
+          aria-label={locale === 'zh' ? 'Switch to English' : '切换为中文'}
+          title={locale === 'zh' ? '切换至 English' : 'Switch to Chinese'}
+        >
+          <Globe2 size={19} />
+          {locale === 'zh' ? 'EN' : '中文'}
+        </button>
+      </header>
 
-      <div className="workspace">
-        <header className="workspace-header">
-          <div className="breadcrumb">
-            <span>{t.workspace}</span>
-            <ChevronRight size={13} />
-            <strong>{t.connection}</strong>
-          </div>
-          <div className="header-actions">
-            <span className="runtime-label">
-              <span className={isDesktop ? 'runtime-dot' : 'preview-dot'} />
-              {isDesktop ? t.localClient : t.preview}
-            </span>
-            <span className="header-divider" />
+      <div className="app-body">
+        <aside className="sidebar">
+          <nav className="primary-nav" aria-label={t.workspaceNav}>
             <button
-              className="language-button"
-              onClick={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
-              aria-label={locale === 'zh' ? 'Switch to English' : '切换为中文'}
-              title={locale === 'zh' ? '切换至 English' : 'Switch to Chinese'}
+              className="active"
+              onClick={() => setLogsOpen(false)}
+              aria-current="page"
+              title={t.connection}
             >
-              <Globe2 size={17} />
-              {locale === 'zh' ? 'EN' : '中文'}
+              <LayoutDashboard size={19} />
+              <span>{t.connection}</span>
+              <ChevronRight className="nav-chevron" size={15} />
             </button>
+            <button
+              onClick={() => setLogsOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={logsOpen}
+              title={t.diagnostics}
+            >
+              <Terminal size={19} />
+              <span>{t.diagnostics}</span>
+              {Boolean(statusError) && <span className="error-dot" />}
+            </button>
+          </nav>
+          <div className="sidebar-bottom">
+            <div className="sidebar-utility">
+              <button className="about-button" onClick={() => setAboutOpen(true)} title={t.about}>
+                <Info size={17} />
+                <span>{t.about}</span>
+                <ChevronRight size={14} />
+              </button>
+            </div>
           </div>
-        </header>
+        </aside>
 
-        <main className="main-scroll" id="main-content">
-          <ConnectionOverview
-            status={status}
-            stats={stats}
-            statusError={statusError}
-            busy={busy}
-            t={t}
-            onToggle={handleToggle}
-            onOpenLogs={() => setLogsOpen(true)}
-          />
-        </main>
-        {!isDesktop && (
-          <div className="preview-notice">
-            <Info size={13} />
-            {t.desktopOnly}
-          </div>
-        )}
+        <div className="workspace">
+          <main className="main-scroll" id="main-content">
+            <ConnectionOverview
+              status={status}
+              stats={stats}
+              statusError={statusError}
+              busy={busy}
+              t={t}
+              onToggle={handleToggle}
+              onOpenLogs={() => setLogsOpen(true)}
+            />
+          </main>
+          {!isDesktop && (
+            <div className="preview-notice">
+              <Info size={13} />
+              {t.desktopOnly}
+            </div>
+          )}
+        </div>
       </div>
 
       {toast && (

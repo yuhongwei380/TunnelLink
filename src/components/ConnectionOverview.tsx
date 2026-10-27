@@ -5,13 +5,12 @@ import {
   ArrowUpRight,
   Clock3,
   FileText,
-  Globe2,
   LoaderCircle,
   LockKeyhole,
   Power,
   Server,
+  ShieldCheck,
 } from 'lucide-react';
-import { ConnectionVisual } from './ConnectionVisual';
 import { formatBytes, formatTime } from '../format';
 import type { Messages } from '../messages';
 import type { VpnState, VpnStats } from '../types';
@@ -51,29 +50,23 @@ export function ConnectionOverview({
     <div
       className={`page-content connection-page ${connectionFailed ? 'has-connection-error' : ''}`}
     >
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">{t.overviewEyebrow}</span>
-          <h2>{t.overview}</h2>
-          <p>{t.overviewDesc}</p>
-        </div>
-        <span className="page-heading-icon" aria-hidden="true">
-          <Globe2 size={28} strokeWidth={1.2} />
-        </span>
-      </div>
       <section
         className={`connection-card ${connected ? 'is-connected' : connecting ? 'is-connecting' : connectionFailed ? 'has-error' : ''}`}
         aria-label={t.status}
       >
         <div className="connection-copy">
-          <div className="card-topline">
-            <span className="hero-eyebrow">{t.privateNetwork}</span>
-          </div>
-          <h3 key={status}>
-            {connected ? t.protectedTitle : connecting ? t.connectingTitle : t.ready}
-          </h3>
-          <p>{connected ? t.connectedDesc : connecting ? t.connectingDesc : t.offlineDesc}</p>
+          <h3>{t.overview}</h3>
+          <p className="connection-state-copy">
+            {connected ? t.connectedDesc : connecting ? t.connectingDesc : t.offlineDesc}
+          </p>
           <div className="connection-action-row">
+            <span
+              className={`status-badge ${connectionFailed ? 'status-error' : ''}`}
+              role="status"
+            >
+              <i />
+              {statusLabel}
+            </span>
             <button
               className={`connection-action ${connected || connecting ? 'secondary-action' : ''}`}
               onClick={onToggle}
@@ -87,16 +80,11 @@ export function ConnectionOverview({
               )}
               {connected ? t.disconnect : connecting ? t.cancel : busy ? t.connecting : t.connect}
             </button>
-            <span
-              className={`status-badge ${connectionFailed ? 'status-error' : ''}`}
-              role="status"
-            >
-              <i />
-              {statusLabel}
-            </span>
           </div>
         </div>
-        <ConnectionVisual state={status} deviceLabel={t.device} networkLabel={t.network} />
+        <span className="connection-security-icon" aria-hidden="true">
+          <ShieldCheck size={43} strokeWidth={1.5} />
+        </span>
       </section>
 
       {statusError && (
@@ -116,7 +104,7 @@ export function ConnectionOverview({
       <section className={`details-card ${connected ? 'is-connected' : ''}`} aria-label={t.gateway}>
         <div className="details-card-main">
           <div className="panel-heading">
-            <span className="eyebrow">{t.profile}</span>
+            <span className="eyebrow">{t.gateway}</span>
             <span className="managed-badge">
               <LockKeyhole size={11} />
               {t.managed}
