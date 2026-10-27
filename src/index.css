@@ -4133,8 +4133,27 @@ dialog::backdrop {
   }
 }
 
-/* Keep the fixed 800 × 480 desktop window readable without vertical overflow. */
-@media (min-width: 561px) and (max-width: 900px) and (max-height: 560px) {
+/* Keep the fixed 1200 × 600 desktop window readable without vertical overflow.
+   The webview renders at a 1.25 zoom (src-tauri/src/lib.rs), so these rules
+   target the resulting ≈960 × 480 CSS viewport the old 800 × 480 tiers saw. */
+@media (min-width: 561px) and (max-width: 1000px) and (max-height: 560px) {
+  /* Preserve the fixed-window look now that the legacy (max-width: 900px)
+     tier no longer matches the zoomed viewport. */
+  .app-body .primary-nav {
+    margin-top: 36px;
+  }
+  .app-body .primary-nav button {
+    justify-content: center;
+  }
+  .app-body .primary-nav button > span {
+    display: none;
+  }
+  .app-body .about-button {
+    justify-content: center;
+  }
+  .app-body .sidebar-bottom {
+    padding-bottom: 12px;
+  }
   .app-shell {
     width: calc(100% - 16px);
     height: calc(100% - 16px);
