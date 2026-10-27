@@ -23,7 +23,7 @@
   --surface: #fff;
   --background: #f7fafc;
   --text: #1e293b;
-  --muted: #64748b;
+  --muted: #4d5c6e;
   --line: #e3e9f1;
   --blue-tint: #eef4ff;
   --success: #16a34a;
@@ -1043,7 +1043,7 @@ p {
   color: #fff;
   border-radius: 12px;
   box-shadow: 0 8px 30px #0b1f3a26;
-  font-size: 13px;
+  font-size: 15px;
   z-index: 20;
   animation: toast-enter 220ms var(--ease);
 }
@@ -1445,13 +1445,13 @@ dialog::backdrop {
   background: #f2f6fc;
 }
 .auth-dialog > .eyebrow {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--primary);
   letter-spacing: 1.4px;
 }
 .auth-dialog h2 {
   color: var(--navy);
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 650;
   letter-spacing: -0.7px;
   line-height: 1.35;
@@ -1459,14 +1459,14 @@ dialog::backdrop {
 }
 .auth-dialog > p:not(.auth-security-note) {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.7;
   margin-bottom: 16px;
 }
 .auth-dialog form > label:not(.remember-label) {
   display: block;
   color: #334764;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   margin: 14px 0 6px;
 }
@@ -1488,7 +1488,7 @@ dialog::backdrop {
   width: 100%;
   background: #fcfdff;
   color: var(--text);
-  font-size: 13px;
+  font-size: 15px;
   min-height: 48px;
   transition:
     border-color 180ms,
@@ -1522,13 +1522,13 @@ dialog::backdrop {
 }
 .input-hint {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.7;
   margin-top: 8px;
 }
 .password-warnings {
   color: #925900;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.7;
 }
 .password-warnings p {
@@ -1550,7 +1550,7 @@ dialog::backdrop {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 12px;
+  font-size: 14px;
   color: #405773;
   margin: 15px 0 0;
   cursor: pointer;
@@ -1564,7 +1564,7 @@ dialog::backdrop {
 }
 .remember-hint {
   margin: 0 0 14px 25px;
-  font-size: 10px;
+  font-size: 13px;
 }
 .submit-button {
   display: flex;
@@ -1578,7 +1578,7 @@ dialog::backdrop {
   border-radius: 9px;
   background: var(--primary);
   color: white;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   box-shadow: 0 3px 8px #155eef16;
 }
@@ -1605,7 +1605,7 @@ dialog::backdrop {
   margin-top: 2px;
 }
 .auth-error > p {
-  font-size: 11px;
+  font-size: 13.5px;
   line-height: 1.8;
   overflow-wrap: anywhere;
   max-height: 120px;
@@ -1618,26 +1618,26 @@ dialog::backdrop {
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
-  font-size: 10px;
-  color: #526b8b;
+  font-size: 13px;
+  color: #3f5670;
 }
 .auth-gateway > .managed-badge {
   margin-left: auto;
 }
 .auth-security-note {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12.5px;
   line-height: 1.7;
   margin-top: 10px;
 }
 .auth-dialog {
   /* Wide dialog: at 640 px the form fits the fixed window without scrolling,
      so no scrollbar appears in the first place. */
-  max-width: 640px;
+  max-width: min(640px, calc(100vw - 28px));
   max-height: calc(100% - 16px);
 }
 .about-dialog {
-  max-width: 600px;
+  max-width: min(600px, calc(100vw - 28px));
 }
 /* When a dialog does need to scroll (long error text, short screens),
    keep the thumb inset inside the rounded card instead of hugging the
@@ -1676,7 +1676,7 @@ dialog::backdrop {
   background: #9caec3;
 }
 .install-dialog {
-  width: min(500px, calc(100vw - 40px));
+  width: min(500px, calc(100vw - 28px));
   max-height: calc(100% - 40px);
   overflow-y: auto;
   padding: 28px;
@@ -1693,14 +1693,14 @@ dialog::backdrop {
 }
 .install-dialog-heading h2 {
   color: var(--navy);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 650;
   line-height: 1.4;
   margin-top: 5px;
 }
 .install-dialog-heading .eyebrow {
   color: #5d708c;
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 1.4px;
 }
 .install-dialog-heading > .dialog-close {
@@ -1720,7 +1720,7 @@ dialog::backdrop {
 .install-dialog-desc {
   margin: 22px 0 20px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.8;
 }
 .install-location {
@@ -1743,7 +1743,7 @@ dialog::backdrop {
   gap: 7px;
   min-width: 0;
   flex: 1;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
 }
 .install-location-item span {
@@ -1760,7 +1760,7 @@ dialog::backdrop {
   gap: 8px;
   margin-top: 14px;
   color: #687d99;
-  font-size: 10px;
+  font-size: 12.5px;
   line-height: 1.7;
 }
 .install-dialog-note svg {
@@ -1777,7 +1777,7 @@ dialog::backdrop {
   flex: 1;
   min-height: 46px;
   border-radius: 9px;
-  font-size: 12px;
+  font-size: 14.5px;
   font-weight: 600;
 }
 .install-dialog-actions .submit-button {
@@ -1806,13 +1806,13 @@ dialog::backdrop {
 }
 .about-header h2 {
   color: var(--navy);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 650;
   margin-top: 6px;
 }
 .about-header .eyebrow {
   color: #5d708c;
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 1.4px;
 }
 .about-header > .dialog-close {
@@ -1820,7 +1820,7 @@ dialog::backdrop {
 }
 .about-subtitle {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.7;
   margin-top: 20px;
 }
@@ -1839,7 +1839,7 @@ dialog::backdrop {
   margin-top: 2px;
 }
 .derivative-note p {
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.8;
 }
 .version-details {
@@ -1853,12 +1853,12 @@ dialog::backdrop {
   border-left: 2px solid #e9eef6;
 }
 .version-details dt {
-  font-size: 10px;
+  font-size: 12.5px;
   color: var(--muted);
   line-height: 1.6;
 }
 .version-details dd {
-  font-size: 12px;
+  font-size: 14px;
   color: #344f72;
   font-weight: 550;
   margin: 6px 0 0;
@@ -1881,7 +1881,7 @@ dialog::backdrop {
   border: 0;
   border-bottom: 2px solid transparent;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   margin-bottom: -1px;
 }
 .legal-tabs button[aria-pressed='true'] {
@@ -1899,7 +1899,7 @@ dialog::backdrop {
   color: #526783;
   background: #fbfcfe;
   font:
-    11px/1.9 Inter,
+    13px/1.9 Inter,
     'PingFang SC',
     'Microsoft YaHei',
     sans-serif;
@@ -2607,9 +2607,9 @@ dialog::backdrop {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: min(1040px, calc(100vw - 40px));
-  height: min(760px, calc(100vh - 40px));
-  max-height: calc(100vh - 40px);
+  width: min(1040px, calc(100vw - 24px));
+  height: min(760px, calc(100vh - 24px));
+  max-height: calc(100vh - 24px);
   margin: auto;
   padding: 20px;
   overflow: hidden;
@@ -2631,18 +2631,18 @@ dialog::backdrop {
 }
 .logs-dialog-heading .eyebrow {
   color: #5d708c;
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 1.4px;
 }
 .logs-dialog-heading h2 {
   color: var(--navy);
-  font-size: 21px;
+  font-size: 23px;
   font-weight: 650;
   margin-top: 4px;
 }
 .logs-dialog-heading p {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   margin-top: 4px;
 }
 .logs-dialog .logs-panel {
@@ -2681,11 +2681,11 @@ dialog::backdrop {
   margin-bottom: 12px;
 }
 .logs-dialog .logs-empty h3 {
-  font-size: 14px;
+  font-size: 16px;
   margin-bottom: 5px;
 }
 .logs-dialog .logs-empty p {
-  font-size: 11px;
+  font-size: 13px;
 }
 .logs-dialog .log-entry {
   grid-template-columns: 130px 72px minmax(0, 1fr);
@@ -2723,14 +2723,14 @@ dialog::backdrop {
 }
 .exit-dialog h2 {
   color: var(--navy);
-  font-size: 20px;
+  font-size: 22px;
   line-height: 1.4;
   font-weight: 600;
   letter-spacing: -0.3px;
 }
 .exit-dialog-desc {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.7;
   margin: 16px 0 28px;
 }
@@ -2744,7 +2744,7 @@ dialog::backdrop {
   min-height: 44px;
   padding: 0 20px;
   border-radius: 9px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
 }
 .keep-open-button {
@@ -4185,11 +4185,8 @@ dialog::backdrop {
   }
 }
 
-/* Fixed 800 × 467 desktop window shown at a 2/3 webview zoom: CSS still
-   sees a ~1200 × 650 viewport, so this block carries the full desktop
-   design (sidebar + dashboard proportions, common client conventions)
-   and the zoom shrinks buttons, dialogs and type by the same 2/3 ratio.
-   Everything — page, dialogs, buttons — stays inside the fixed frame. */
+/* Legacy landscape variant for an 800 × 467 window at 2/3 webview zoom.
+   Not active at the current 400 × 800 portrait window; kept for reference. */
 @media (min-width: 1001px) and (max-height: 720px) {
   .app-header {
     flex-basis: 100px;
@@ -4336,5 +4333,176 @@ dialog::backdrop {
   }
   .connection-page .workspace-copyright {
     font-size: 13px;
+  }
+}
+
+/* Fixed 400 × 800 portrait window rendered at 100% zoom (inner viewport
+   ~400 × 769 CSS px): a top tab bar, then the connection card and the
+   gateway details stacked. Type sizes are raised and grey text darkened
+   versus the generic small-screen tier so labels stay readable. */
+@media (max-width: 560px) {
+  .app-header {
+    flex-basis: 78px;
+    padding: 0 16px;
+  }
+  .app-header-brand .brand-icon {
+    width: 38px;
+    height: 38px;
+  }
+  .app-header-brand h1 {
+    font-size: 21px;
+  }
+  .app-header > .language-button {
+    min-width: 60px;
+    min-height: 40px;
+    font-size: 15px;
+    color: #454545;
+  }
+  .app-body > .sidebar {
+    padding: 8px 16px 0;
+  }
+  .app-body .primary-nav {
+    gap: 20px;
+  }
+  .app-body .primary-nav button {
+    min-height: 44px;
+    padding: 0 6px 8px;
+    font-size: 14px;
+    color: #4a4a4a;
+  }
+  .app-body .primary-nav button svg {
+    width: 22px;
+    height: 22px;
+  }
+  .app-body .about-button {
+    min-height: 44px;
+    font-size: 16px;
+    color: #3d3d3d;
+  }
+  .connection-page {
+    padding: 18px 14px 10px;
+  }
+  .connection-page .connection-card {
+    min-height: 0;
+    padding: 24px 20px 20px;
+    border-radius: 20px;
+  }
+  .connection-page .connection-copy h3 {
+    font-size: 30px;
+  }
+  .connection-page .connection-security-icon {
+    top: 26px;
+    right: 22px;
+  }
+  .connection-page .connection-security-icon svg {
+    width: 36px;
+    height: 36px;
+  }
+  .connection-page .connection-action-row {
+    margin-top: 18px;
+  }
+  .connection-page .connection-action-row .status-badge {
+    margin-bottom: 16px;
+    font-size: 17px;
+  }
+  .connection-page .connection-action-row .connection-action {
+    min-height: 62px;
+    border-radius: 14px;
+    font-size: 24px;
+  }
+  .connection-page .connection-action-row .connection-action svg {
+    width: 26px;
+    height: 26px;
+  }
+  .connection-page .details-card {
+    margin-top: 16px;
+    padding: 20px 18px 12px;
+    border-radius: 18px;
+  }
+  .connection-page .details-card-main .panel-heading .eyebrow {
+    font-size: 20px;
+    color: #4f4f4f;
+  }
+  .connection-page .details-card-main .gateway-identity h3 {
+    font-size: 24px;
+  }
+  .connection-page .details-card-main .gateway-net {
+    gap: 6px 24px;
+  }
+  .connection-page .details-card-main .gateway-net-item span {
+    font-size: 16px;
+    color: #4f4f4f;
+  }
+  .connection-page .details-card-main .gateway-net-item strong {
+    font-size: 17px;
+    color: #141414;
+  }
+  .connection-page .details-card-session {
+    margin-top: 16px;
+    padding-top: 15px;
+  }
+  .connection-page .details-card-session .metric-card {
+    padding: 0 10px;
+  }
+  .connection-page .details-card-session .metric-card .metric-label {
+    font-size: 15px;
+    color: #4f4f4f;
+  }
+  .connection-page .details-card-session .metric-card > strong,
+  .connection-page .details-card:not(.is-connected) .metric-card > strong {
+    margin-top: 6px;
+    font-size: 19px;
+    color: #2a2a2a;
+  }
+  .connection-page .details-card-footer {
+    margin-top: 14px;
+    padding-top: 10px;
+  }
+  .connection-page .details-card-footer .support-log-button {
+    min-height: 32px;
+    font-size: 15px;
+    color: #3c3c3c;
+  }
+  .connection-page .workspace-footer {
+    padding-top: 14px;
+  }
+  .connection-page .workspace-copyright {
+    font-size: 13px;
+    color: #5a5a5a;
+  }
+  .logs-dialog {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    max-height: calc(100vh - 16px);
+    padding: 14px;
+    gap: 10px;
+  }
+  .logs-dialog .logs-panel-header {
+    padding: 10px 12px;
+  }
+  .logs-dialog .logs-controls {
+    padding: 6px 10px;
+  }
+  .logs-dialog .log-search-field {
+    margin: 0 10px 8px;
+  }
+  .logs-dialog .log-column-labels {
+    grid-template-columns: 112px 56px minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .logs-dialog .log-entry {
+    grid-template-columns: 112px 56px minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 12.5px;
+  }
+  .logs-dialog .logs-footnote {
+    padding: 8px 12px;
+    font-size: 12.5px;
+  }
+  .logs-dialog .logs-error {
+    padding: 7px 12px;
   }
 }

@@ -190,12 +190,6 @@ pub fn run() {
             }
         }))
         .setup(|app| {
-            // The 800 × 467 window is two-thirds of the 1200 × 700 desktop design;
-            // a fixed webview zoom keeps every element (buttons, dialogs included)
-            // at the same 2/3 ratio while CSS still sees a ~1200 × 700 viewport.
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.set_zoom(2.0 / 3.0);
-            }
             app.manage(Controller::new(app.config().identifier.clone()));
             app.manage(ExitApproval(AtomicBool::new(false)));
             Ok(())
