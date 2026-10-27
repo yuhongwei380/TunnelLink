@@ -192,14 +192,6 @@ pub fn run() {
         .setup(|app| {
             app.manage(Controller::new(app.config().identifier.clone()));
             app.manage(ExitApproval(AtomicBool::new(false)));
-            // The window is fixed at 1200 × 600 while the UI is tuned for an
-            // 800 × 480 design canvas, so zoom the webview by 600/480 = 1.25.
-            // This scales every element — buttons, dialogs, toasts — in step
-            // with the window, and keeps the CSS viewport at ≈960 × 480 so the
-            // media-query tiers keep matching as before.
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.set_zoom(1.25);
-            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
