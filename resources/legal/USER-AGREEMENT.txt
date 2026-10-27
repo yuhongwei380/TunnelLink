@@ -4,7 +4,7 @@
 1. 项目性质
 本客户端是基于 OpenVPN 3 Core 的二次开发项目，采用 Tauri 2 桌面框架。它不是 OpenVPN 官方 Connect 客户端，也不表示获得 OpenVPN 官方认证、支持或背书。OpenVPN 名称及相关商标属于其各自权利人。
 上游项目：https://github.com/OpenVPN/openvpn3
-本客户端及所用 OpenVPN 3 Core 的版本可在“关于与用户协议”中查看，精确发布标签和提交记录在安装目录内的 ovpncli-build.json 中。
+本客户端及所用 OpenVPN 3 Core 的版本可在“关于软件”中查看，精确发布标签和提交记录在安装目录内的 ovpncli-build.json 中。
 
 2. 使用范围与授权
 请仅连接您拥有访问权限的 VPN 网关，并遵守适用法律及所属组织的网络使用规定。网关账号、访问权限、服务器策略和网络服务由相应管理员提供。本客户端不提供 VPN 账号或保证服务器可用性。
@@ -23,7 +23,7 @@ Windows 安装程序需要管理员权限，会安装或检查随包提供的 TA
 6. 服务与责任
 在适用法律允许的范围内，本软件按现状提供，不承诺连接持续可用、适用于特定用途或完全无错误。重要业务请保留适当的网络恢复方式。相应开源组件的保证免责和责任限制以其许可证为准。本条不排除适用法律不允许排除的权利或责任。
 
-安装向导中的“同意”表示您已阅读并接受上述使用条款。您也可以取消安装。已安装后，可随时从客户端底部的“关于与用户协议”重新查看本协议及项目说明。
+安装向导中的“同意”表示您已阅读并接受上述使用条款。您也可以取消安装。已安装后，可随时从客户端底部的“关于软件”重新查看本协议及项目说明。
 
 English
 
@@ -45,4 +45,4 @@ This client's original code, and the combined work formed by linking it with Ope
 6. Availability and liability
 To the extent permitted by applicable law, the software is provided as is, without promises of uninterrupted availability, fitness for a particular purpose, or error-free operation. Maintain suitable network recovery arrangements for critical work. Component license terms govern their warranty disclaimers and limitations of liability. Nothing here excludes rights or liabilities that applicable law does not permit excluding.
 
-Selecting I Agree in the installer confirms that you have read and accepted these terms. You may cancel installation. The agreement remains available in About & agreement in the client.
+Selecting I Agree in the installer confirms that you have read and accepted these terms. You may cancel installation. The agreement remains available in About in the client.

@@ -10,7 +10,6 @@ import {
   LockKeyhole,
   Power,
   Server,
-  ShieldCheck,
 } from 'lucide-react';
 import { ConnectionVisual } from './ConnectionVisual';
 import { formatBytes, formatTime } from '../format';
@@ -23,7 +22,6 @@ type Props = {
   stats: VpnStats;
   statusError: string;
   busy: boolean;
-  clientVersion: string;
   t: Messages;
   onToggle: () => void;
   onOpenLogs: () => void;
@@ -34,7 +32,6 @@ export function ConnectionOverview({
   stats,
   statusError,
   busy,
-  clientVersion,
   t,
   onToggle,
   onOpenLogs,
@@ -71,6 +68,25 @@ export function ConnectionOverview({
         <div className="connection-copy">
           <div className="card-topline">
             <span className="hero-eyebrow">{t.privateNetwork}</span>
+          </div>
+          <h3 key={status}>
+            {connected ? t.protectedTitle : connecting ? t.connectingTitle : t.ready}
+          </h3>
+          <p>{connected ? t.connectedDesc : connecting ? t.connectingDesc : t.offlineDesc}</p>
+          <div className="connection-action-row">
+            <button
+              className={`connection-action ${connected || connecting ? 'secondary-action' : ''}`}
+              onClick={onToggle}
+              disabled={busy}
+              aria-busy={busy || connecting}
+            >
+              {busy || connecting ? (
+                <LoaderCircle size={18} className="spin" />
+              ) : (
+                <Power size={18} />
+              )}
+              {connected ? t.disconnect : connecting ? t.cancel : busy ? t.connecting : t.connect}
+            </button>
             <span
               className={`status-badge ${connectionFailed ? 'status-error' : ''}`}
               role="status"
@@ -79,30 +95,8 @@ export function ConnectionOverview({
               {statusLabel}
             </span>
           </div>
-          <h3 key={status}>
-            {connected ? t.protectedTitle : connecting ? t.connectingTitle : t.ready}
-          </h3>
-          <p>{connected ? t.connectedDesc : connecting ? t.connectingDesc : t.offlineDesc}</p>
-          <button
-            className={`connection-action ${connected || connecting ? 'secondary-action' : ''}`}
-            onClick={onToggle}
-            disabled={busy}
-            aria-busy={busy || connecting}
-          >
-            {busy || connecting ? <LoaderCircle size={18} className="spin" /> : <Power size={18} />}
-            {connected ? t.disconnect : connecting ? t.cancel : busy ? t.connecting : t.connect}
-          </button>
-          <span className="connection-hint">
-            <LockKeyhole size={12} />
-            {connected ? t.tunnelActive : connecting ? t.tunnelConnecting : t.authNote}
-          </span>
         </div>
-        <ConnectionVisual
-          state={status}
-          deviceLabel={t.device}
-          networkLabel={t.network}
-          tunnelLabel={connected ? t.tunnelActive : connecting ? t.tunnelConnecting : t.tunnelIdle}
-        />
+        <ConnectionVisual state={status} deviceLabel={t.device} networkLabel={t.network} />
       </section>
 
       {statusError && (
@@ -119,79 +113,8 @@ export function ConnectionOverview({
         </div>
       )}
 
-      <section className="session-section" aria-label={t.session}>
-        <div className="section-caption">
-          <h3>{t.session}</h3>
-          <span>
-            {connected
-              ? stats.metricsAvailable
-                ? t.sessionDesc
-                : t.metricsUnavailable
-              : connecting
-                ? t.connecting
-                : t.waiting}
-          </span>
-        </div>
-        <div className="metrics-grid">
-          <div className="metric-card">
-            <div className="metric-label">
-              <span>{t.duration}</span>
-              <span className="metric-icon">
-                <Clock3 size={17} />
-              </span>
-            </div>
-            <strong className="time-value">{formatTime(stats.uptime)}</strong>
-            <small>{t.durationHint}</small>
-          </div>
-          <div className="metric-card">
-            <div className="metric-label">
-              <span>{t.download}</span>
-              <span className="metric-icon teal">
-                <ArrowDownLeft size={18} />
-              </span>
-            </div>
-            <strong>
-              {stats.metricsAvailable ? (
-                formatBytes(stats.bytesIn)
-              ) : (
-                <span className="metric-placeholder">{t.noData}</span>
-              )}
-            </strong>
-            <small>
-              {stats.metricsAvailable
-                ? t.transferHint
-                : connected
-                  ? t.metricsUnavailable
-                  : t.waiting}
-            </small>
-          </div>
-          <div className="metric-card">
-            <div className="metric-label">
-              <span>{t.upload}</span>
-              <span className="metric-icon blue">
-                <ArrowUpRight size={18} />
-              </span>
-            </div>
-            <strong>
-              {stats.metricsAvailable ? (
-                formatBytes(stats.bytesOut)
-              ) : (
-                <span className="metric-placeholder">{t.noData}</span>
-              )}
-            </strong>
-            <small>
-              {stats.metricsAvailable
-                ? t.transferHint
-                : connected
-                  ? t.metricsUnavailable
-                  : t.waiting}
-            </small>
-          </div>
-        </div>
-      </section>
-
-      <div className="details-grid">
-        <section className="gateway-card" aria-label={t.gateway}>
+      <section className={`details-card ${connected ? 'is-connected' : ''}`} aria-label={t.gateway}>
+        <div className="details-card-main">
           <div className="panel-heading">
             <span className="eyebrow">{t.profile}</span>
             <span className="managed-badge">
@@ -214,27 +137,93 @@ export function ConnectionOverview({
               OpenVPN 3 <span>/ {release.version}</span>
             </strong>
           </div>
-        </section>
-        <section className="support-card">
-          <span className="support-icon">
-            <FileText size={21} strokeWidth={1.6} />
-          </span>
-          <h3>{t.supportTitle}</h3>
-          <p>{t.supportDesc}</p>
+        </div>
+        <div className="details-card-session">
+          <div className="section-caption">
+            <h3>{t.session}</h3>
+            <span>
+              {connected
+                ? stats.metricsAvailable
+                  ? t.sessionDesc
+                  : t.metricsUnavailable
+                : connecting
+                  ? t.connecting
+                  : t.waiting}
+            </span>
+          </div>
+          <div className="metrics-grid">
+            <div className="metric-card">
+              <div className="metric-label">
+                <span>{t.duration}</span>
+                <span className="metric-icon">
+                  <Clock3 size={17} />
+                </span>
+              </div>
+              <strong className="time-value">{formatTime(stats.uptime)}</strong>
+              <small>{t.durationHint}</small>
+            </div>
+            <div className="metric-card">
+              <div className="metric-label">
+                <span>{t.download}</span>
+                <span className="metric-icon teal">
+                  <ArrowDownLeft size={18} />
+                </span>
+              </div>
+              <strong>
+                {stats.metricsAvailable ? (
+                  formatBytes(stats.bytesIn)
+                ) : (
+                  <span className="metric-placeholder">{t.noData}</span>
+                )}
+              </strong>
+              <small>
+                {stats.metricsAvailable
+                  ? t.transferHint
+                  : connected
+                    ? t.metricsUnavailable
+                    : t.waiting}
+              </small>
+            </div>
+            <div className="metric-card">
+              <div className="metric-label">
+                <span>{t.upload}</span>
+                <span className="metric-icon blue">
+                  <ArrowUpRight size={18} />
+                </span>
+              </div>
+              <strong>
+                {stats.metricsAvailable ? (
+                  formatBytes(stats.bytesOut)
+                ) : (
+                  <span className="metric-placeholder">{t.noData}</span>
+                )}
+              </strong>
+              <small>
+                {stats.metricsAvailable
+                  ? t.transferHint
+                  : connected
+                    ? t.metricsUnavailable
+                    : t.waiting}
+              </small>
+            </div>
+          </div>
+        </div>
+        <div className="details-card-footer">
+          <div className="details-card-log-copy">
+            <FileText size={17} strokeWidth={1.7} />
+            <span>
+              <strong>{t.supportTitle}</strong>
+              <small>{t.supportDesc}</small>
+            </span>
+          </div>
           <button className="support-log-button" onClick={onOpenLogs}>
             {t.viewLogs}
             <ArrowUpRight size={16} />
           </button>
-        </section>
-      </div>
+        </div>
+      </section>
       <footer className="workspace-footer">
-        <span>
-          <ShieldCheck size={13} />
-          {t.powered}
-        </span>
-        <span>
-          {t.localClient} <b>·</b> v{clientVersion}
-        </span>
+        <span className="workspace-copyright">{t.copyright}</span>
       </footer>
     </div>
   );

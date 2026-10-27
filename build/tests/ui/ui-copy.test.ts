@@ -10,6 +10,8 @@ test('partial custom copy falls back by field and preserves the other locale', (
   });
 
   assert.equal(copy.zh.overview.title, '公司网络');
+  assert.equal(copy.zh.appTitle, defaultUiCopy.zh.appTitle);
+  assert.equal(copy.zh.copyright, defaultUiCopy.zh.copyright);
   assert.equal(copy.zh.overview.description, defaultUiCopy.zh.overview.description);
   assert.equal(copy.zh.connection.connectedTitle, '连接成功');
   assert.deepEqual(copy.en, defaultUiCopy.en);
@@ -31,4 +33,19 @@ test('invalid copy shapes and non-string overrides retain defaults', () => {
 test('an empty string is an intentional copy override', () => {
   const copy = mergeUiCopy(defaultUiCopy, { en: { overview: { description: '' } } });
   assert.equal(copy.en.overview.description, '');
+});
+
+test('branding and primary action labels are configurable', () => {
+  const copy = mergeUiCopy(defaultUiCopy, {
+    zh: {
+      appTitle: '内部 VPN',
+      copyright: '© 2026 内部网络团队',
+      connection: { connectButton: '开始连接' },
+    },
+  });
+
+  assert.equal(copy.zh.appTitle, '内部 VPN');
+  assert.equal(copy.zh.copyright, '© 2026 内部网络团队');
+  assert.equal(copy.zh.connection.connectButton, '开始连接');
+  assert.equal(copy.zh.connection.disconnectButton, defaultUiCopy.zh.connection.disconnectButton);
 });

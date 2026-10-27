@@ -5,11 +5,10 @@ type Props = {
   state: VpnState;
   deviceLabel: string;
   networkLabel: string;
-  tunnelLabel: string;
 };
 
 /** A schematic, not a live topology or an assertion about the user's public IP. */
-export function ConnectionVisual({ state, deviceLabel, networkLabel, tunnelLabel }: Props) {
+export function ConnectionVisual({ state, deviceLabel, networkLabel }: Props) {
   return (
     <div className={`connection-visual visual-${state.toLowerCase()}`} aria-hidden="true">
       <div className="orbit-scene">
@@ -39,10 +38,6 @@ export function ConnectionVisual({ state, deviceLabel, networkLabel, tunnelLabel
           </span>
           <small>{networkLabel}</small>
         </div>
-      </div>
-      <div className="tunnel-caption">
-        <span />
-        {tunnelLabel}
       </div>
     </div>
   );

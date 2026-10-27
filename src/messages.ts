@@ -3,6 +3,7 @@ import type { Locale, UiCopy } from './ui-copy';
 export const MESSAGES = {
   zh: {
     appTitle: 'OpenVPN 客户端',
+    copyright: '© 2026 OpenVPN 企业客户端',
     workspace: '企业网络访问',
     connection: '连接概览',
     diagnostics: '日志与诊断',
@@ -40,7 +41,7 @@ export const MESSAGES = {
     capsLock: '大写锁定（Caps Lock）已开启',
     spaces: '密码首尾含空格，请确认是否正确。',
     rememberHint: '成功认证后保存在系统凭据存储中，请勿在共享设备上启用。',
-    about: '关于与用户协议',
+    about: '关于软件',
     agreement: '用户协议',
     notices: '开源声明',
     derivative: '基于 OpenVPN 3 Core 的二次开发项目，并非官方 OpenVPN Connect 客户端。',
@@ -128,6 +129,7 @@ export const MESSAGES = {
   },
   en: {
     appTitle: 'OpenVPN Client',
+    copyright: '© 2026 OpenVPN Enterprise Client',
     workspace: 'ENTERPRISE ACCESS',
     connection: 'Connection',
     diagnostics: 'Diagnostics',
@@ -166,7 +168,7 @@ export const MESSAGES = {
     spaces: 'Your password starts or ends with a space. Please check.',
     rememberHint:
       'Saved in your system credential store after successful authentication. Avoid on shared devices.',
-    about: 'About & agreement',
+    about: 'About',
     agreement: 'Agreement',
     notices: 'Open-source notices',
     derivative:
@@ -261,6 +263,11 @@ export function getMessages(locale: Locale, uiCopy: UiCopy) {
   const custom = uiCopy[locale];
   return {
     ...MESSAGES[locale],
+    appTitle: custom.appTitle,
+    copyright: custom.copyright,
+    connect: custom.connection.connectButton,
+    disconnect: custom.connection.disconnectButton,
+    cancel: custom.connection.cancelButton,
     overview: custom.overview.title,
     overviewEyebrow: custom.overview.eyebrow,
     overviewDesc: custom.overview.description,

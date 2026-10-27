@@ -1,12 +1,17 @@
 {
   "zh": {
+    "appTitle": "OpenVPN 企业客户端",
+    "copyright": "© 2026 OpenVPN 企业客户端",
     "overview": {
       "eyebrow": "连接概览",
-      "title": "企业网络连接",
+      "title": "VPN 连接",
       "description": "查看 VPN 连接状态并访问企业网络。"
     },
     "connection": {
       "label": "企业网络连接",
+      "connectButton": "连接 VPN",
+      "disconnectButton": "断开连接",
+      "cancelButton": "取消连接",
       "disconnectedTitle": "未连接",
       "disconnectedDescription": "连接企业网关，访问内部资源。",
       "connectingTitle": "正在连接",
@@ -17,13 +22,18 @@
     }
   },
   "en": {
+    "appTitle": "OpenVPN Enterprise Client",
+    "copyright": "© 2026 OpenVPN Enterprise Client",
     "overview": {
       "eyebrow": "CONNECTION OVERVIEW",
-      "title": "Enterprise network connection",
+      "title": "VPN connection",
       "description": "View VPN status and access the enterprise network."
     },
     "connection": {
       "label": "ENTERPRISE NETWORK",
+      "connectButton": "Connect VPN",
+      "disconnectButton": "Disconnect",
+      "cancelButton": "Cancel connection",
       "disconnectedTitle": "Not connected",
       "disconnectedDescription": "Connect to the gateway to access internal resources.",
       "connectingTitle": "Connecting",

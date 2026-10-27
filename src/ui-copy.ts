@@ -1,4 +1,6 @@
 export type LocaleCopy = {
+  appTitle: string;
+  copyright: string;
   overview: {
     eyebrow: string;
     title: string;
@@ -6,6 +8,9 @@ export type LocaleCopy = {
   };
   connection: {
     label: string;
+    connectButton: string;
+    disconnectButton: string;
+    cancelButton: string;
     disconnectedTitle: string;
     disconnectedDescription: string;
     connectingTitle: string;
@@ -44,7 +49,9 @@ export function mergeUiCopy(defaults: UiCopy, value: unknown): UiCopy {
   const mergeLocale = (locale: keyof UiCopy): LocaleCopy => {
     const input = record(root[locale]);
     const copy = defaults[locale];
+    const labels = mergeStrings({ appTitle: copy.appTitle, copyright: copy.copyright }, input);
     return {
+      ...labels,
       overview: mergeStrings(copy.overview, input.overview),
       connection: mergeStrings(copy.connection, input.connection),
     };

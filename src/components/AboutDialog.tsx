@@ -12,6 +12,7 @@ export const AGREEMENT_REVISION = '2026-10-25';
 type Props = {
   open: boolean;
   agreementRequired: boolean;
+  appTitle: string;
   clientVersion: string;
   t: Messages;
   onClose: () => void;
@@ -21,6 +22,7 @@ type Props = {
 export function AboutDialog({
   open,
   agreementRequired,
+  appTitle,
   clientVersion,
   t,
   onClose,
@@ -43,7 +45,7 @@ export function AboutDialog({
       <div className="about-header">
         <AppLogo />
         <div>
-          <span className="eyebrow">OPENVPN CLIENT</span>
+          <span className="eyebrow">{appTitle}</span>
           <h2 id="about-title">{t.about}</h2>
         </div>
         {!agreementRequired && (

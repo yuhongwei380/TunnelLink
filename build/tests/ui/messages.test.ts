@@ -17,5 +17,7 @@ test('custom connection copy is applied without replacing application messages',
   assert.equal(messages.overview, 'Team network');
   assert.equal(messages.protectedTitle, 'Ready for work');
   assert.equal(messages.connect, MESSAGES.en.connect);
+  assert.equal(messages.appTitle, defaultUiCopy.en.appTitle);
+  assert.equal(messages.copyright, defaultUiCopy.en.copyright);
   assert.equal(getMessages('zh', copy).overview, defaultUiCopy.zh.overview.title);
 });

@@ -58,32 +58,7 @@ export default function App() {
   } = useVpnConnection(t, setToast);
   const clientVersion = meta.version || release.version;
   const isDesktop = Boolean(window.vpn);
-  const appTitle =
-    !meta.name ||
-    ['openvpnclient', 'openvpn-client', 'openvpn client'].includes(meta.name.toLowerCase())
-      ? t.appTitle
-      : meta.name;
-  const connected = status === 'CONNECTED';
-  const connecting = status === 'CONNECTING';
-  const connectionFailed = Boolean(statusError) && !connected && !connecting;
-  const engineStatusClass = !isDesktop
-    ? 'preview'
-    : connectionFailed
-      ? 'error'
-      : connecting
-        ? 'connecting'
-        : connected
-          ? 'active'
-          : 'ready';
-  const engineStatusLabel = !isDesktop
-    ? t.preview
-    : connectionFailed
-      ? t.engineError
-      : connecting
-        ? t.engineStarting
-        : connected
-          ? t.engineRunning
-          : t.engineReady;
+  const appTitle = t.appTitle;
 
   useEffect(() => {
     localStorage.setItem('vpn-ui-locale', locale);
@@ -240,10 +215,6 @@ export default function App() {
             <strong>OpenVPN 3</strong>
             <div className="engine-meta">
               <span>Core {release.version}</span>
-              <span className={`engine-state engine-${engineStatusClass}`}>
-                <i />
-                {engineStatusLabel}
-              </span>
             </div>
           </div>
           <div className="sidebar-utility">
@@ -252,10 +223,6 @@ export default function App() {
               <span>{t.about}</span>
               <ChevronRight size={14} />
             </button>
-            <div className="sidebar-version">
-              <span>OpenVPN Client</span>
-              <span>v{clientVersion}</span>
-            </div>
           </div>
         </div>
       </aside>
@@ -291,7 +258,6 @@ export default function App() {
             stats={stats}
             statusError={statusError}
             busy={busy}
-            clientVersion={clientVersion}
             t={t}
             onToggle={handleToggle}
             onOpenLogs={() => setLogsOpen(true)}
@@ -345,6 +311,7 @@ export default function App() {
       <AboutDialog
         open={aboutOpen}
         agreementRequired={agreementRequired}
+        appTitle={appTitle}
         clientVersion={clientVersion}
         t={t}
         onClose={() => setAboutOpen(false)}
