@@ -26,7 +26,7 @@ export async function createTempDirectory(prefix, root = projectRoot) {
 
 export function prepareTauriLayout(root = projectRoot) {
   const destination = path.join(root, '.cache/tauri/gen');
-  const alias = path.join(root, 'src-tauri/gen');
+  const alias = path.join(root, 'ui/src-tauri/gen');
   fs.mkdirSync(destination, { recursive: true });
   // Tauri hardcodes gen/schemas. Keep its required alias while storing all
   // generated files in the cache. Windows junctions need no developer mode.

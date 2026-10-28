@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import defaultUiCopy from '../../../config/ui-copy.json';
+import defaultUiCopy from '../../../resources/settings/ui-copy.json';
 import { getMessages, MESSAGES } from '../../../ui/src/messages.ts';
 import { mergeUiCopy } from '../../../ui/src/ui-copy.ts';
 

@@ -20,9 +20,9 @@ $ScriptVersion = "2026-10-23.2"
 
 $ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 . (Join-Path $PSScriptRoot 'openssl.ps1')
-$releaseLock = Get-Content -LiteralPath (Join-Path $ProjectRoot 'config/openvpn3-release.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+$releaseLock = Get-Content -LiteralPath (Join-Path $ProjectRoot 'resources/settings/openvpn3-release.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 if (-not $OpenVpn3Ref) { $OpenVpn3Ref = $releaseLock.ref }
-if ($OpenVpn3Ref -ne $releaseLock.ref) { throw 'OpenVpn3Ref must match config/openvpn3-release.json.' }
+if ($OpenVpn3Ref -ne $releaseLock.ref) { throw 'OpenVpn3Ref must match resources/settings/openvpn3-release.json.' }
 if ([string]::IsNullOrWhiteSpace($WorkDir)) {
   $WorkDir = Join-Path $ProjectRoot (".cache/work/windows/openvpn3-src-" + [Guid]::NewGuid().ToString("N"))
 }

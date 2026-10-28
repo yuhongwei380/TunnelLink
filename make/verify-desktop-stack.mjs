@@ -20,7 +20,7 @@ export async function verifyDesktopStack(root) {
   if (!pkg.dependencies?.['@tauri-apps/api'] || !pkg.devDependencies?.['@tauri-apps/cli'])
     throw new Error('Tauri API and CLI must be configured.');
   if (pkg.main || pkg.build || pkg.config?.forge)
-    throw new Error('Obsolete desktop package configuration: use src-tauri/tauri.conf.json.');
+    throw new Error('Obsolete desktop package configuration: use ui/src-tauri/tauri.conf.json.');
   for (const [name, command] of Object.entries(pkg.scripts || {})) {
     if (/\belectron(?:-[\w-]+)?\b|(?:before|after)-pack\.(?:cjs|mjs|js)\b/i.test(command))
       throw new Error(`Obsolete desktop script: ${name}`);
@@ -53,7 +53,7 @@ export async function verifyDesktopStack(root) {
     if (exists) throw new Error(`Obsolete desktop entry still exists: ${entry}`);
   }
   for (const name of ['tauri.conf.json', 'tauri.windows.conf.json', 'tauri.macos.conf.json']) {
-    const config = JSON.parse(await fs.readFile(path.join(root, 'src-tauri', name), 'utf8'));
+    const config = JSON.parse(await fs.readFile(path.join(root, 'ui/src-tauri', name), 'utf8'));
     if (/electron/i.test(JSON.stringify(config)))
       throw new Error(`Obsolete desktop resource reference in ${name}`);
   }

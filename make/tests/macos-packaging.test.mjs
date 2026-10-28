@@ -67,14 +67,14 @@ test('macOS targets use Tauri architecture names and reject unknown targets', ()
 
 test('macOS DMG presents the standard Applications drag target', async () => {
   const config = JSON.parse(
-    await fs.readFile(path.join(projectRoot, 'src-tauri/tauri.macos.conf.json'), 'utf8'),
+    await fs.readFile(path.join(projectRoot, 'ui/src-tauri/tauri.macos.conf.json'), 'utf8'),
   );
   assert.deepEqual(config.bundle.macOS.dmg, {
     windowSize: { width: 660, height: 400 },
     appPosition: { x: 180, y: 170 },
     applicationFolderPosition: { x: 480, y: 170 },
   });
-  const nativeSource = await fs.readFile(path.join(projectRoot, 'src-tauri/src/lib.rs'), 'utf8');
+  const nativeSource = await fs.readFile(path.join(projectRoot, 'ui/src-tauri/src/lib.rs'), 'utf8');
   assert.match(nativeSource, /resource_dir\(\)/);
   assert.match(nativeSource, /app_install_to_applications/);
 });

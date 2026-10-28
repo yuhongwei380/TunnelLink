@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.join(root, 'resources/brand/app-icon.svg');
 const stagingDir = path.join(root, '.cache/branding-icons');
-const iconsDir = path.join(root, 'src-tauri/icons');
+const iconsDir = path.join(root, 'ui/src-tauri/icons');
 const cli = path.join(root, 'node_modules/@tauri-apps/cli/tauri.js');
 
 // Stage the full Tauri output, then keep only this project's desktop formats.

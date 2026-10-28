@@ -7,7 +7,7 @@ import { projectRoot, verifyEngineRelease } from '../openvpn3-release.mjs';
 import { createTempDirectory } from '../lib/paths.mjs';
 
 export const driverManifest = JSON.parse(
-  await fs.readFile(path.join(projectRoot, 'config/windows-tap-driver.json'), 'utf8'),
+  await fs.readFile(path.join(projectRoot, 'resources/settings/windows-tap-driver.json'), 'utf8'),
 );
 
 export async function sha256(file) {

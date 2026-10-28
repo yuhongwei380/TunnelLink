@@ -47,7 +47,7 @@ if (args[0] === 'cargo') {
   commandArgs = [path.join(root, 'node_modules/@tauri-apps/cli/tauri.js'), ...args];
 }
 const result = spawnSync(command, commandArgs, {
-  cwd: root,
+  cwd: args[0] === 'cargo' ? root : path.join(root, 'ui'),
   env,
   stdio: 'inherit',
   windowsHide: true,

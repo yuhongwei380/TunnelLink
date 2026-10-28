@@ -10,7 +10,7 @@ export const hashFile = async (file) =>
     .digest('hex');
 export async function readRelease(root = projectRoot) {
   const release = JSON.parse(
-    await fs.readFile(path.join(root, 'config/openvpn3-release.json'), 'utf8'),
+    await fs.readFile(path.join(root, 'resources/settings/openvpn3-release.json'), 'utf8'),
   );
   if (
     !/^\d+\.\d+\.\d+$/.test(release.version) ||

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 [[ "$(uname -s)" == Darwin ]] || { echo 'macOS dependency setup must run on a Mac.' >&2; exit 1; }
-: "${OPENVPN_BUILD_ENV_FILE:?Run node install.mjs from the repository root.}"
-: "${OPENVPN_BUILD_NODE:?Run node install.mjs from the repository root.}"
-: "${OPENVPN_BUILD_ARCH:?Run node install.mjs from the repository root.}"
+: "${OPENVPN_BUILD_ENV_FILE:?Run node build.mjs from the repository root.}"
+: "${OPENVPN_BUILD_NODE:?Run node build.mjs from the repository root.}"
+: "${OPENVPN_BUILD_ARCH:?Run node build.mjs from the repository root.}"
 
 if ! xcrun --find clang >/dev/null 2>&1; then
   xcode-select --install || true
-  echo 'Complete the Xcode Command Line Tools installation, then rerun node install.mjs.' >&2
+  echo 'Complete the Xcode Command Line Tools installation, then rerun node build.mjs.' >&2
   exit 1
 fi
 
@@ -21,7 +21,7 @@ if [[ -x "$BREW_DEFAULT" ]]; then
 elif command -v brew >/dev/null 2>&1; then
   BREW="$(command -v brew)"
 else
-  echo 'Homebrew is required. Install it from https://brew.sh, then rerun node install.mjs.' >&2
+  echo 'Homebrew is required. Install it from https://brew.sh, then rerun node build.mjs.' >&2
   exit 1
 fi
 BREW_PREFIX="$("$BREW" --prefix)"

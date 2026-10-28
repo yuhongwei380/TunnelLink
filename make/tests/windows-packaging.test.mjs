@@ -17,7 +17,7 @@ import { engineFixture } from './helpers/engine-fixture.mjs';
 test('Windows resources keep build tools out of the installed runtime', async (t) => {
   const directory = await createTempDirectory('openvpn-windows-resources-');
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
-  const configDirectory = path.join(projectRoot, 'src-tauri');
+  const configDirectory = path.join(projectRoot, 'ui/src-tauri');
   const config = JSON.parse(
     await fs.readFile(path.join(configDirectory, 'tauri.windows.conf.json'), 'utf8'),
   );
@@ -39,7 +39,7 @@ test('Windows resources keep build tools out of the installed runtime', async (t
 });
 
 test('Windows packaging embeds the generated application icon', async () => {
-  const configDirectory = path.join(projectRoot, 'src-tauri');
+  const configDirectory = path.join(projectRoot, 'ui/src-tauri');
   const baseConfig = JSON.parse(
     await fs.readFile(path.join(configDirectory, 'tauri.conf.json'), 'utf8'),
   );

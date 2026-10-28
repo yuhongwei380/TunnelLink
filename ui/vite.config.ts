@@ -21,7 +21,7 @@ export default defineConfig({
     // Native builds and installer files are not frontend source. Watching them
     // on Windows can fail with EBUSY while NSIS is writing an installer.
     watch: {
-      ignored: ['**/.cache/**', '**/build_dist/**', '**/src-tauri/gen/**'],
+      ignored: ['**/.cache/**', '**/build_dist/**', '**/src-tauri/**'],
     },
     hmr: process.env.DISABLE_HMR !== 'true',
   },

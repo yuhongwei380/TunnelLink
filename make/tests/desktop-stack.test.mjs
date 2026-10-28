@@ -8,7 +8,7 @@ import { verifyDesktopStack } from '../verify-desktop-stack.mjs';
 async function fixture(t) {
   const root = await createTempDirectory('tauri-stack-test-');
   t.after(() => fs.rm(root, { recursive: true, force: true }));
-  await fs.mkdir(path.join(root, 'src-tauri'));
+  await fs.mkdir(path.join(root, 'ui/src-tauri'), { recursive: true });
   await fs.writeFile(
     path.join(root, 'package.json'),
     JSON.stringify({
@@ -18,7 +18,7 @@ async function fixture(t) {
   );
   await fs.writeFile(path.join(root, 'package-lock.json'), JSON.stringify({ packages: {} }));
   for (const name of ['tauri.conf.json', 'tauri.windows.conf.json', 'tauri.macos.conf.json'])
-    await fs.writeFile(path.join(root, 'src-tauri', name), '{}');
+    await fs.writeFile(path.join(root, 'ui/src-tauri', name), '{}');
   return root;
 }
 
@@ -43,7 +43,7 @@ test('old runtime directories and resource references block builds', async (t) =
   await assert.rejects(verifyDesktopStack(root), /Obsolete desktop entry/);
   await fs.rmdir(path.join(root, 'electron'));
   await fs.writeFile(
-    path.join(root, 'src-tauri/tauri.macos.conf.json'),
+    path.join(root, 'ui/src-tauri/tauri.macos.conf.json'),
     JSON.stringify({ bundle: { resources: ['../electron/bin'] } }),
   );
   await assert.rejects(verifyDesktopStack(root), /Obsolete desktop resource/);

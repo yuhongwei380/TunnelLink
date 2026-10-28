@@ -50,7 +50,7 @@ pub fn engine_path() -> Result<PathBuf, String> {
             "windows-x64/ovpncli.exe"
         };
         let development = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../.cache/native/bin")
+            .join("../../.cache/native/bin")
             .join(platform);
         if development.is_file() {
             return Ok(development);
@@ -160,7 +160,7 @@ fn supervise(directory: &Path, log: &File) -> Result<i32, String> {
         .map_err(|e| e.to_string())?;
     profile
         .as_file()
-        .write_all(include_bytes!("../../config/client.ovpn"))
+        .write_all(include_bytes!("../../../resources/settings/client.ovpn"))
         .map_err(|e| e.to_string())?;
     let mut cmd = command(engine);
     #[cfg(windows)]

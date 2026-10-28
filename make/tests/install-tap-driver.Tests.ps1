@@ -26,7 +26,7 @@ New-Item -ItemType Directory -Path $testCache -Force | Out-Null
 $manifestRoot = Join-Path $testCache ('tap-driver-' + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $manifestRoot | Out-Null
 try {
-  $manifestText = Get-Content -LiteralPath (Join-Path $PSScriptRoot '..\..\config\windows-tap-driver.json') -Raw -Encoding UTF8
+  $manifestText = Get-Content -LiteralPath (Join-Path $PSScriptRoot '..\..\resources\settings\windows-tap-driver.json') -Raw -Encoding UTF8
   $manifestLock = $manifestText | ConvertFrom-Json
   foreach ($name in @('devcon.exe', 'OemVista.inf', 'tap0901.cat', 'tap0901.sys')) {
     $payloadFile = Join-Path $manifestRoot $name

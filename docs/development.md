@@ -4,11 +4,11 @@
 
 客户端使用 Tauri 2、Rust、React、TypeScript 和 Vite。React 负责界面，Rust 负责系统凭据、VPN 状态、原生进程监督和窗口生命周期，OpenVPN 3 Core 以原生引擎随安装包分发。
 
-Node.js 仅用于前端开发、构建、资源准备和测试，不作为桌面运行时分发。`make/` 中的 JavaScript 脚本是当前 Tauri 构建链的一部分；桌面配置统一位于 `src-tauri/tauri*.conf.json`。
+Node.js 仅用于前端开发、构建、资源准备和测试，不作为桌面运行时分发。`make/` 中的 JavaScript 脚本是当前 Tauri 构建链的一部分；桌面配置统一位于 `ui/src-tauri/tauri*.conf.json`。
 
 ## 环境与启动
 
-需要 Node.js、npm 和 Rust stable。当前前端工具要求 Node.js 20.19+ 或 22.12+；具体依赖版本由 `package-lock.json` 固定。
+需要 Node.js 22 或更新版本、npm 和 Rust stable；具体依赖版本由 `package-lock.json` 固定。以下命令均在仓库根目录执行。
 
 - Windows：Visual Studio C++ Build Tools、Windows SDK，使用 MSVC Rust 工具链。
 - macOS：Xcode Command Line Tools；当前桌面应用最低系统版本为 macOS 13.3。
@@ -39,50 +39,57 @@ npm run tauri:dev
 
 ## 代码目录
 
-| 路径                                      | 职责                                               |
-| ----------------------------------------- | -------------------------------------------------- |
-| `ui/src/App.tsx`                          | 应用布局、语言、桌面关闭事件和弹窗协调             |
-| `ui/src/components/`                      | 连接概览、隧道示意，以及登录、日志、协议和退出弹窗 |
-| `ui/src/hooks/useVpnConnection.ts`        | 状态轮询、凭据加载、连接和断开操作                 |
-| `ui/src/hooks/useDialog.ts`               | 原生对话框的开关与初始焦点                         |
-| `ui/src/desktop.ts`                       | Tauri invoke 适配；浏览器预览不安装原生接口        |
-| `ui/src/types.ts`、`ui/src/global.d.ts`   | 共享接口类型与 Window 扩展                         |
-| `ui/src/messages.ts`、`ui/src/ui-copy.ts` | 双语文案与用户文案合并                             |
-| `ui/src/logs.ts`、`ui/src/format.ts`      | 日志筛选、复制文本及会话数据格式化                 |
-| `ui/src/index.css`                        | 界面样式、响应式规则与动效                         |
-| `src-tauri/src/lib.rs`                    | Tauri commands、单实例与窗口生命周期               |
-| `src-tauri/src/vpn.rs`                    | 连接控制、日志、状态与系统凭据                     |
-| `src-tauri/src/worker.rs`                 | 原生监督进程、引擎启动、停止及心跳                 |
-| `src-tauri/src/windows_process.rs`        | Windows 控制台、Job Object 和进程清理              |
-| `make/`                                   | 通用 Tauri 构建调度、版本同步、资源准备和产物归集  |
-| `make/windows/`                           | Windows 引擎编译、驱动准备、安装器、打包和验证     |
-| `make/macos/`                             | macOS 引擎编译、应用/DMG 打包和运行库验证          |
-| `make/tests/`                             | 构建、打包与前端逻辑测试                           |
-| `config/`                                 | 固定连接配置、品牌、文案及版本锁                   |
-| `.cache/native/`                          | 已准备的原生引擎、运行库与驱动                     |
-| `resources/`                              | 品牌资源与用户协议；依赖许可集中在 `LICENSES/`     |
+| 路径                                      | 职责                                                                |
+| ----------------------------------------- | ------------------------------------------------------------------- |
+| `build.mjs`                               | 统一安装包构建入口，准备依赖并调用 `make/build.mjs`                 |
+| `custom-config/`                          | 本地 VPN 配置与品牌覆盖，详见[配置说明](../custom-config/README.md) |
+| `ui/src/App.tsx`                          | 应用布局、语言、桌面关闭事件和弹窗协调                              |
+| `ui/src/components/`                      | 连接概览、隧道示意，以及登录、日志、协议和退出弹窗                  |
+| `ui/src/hooks/useVpnConnection.ts`        | 状态轮询、凭据加载、连接和断开操作                                  |
+| `ui/src/hooks/useDialog.ts`               | 原生对话框的开关与初始焦点                                          |
+| `ui/src/desktop.ts`                       | Tauri invoke 适配；浏览器预览不安装原生接口                         |
+| `ui/src/types.ts`、`ui/src/global.d.ts`   | 共享接口类型与 Window 扩展                                          |
+| `ui/src/messages.ts`、`ui/src/ui-copy.ts` | 双语文案与用户文案合并                                              |
+| `ui/src/logs.ts`、`ui/src/format.ts`      | 日志筛选、复制文本及会话数据格式化                                  |
+| `ui/src/index.css`                        | 界面样式、响应式规则与动效                                          |
+| `ui/src-tauri/src/lib.rs`                 | Tauri commands、单实例与窗口生命周期                                |
+| `ui/src-tauri/src/vpn.rs`                 | 连接控制、日志、状态与系统凭据                                      |
+| `ui/src-tauri/src/worker.rs`              | 原生监督进程、引擎启动、停止及心跳                                  |
+| `ui/src-tauri/src/windows_process.rs`     | Windows 控制台、Job Object 和进程清理                               |
+| `make/`                                   | 通用 Tauri 构建调度、版本同步、资源准备和产物归集                   |
+| `make/windows/`                           | Windows 引擎编译、驱动准备、安装器、打包和验证                      |
+| `make/macos/`                             | macOS 引擎编译、应用/DMG 打包和运行库验证                           |
+| `make/tests/`                             | 构建、打包与前端逻辑测试                                            |
+| `resources/settings/`                     | 固定连接配置、品牌、文案及版本锁                                    |
+| `.cache/native/`                          | 已准备的原生引擎、运行库与驱动                                      |
+| `resources/brand/`、`resources/legal/`    | 品牌源图与用户协议；依赖许可集中在 `LICENSES/`                      |
 
-`package-lock.json` 和 `src-tauri/Cargo.lock` 是需要保存的依赖锁文件。`node_modules/`、`.cache/`、`build_dist/`、`src-tauri/gen/` 目录链接与原生二进制不提交。
+`package-lock.json` 和 `ui/src-tauri/Cargo.lock` 是需要保存的依赖锁文件。`node_modules/`、`.cache/`、`build_dist/`、`ui/src-tauri/gen/` 目录链接与原生二进制不提交。
 
-前端入口、源码与 Vite/TypeScript 配置统一位于 `ui/`，npm 清单和依赖锁仍位于根目录。构建、环境准备和独立测试统一位于 `make/`。
+前端入口、源码与 Vite/TypeScript 配置，以及 `ui/src-tauri/` 原生后端统一位于 `ui/`，npm 清单和依赖锁仍位于根目录。默认配置位于 `resources/settings/`，构建、环境准备和独立测试统一位于 `make/`；根目录 `build.mjs` 为统一构建入口。
 
-前端输出位于 `.cache/frontend/`，Rust 输出位于 `.cache/cargo-target/`，下载依赖位于 `.cache/deps/`，隔离源码位于 `.cache/work/`，生成的安装器协议位于 `.cache/legal/`。Tauri 打包工具使用本地缓存，位于 Cargo 输出目录下的 `.tauri/`。Tauri 固定读取 `src-tauri/gen/`，构建入口会自动建立指向 `.cache/tauri/gen/` 的目录链接，实际生成文件保存在缓存中。安装后的应用仍使用操作系统规定的用户配置和临时目录。
+前端输出位于 `.cache/frontend/`，Rust 输出位于 `.cache/cargo-target/`，下载依赖位于 `.cache/deps/`，隔离源码位于 `.cache/work/`，生成的安装器协议位于 `.cache/legal/`。Tauri 打包工具使用本地缓存，位于 Cargo 输出目录下的 `.tauri/`。Tauri 固定读取 `ui/src-tauri/gen/`，构建入口会自动建立指向 `.cache/tauri/gen/` 的目录链接，实际生成文件保存在缓存中。安装后的应用仍使用操作系统规定的用户配置和临时目录。
 
 `npm run clean` 清理前端、Rust 和打包中间产物，保留下载依赖、原生引擎和私有配置；`npm run clean:dist` 单独清理 `build_dist/` 中的最终安装包。
 
 ## 配置修改
 
-- `config/client.ovpn`：编译进原生客户端的固定配置；修改后需要重新构建客户端。
-- `config/app-branding.json`：应用名称、标识与默认界面语言（`defaultLocale`：`CN` 默认中文 / `EN` 默认英文，仅影响首次启动，用户手动切换后记住用户选择）；直接构建时修改后运行 `npm run sync:branding`。统一构建优先使用 `vpn-config/app-branding.json`，复制到隔离源码后参与构建；该文件不存在时使用 `config/` 下的默认值。
-- `config/openvpn3-release.json`：OpenVPN 版本、标签和提交的唯一来源；升级流程见[构建与发布](building.md#版本与许可)。
-- `config/ui-copy.json`：新用户默认文案。已生成的用户文案文件不会被覆盖，修改方式见[使用说明中的文案配置](../README.md#修改连接页文案)。
+使用 `node build.mjs` 构建安装包时，连接配置默认读取 `custom-config/client.ovpn`，也可通过 `--profile PATH` 指定。入口仅在隔离源码中替换 `resources/settings/client.ovpn`，不改写当前工作树的默认配置。`custom-config/` 中仅说明文件与品牌配置被 Git 跟踪，其余本地文件被忽略。
+
+- `resources/settings/client.ovpn`：编译进原生客户端的固定配置；修改后需要重新构建客户端。
+- `resources/settings/app-branding.json`：应用名称、标识与默认界面语言（`defaultLocale`：`CN` 默认中文 / `EN` 默认英文，仅影响首次启动，用户手动切换后记住用户选择）；直接构建时修改后运行 `npm run sync:branding`。统一构建优先使用 `custom-config/app-branding.json`，复制到隔离源码后参与构建；该文件不存在时使用 `resources/settings/` 下的默认值。
+- `resources/settings/openvpn3-release.json`：OpenVPN 版本、标签和提交的唯一来源；升级流程见[构建与发布](building.md#版本与许可)。
+- `resources/settings/ui-copy.json`：新用户默认文案。已生成的用户文案文件不会被覆盖，修改方式见[使用说明中的文案配置](../README.md#修改连接页文案)。
+- `resources/settings/windows-tap-driver.json`、`resources/settings/windows-openssl.json`：Windows 驱动和 OpenSSL 构建依赖的下载地址、版本与校验值。
+
+直接执行 `npm run package:win`、`npm run package:mac` 或 Tauri 构建命令时，使用当前工作树中的 `resources/settings/`，不会读取 `custom-config/` 的覆盖配置。
 
 ## 界面约定
 
 - 颜色、布局、响应式规则与动效统一维护在 `ui/src/index.css`。主色为 `#155EEF`，连接面板为 `#0B1F3A`，隧道强调色为 `#0E9F9A`；状态分别使用绿色、橙色和红色，并保留文字说明。
 - 默认窗口固定为 840 × 640，不支持调整大小或最大化。连接页保留一个主要连接操作、真实隧道状态、会话数据、网关信息和诊断入口。
 - Inter 字体离线打包，中文使用 PingFang SC 或 Microsoft YaHei，功能图标使用 Lucide。字体许可保存在 `LICENSES/Inter-OFL.txt`。
-- 项目 Logo 的唯一源文件为 `resources/brand/app-icon.svg`，侧栏、关于窗口和 favicon 共用该 SVG。修改后运行 `npm run icons:generate`，同步生成 `src-tauri/icons/` 中的桌面 PNG、Windows ICO 与 macOS ICNS。
+- 项目 Logo 的唯一源文件为 `resources/brand/app-icon.svg`，侧栏、关于窗口和 favicon 共用该 SVG。修改后运行 `npm run icons:generate`，同步生成 `ui/src-tauri/icons/` 中的桌面 PNG、Windows ICO 与 macOS ICNS。
 - 页面、弹窗和交互过渡控制在 180–240ms，并遵循 `prefers-reduced-motion: reduce`。隧道示意仅在正在连接时播放连接动效，`ConnectionVisual` 不代表测量得到的网络拓扑。
 - 弹窗使用原生 `dialog` 和键盘焦点管理，表单保留可见标签、错误和状态提示。登录、日志、协议与退出弹窗共用界面样式。
 
@@ -104,19 +111,23 @@ npm run check
 npm run build
 ```
 
-`npm run check` 依次执行格式检查、严格 TypeScript 检查、桌面技术栈检查、前端逻辑测试和打包单元测试。TypeScript 检查也覆盖前端测试文件。
+`npm run check` 依次执行格式检查、严格 TypeScript 检查、桌面技术栈检查、前端逻辑测试、打包单元测试和统一构建流程测试。TypeScript 检查也覆盖前端测试文件。
 
 `.editorconfig` 统一 UTF-8、LF 和缩进；Prettier 覆盖前端、JavaScript 构建脚本、前端测试和相关配置。许可文本、原生二进制与生成目录不参与格式化。Rust 使用标准 rustfmt 格式。
 
-| 命令                     | 范围                                     |
-| ------------------------ | ---------------------------------------- |
-| `npm run format:check`   | 只检查代码格式                           |
-| `npm run lint`           | TypeScript 严格类型与未使用代码检查      |
-| `npm run check:stack`    | Tauri 依赖、旧桌面配置与资源引用检查     |
-| `npm run test:ui`        | 文案、日志和会话格式化测试               |
-| `npm run test:packaging` | Windows/macOS 打包单元测试，使用临时夹具 |
-| `npm run test:native`    | Rust 测试，需要原生构建环境              |
-| `npm run check:native`   | Rust 编译检查，需要原生构建环境          |
-| `npm run clean`          | 清理前端输出和归集的安装包               |
+| 命令                     | 范围                                           |
+| ------------------------ | ---------------------------------------------- |
+| `npm run format:check`   | 只检查代码格式                                 |
+| `npm run lint`           | TypeScript 严格类型与未使用代码检查            |
+| `npm run check:stack`    | Tauri 依赖、旧桌面配置与资源引用检查           |
+| `npm run test:ui`        | 文案、日志和会话格式化测试                     |
+| `npm run test:packaging` | Windows/macOS 打包单元测试，使用临时夹具       |
+| `npm run test:unified`   | 统一构建入口、配置覆盖、源码隔离和产物归集测试 |
+| `npm run test:native`    | Rust 测试，需要原生构建环境                    |
+| `npm run check:native`   | Rust 编译检查，需要原生构建环境                |
+| `npm run build`          | 只构建前端，输出到 `.cache/frontend/`          |
+| `node build.mjs`         | 按当前平台构建带自定义配置的安装包             |
+| `npm run clean`          | 清理前端、Rust 和打包中间产物                  |
+| `npm run clean:dist`     | 清理 `build_dist/` 中的最终安装包              |
 
-测试按职责保存：`make/tests/ui/` 为前端逻辑，`make/tests/helpers/` 为共享夹具，`make/tests/integration/` 为依赖真实下载资源的集成测试。驱动安装逻辑的 PowerShell 测试和集成测试步骤见[构建与发布](building.md#验证安装包)。
+测试按职责保存：`make/tests/ui/` 为前端逻辑，`make/tests/unified/` 为统一构建流程，`make/tests/helpers/` 为共享夹具，`make/tests/integration/` 为依赖真实下载资源的集成测试。驱动安装逻辑的 PowerShell 测试和集成测试步骤见[构建与发布](building.md#验证安装包)。

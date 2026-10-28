@@ -13,10 +13,10 @@ export async function engineFixture(t) {
   await fs.writeFile(path.join(bin, 'libssl-3-x64.dll'), 'test-ssl');
   await fs.writeFile(path.join(bin, 'libcrypto-3-x64.dll'), 'test-crypto');
   const release = await readRelease(root);
-  await fs.mkdir(path.join(directory, 'config'));
+  await fs.mkdir(path.join(directory, 'resources/settings'), { recursive: true });
   await fs.copyFile(
-    path.join(root, 'config/openvpn3-release.json'),
-    path.join(directory, 'config/openvpn3-release.json'),
+    path.join(root, 'resources/settings/openvpn3-release.json'),
+    path.join(directory, 'resources/settings/openvpn3-release.json'),
   );
   const metadata = {
     version: release.version,

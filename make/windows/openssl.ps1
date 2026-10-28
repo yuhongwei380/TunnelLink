@@ -74,11 +74,11 @@ function Find-OpenSslSdk {
 }
 
 function Read-OpenSslRelease {
-    $release = Get-Content -LiteralPath (Join-Path $PSScriptRoot '../../config/windows-openssl.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    $release = Get-Content -LiteralPath (Join-Path $PSScriptRoot '../../resources/settings/windows-openssl.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($release.version -notmatch '^3\.\d+\.\d+$' -or $release.sha256 -notmatch '^[a-fA-F0-9]{64}$' -or
         $release.url -notmatch '^https://download\.firedaemon\.com/FireDaemon-OpenSSL/openssl-3\.[0-9]+\.[0-9]+\.zip$' -or
         $release.url -notlike ('*/openssl-' + $release.version + '.zip')) {
-        throw 'Invalid OpenSSL 3 x64 SDK lock in config/windows-openssl.json.'
+        throw 'Invalid OpenSSL 3 x64 SDK lock in resources/settings/windows-openssl.json.'
     }
     return $release
 }

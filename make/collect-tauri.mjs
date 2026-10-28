@@ -15,7 +15,7 @@ export async function collectTauri(root, args, env) {
   await fs.mkdir(output, { recursive: true });
   const pkg = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
   const branding = JSON.parse(
-    await fs.readFile(path.join(root, 'config/app-branding.json'), 'utf8'),
+    await fs.readFile(path.join(root, 'resources/settings/app-branding.json'), 'utf8'),
   );
   const artifacts = [];
   if (process.platform === 'win32') {

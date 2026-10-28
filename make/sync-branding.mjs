@@ -4,7 +4,7 @@ import { readRelease } from './openvpn3-release.mjs';
 
 const rootDir = process.cwd();
 const pkgPath = path.join(rootDir, 'package.json');
-const brandingPath = path.join(rootDir, 'config', 'app-branding.json');
+const brandingPath = path.join(rootDir, 'resources/settings', 'app-branding.json');
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -30,17 +30,17 @@ const packageName = productName
   .slice(0, 214);
 
 if (!appId) {
-  throw new Error('config/app-branding.json missing field: appId');
+  throw new Error('resources/settings/app-branding.json missing field: appId');
 }
 if (!productName) {
-  throw new Error('config/app-branding.json missing field: productName');
+  throw new Error('resources/settings/app-branding.json missing field: productName');
 }
 
 const defaultLocale = String(branding.defaultLocale || 'CN')
   .trim()
   .toUpperCase();
 if (defaultLocale !== 'CN' && defaultLocale !== 'EN') {
-  throw new Error('config/app-branding.json field defaultLocale must be CN or EN');
+  throw new Error('resources/settings/app-branding.json field defaultLocale must be CN or EN');
 }
 
 const pkg = readJson(pkgPath);
@@ -50,14 +50,14 @@ pkg.version = release.version;
 if (packageName) {
   pkg.name = packageName;
 }
-const tauriPath = path.join(rootDir, 'src-tauri', 'tauri.conf.json');
+const tauriPath = path.join(rootDir, 'ui/src-tauri', 'tauri.conf.json');
 const tauri = readJson(tauriPath);
 tauri.identifier = appId;
 tauri.productName = productName;
 tauri.version = pkg.version;
 tauri.app.windows[0].title = productName;
 writeJson(tauriPath, tauri);
-const cargoPath = path.join(rootDir, 'src-tauri', 'Cargo.toml');
+const cargoPath = path.join(rootDir, 'ui/src-tauri', 'Cargo.toml');
 const cargo = fs
   .readFileSync(cargoPath, 'utf8')
   .replace(/^(version\s*=\s*)"[^"]+"/m, `$1"${pkg.version}"`);

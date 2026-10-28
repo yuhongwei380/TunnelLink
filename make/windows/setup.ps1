@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 if (-not $env:OPENVPN_BUILD_ENV_FILE -or -not $env:OPENVPN_BUILD_NODE) {
-    throw 'Run node install.mjs from the repository root.'
+    throw 'Run node build.mjs from the repository root.'
 }
 $openSslScript = Join-Path $PSScriptRoot './openssl.ps1'
 if (-not (Test-Path -LiteralPath $openSslScript -PathType Leaf)) {
@@ -23,7 +23,7 @@ function Refresh-BuildPath {
 
 function Install-BuildTool([string]$Id) {
     if (-not (Get-Command winget.exe -ErrorAction SilentlyContinue)) {
-        throw "Installing $Id requires winget. Install Microsoft's App Installer, then rerun node install.mjs."
+        throw "Installing $Id requires winget. Install Microsoft's App Installer, then rerun node build.mjs."
     }
     Write-Host "Installing missing build tool: $Id"
     & winget.exe install --id $Id --exact --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity
@@ -33,7 +33,7 @@ function Install-BuildTool([string]$Id) {
 
 Refresh-BuildPath
 if (-not (Get-Command npm.cmd -ErrorAction SilentlyContinue)) {
-    throw 'Install the full Node.js 22+ distribution, including npm, and rerun node install.mjs.'
+    throw 'Install the full Node.js 22+ distribution, including npm, and rerun node build.mjs.'
 }
 if (-not (Get-Command git.exe -ErrorAction SilentlyContinue)) { Install-BuildTool 'Git.Git' }
 if (-not (Get-Command rustup.exe -ErrorAction SilentlyContinue)) { Install-BuildTool 'Rustlang.Rustup' }

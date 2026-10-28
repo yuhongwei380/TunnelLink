@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { buildEnvironment } from './paths.mjs';
 
-const profileTarget = 'config/client.ovpn';
+const profileTarget = 'resources/settings/client.ovpn';
 
 export function detectPlatform(value = 'auto', host = process.platform) {
   if (value !== 'auto') {
@@ -109,16 +109,18 @@ async function exists(file) {
 }
 
 export async function loadUpstream(root) {
-  const upstream = JSON.parse(await fs.readFile(path.join(root, 'config/upstream.json'), 'utf8'));
+  const upstream = JSON.parse(
+    await fs.readFile(path.join(root, 'resources/settings/upstream.json'), 'utf8'),
+  );
   if (
     typeof upstream.repository !== 'string' ||
     !upstream.repository ||
     upstream.repository.startsWith('-')
   ) {
-    throw new Error('config/upstream.json must specify a repository URL.');
+    throw new Error('resources/settings/upstream.json must specify a repository URL.');
   }
   if (!/^[a-f0-9]{40}$/i.test(upstream.commit ?? '')) {
-    throw new Error('config/upstream.json must pin a full 40-character commit.');
+    throw new Error('resources/settings/upstream.json must pin a full 40-character commit.');
   }
   return { repository: upstream.repository, commit: upstream.commit.toLowerCase() };
 }
@@ -130,7 +132,7 @@ export async function readProfile(file) {
   } catch (error) {
     if (error.code === 'ENOENT') {
       throw new Error(
-        `Private profile not found: ${file}. Create vpn-config/client.ovpn or pass --profile PATH.`,
+        `Private profile not found: ${file}. Create custom-config/client.ovpn or pass --profile PATH.`,
       );
     }
     throw error;
@@ -261,7 +263,7 @@ export async function prepareSource({ root, platform, upstream, profile }) {
   }
   if (git(sourceDir, ['remote', 'get-url', 'origin']).stdout.trim() !== upstream.repository) {
     throw new Error(
-      `Cached origin does not match config/upstream.json. Move ${sourceDir} aside and retry.`,
+      `Cached origin does not match resources/settings/upstream.json. Move ${sourceDir} aside and retry.`,
     );
   }
   const head = git(sourceDir, ['rev-parse', '--verify', 'HEAD'], { allowFailure: true });
@@ -306,9 +308,9 @@ export async function prepareSource({ root, platform, upstream, profile }) {
   const destination = path.join(sourceDir, profileTarget);
   if (
     (await fs.realpath(path.dirname(destination))) !==
-    path.join(await fs.realpath(sourceDir), 'config')
+    path.join(await fs.realpath(sourceDir), 'resources/settings')
   ) {
-    throw new Error('The upstream config directory must not point outside the source cache.');
+    throw new Error('The upstream settings directory must not point outside the source cache.');
   }
   if (!(await fs.readFile(destination)).equals(profile.contents)) {
     await fs.writeFile(destination, profile.contents, { mode: 0o600 });
@@ -329,7 +331,7 @@ export async function prepareLocalSource({ root, platform, upstream, profile, br
     '.git',
     '.cache',
     'node_modules',
-    'vpn-config',
+    'custom-config',
     'private',
     'build_dist',
   ]);
@@ -342,7 +344,7 @@ export async function prepareLocalSource({ root, platform, upstream, profile, br
         recursive: true,
         filter: (entry) => {
           const relative = path.relative(root, entry);
-          return relative !== path.join('src-tauri', 'gen');
+          return relative !== path.join('ui/src-tauri', 'gen');
         },
       });
     }
@@ -368,7 +370,7 @@ export async function prepareLocalSource({ root, platform, upstream, profile, br
   }
   await fs.chmod(destination, 0o600);
   if (branding) {
-    await fs.writeFile(path.join(sourceDir, 'config/app-branding.json'), branding);
+    await fs.writeFile(path.join(sourceDir, 'resources/settings/app-branding.json'), branding);
   }
   return { sourceDir, platform, upstream, profileSha256: profile.sha256 };
 }

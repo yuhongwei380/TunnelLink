@@ -13,13 +13,15 @@
 
 需要生成带私有 VPN 配置的安装包时，使用仓库根目录的统一入口：
 
-1. 安装 Node.js 22 或更新版本，并将完整、内嵌证书的配置保存为 `vpn-config/client.ovpn`。如果此前使用 `private/client.ovpn`，请将其移动到新位置。
-2. 在 Windows x64 或 macOS（Apple Silicon / Intel）本机执行 `node install.mjs`。
+1. 安装 Node.js 22 或更新版本，并将完整、内嵌证书的配置保存为 `custom-config/client.ovpn`，配置要求见[自定义构建配置](custom-config/README.md)。
+2. 在 Windows x64 或 macOS（Apple Silicon / Intel）本机执行 `node build.mjs`。
 3. 入口会检查平台、准备依赖、把当前源码复制到隔离缓存、替换配置、编译引擎并校验安装包，产物只保存到 `build_dist/<平台>/`（重复构建覆盖同名安装包，构建缓存中不留副本）。
 
-只准备源码和配置、不安装依赖或编译时执行 `node install.mjs --prepare-only`。已有工具链希望完全手动管理时，加上 `--no-auto-install-deps`；强制或跳过引擎编译分别使用 `--force-engine` 和 `--skip-engine`。私有配置会编译进客户端，请不要把 `vpn-config/client.ovpn` 或生成的 `build_dist/` 内容提交到 Git。
+只准备源码和配置、不安装依赖或编译时执行 `node build.mjs --prepare-only`。已有工具链希望完全手动管理时，加上 `--no-auto-install-deps`；强制或跳过引擎编译分别使用 `--force-engine` 和 `--skip-engine`。私有配置会编译进客户端，请不要把 `custom-config/client.ovpn` 或生成的 `build_dist/` 内容提交到 Git。
 
-统一构建优先使用 `vpn-config/app-branding.json`，在隔离构建目录中覆盖 `config/app-branding.json`。修改其中 `defaultLocale` 为 `CN` 或 `EN` 后重新构建，即可生成不同默认语言的安装包；手动切换过语言的用户仍使用其保存的选择。若该文件不存在，则使用 `config/app-branding.json`。
+统一构建优先使用 `custom-config/app-branding.json`，在隔离构建目录中覆盖 `resources/settings/app-branding.json`。修改其中 `defaultLocale` 为 `CN` 或 `EN` 后重新构建，即可生成不同默认语言的安装包；手动切换过语言的用户仍使用其保存的选择。若该文件不存在，则使用 `resources/settings/app-branding.json`。
+
+`custom-config/` 保存本地构建输入，`resources/settings/` 保存仓库默认配置与依赖版本锁；前端和 Tauri 原生后端统一位于 `ui/`。`node build.mjs` 构建安装包，`npm run build` 只构建前端静态文件。目录职责与分步构建命令见[开发指南](docs/development.md#代码目录)和[构建与发布](docs/building.md)。
 
 ## 连接和断开
 
@@ -56,7 +58,7 @@
 
 ## 修改连接页文案
 
-客户端首次启动时，会把 [`config/ui-copy.json`](config/ui-copy.json) 的默认内容复制到操作系统的用户配置目录：
+客户端首次启动时，会把 [`resources/settings/ui-copy.json`](resources/settings/ui-copy.json) 的默认内容复制到操作系统的用户配置目录：
 
 - Windows：在资源管理器地址栏打开 `%APPDATA%\com.example.openvpn-client-phoenix`。
 - macOS：在 Finder 中按 `Command + Shift + G`，前往 `~/Library/Application Support/com.example.openvpn-client-phoenix`。
@@ -80,7 +82,7 @@
 
 本客户端基于 [OpenVPN 3 Core](https://github.com/OpenVPN/openvpn3)（Copyright (C) OpenVPN Inc）二次开发。上游为 AGPL-3.0-only 或 MPL-2.0 双许可，**本项目选择 AGPL-3.0-only 选项**：组合作品（本客户端与其链接的 OpenVPN 3 Core 引擎）按 **AGPL-3.0-only** 分发，并依上游附加许可允许链接 OpenSSL；本项目自研代码同样按 AGPL-3.0-only（见顶层 [LICENSE](LICENSE) 与 [NOTICE](NOTICE)）。
 
-- **客户端软件本身即本仓库**，完整客户端源码就在这里：<https://github.com/yuhongwei380/openvpn3-client>。上游 OpenVPN 3 Core 固定到具体 release 与 commit（`config/openvpn3-release.json`），构建时对 `cmake/FindCoreDeps.cmake` 的最小补丁记录在构建脚本中；安装包按 AGPL §6(d) 在指定发布地点分发、对应源码在同处或清楚指引的位置提供，详见 [NOTICE](NOTICE)。
+- **客户端软件本身即本仓库**，完整客户端源码就在这里：<https://github.com/yuhongwei380/openvpn3-client>。上游 OpenVPN 3 Core 固定到具体 release 与 commit（`resources/settings/openvpn3-release.json`），构建时对 `cmake/FindCoreDeps.cmake` 的最小补丁记录在构建脚本中；安装包按 AGPL §6(d) 在指定发布地点分发、对应源码在同处或清楚指引的位置提供，详见 [NOTICE](NOTICE)。
 - **依赖组件的版权归各自上游项目/仓库所有**，全部许可证原文集中在 [LICENSES/](LICENSES) 目录（AGPL、MPL 与 OpenSSL 附加许可原文原样保留在 `LICENSES/openvpn3/`）。Windows TAP-Windows6 驱动（**GPLv2**）与 devcon（**MS-PL**）作为独立组件聚合分发（不链接进应用），不与整体 AGPL 合并；OpenSSL（3.x，Apache-2.0）、Inter 字体（OFL-1.1）等声明见 [LICENSES/THIRD-PARTY-NOTICES.txt](LICENSES/THIRD-PARTY-NOTICES.txt)。
 - 安装包附带引擎来源记录 `ovpncli-build.json` 与上述许可文件（安装目录 `legal/licenses/`）。
 

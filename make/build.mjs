@@ -16,10 +16,10 @@ import {
 } from './lib/build.mjs';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const help = `Usage: node install.mjs [options]
+const help = `Usage: node build.mjs [options]
 
   --platform windows|macos|auto  Build platform (default: detect current OS)
-  --profile PATH               Private profile (default: vpn-config/client.ovpn)
+  --profile PATH               Private profile (default: custom-config/client.ovpn)
   --prepare-only               Copy current source and replace profile, without compiling
   --force-engine               Rebuild the native OpenVPN engine
   --skip-engine                Reuse an engine verified by the upstream scripts
@@ -53,10 +53,10 @@ export async function runBuild(
     ? { repository: 'local-working-tree', commit: 'working-tree' }
     : await loadUpstream(root);
   const profile = await readProfile(
-    path.resolve(options.profile ?? path.join(root, 'vpn-config/client.ovpn')),
+    path.resolve(options.profile ?? path.join(root, 'custom-config/client.ovpn')),
   );
   const branding = localSource
-    ? await readBranding(path.join(root, 'vpn-config/app-branding.json'))
+    ? await readBranding(path.join(root, 'custom-config/app-branding.json'))
     : null;
   await withBuildLock(root, platform, async () => {
     // Validate the private input before installing tools or downloading source.
@@ -69,7 +69,7 @@ export async function runBuild(
       ? await prepareLocalSource({ root, platform, upstream, profile, branding })
       : await prepareSource({ root, platform, upstream, profile });
     console.log(
-      `Source ready: ${prepared.sourceDir}\nSource revision: ${upstream.commit}\nPrivate profile replaced: config/client.ovpn`,
+      `Source ready: ${prepared.sourceDir}\nSource revision: ${upstream.commit}\nPrivate profile replaced: resources/settings/client.ovpn`,
     );
     if (options.prepareOnly) {
       console.log('Preparation completed. No compiler or packaging tools were invoked.');

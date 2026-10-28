@@ -11,7 +11,7 @@ This client is derived from OpenVPN 3 Core and is not the official OpenVPN Conne
 
 OpenVPN 3 Core
   Upstream: https://github.com/OpenVPN/openvpn3
-  Release and exact commit: config/openvpn3-release.json in the project;
+  Release and exact commit: resources/settings/openvpn3-release.json in the project;
   bin/<platform>/ovpncli-build.json in the installed application resources.
   Upstream dual license: MPL-2.0 or AGPL-3.0-only. This project exercises
   the AGPL option: the combined work formed by this client and the
@@ -19,7 +19,7 @@ OpenVPN 3 Core
   using the upstream additional permission to link against OpenSSL
   (legal/licenses/openvpn3/LICENSES/openvpn3-openssl-exception.txt).
   The Windows build applies minimal patches to cmake/FindCoreDeps.cmake;
-  they are recorded in build/windows/build-openvpn3.ps1 and form part of
+  they are recorded in make/windows/build-openvpn3.ps1 and form part of
   the corresponding source.
   Full upstream license texts: legal/licenses/openvpn3/LICENSES/.
   Conveying model (AGPL section 6(d)): installers are conveyed from the

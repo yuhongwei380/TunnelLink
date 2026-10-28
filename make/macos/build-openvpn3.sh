@@ -3,10 +3,10 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OPENVPN3_REPO_URL="${OPENVPN3_REPO_URL:-https://github.com/OpenVPN/openvpn3.git}"
-RELEASE_REF="$(node -p "require(process.argv[1]).ref" "$PROJECT_ROOT/config/openvpn3-release.json")"
-RELEASE_COMMIT="$(node -p "require(process.argv[1]).commit" "$PROJECT_ROOT/config/openvpn3-release.json")"
+RELEASE_REF="$(node -p "require(process.argv[1]).ref" "$PROJECT_ROOT/resources/settings/openvpn3-release.json")"
+RELEASE_COMMIT="$(node -p "require(process.argv[1]).commit" "$PROJECT_ROOT/resources/settings/openvpn3-release.json")"
 OPENVPN3_REF="${OPENVPN3_REF:-$RELEASE_REF}"
-[[ "$OPENVPN3_REF" == "$RELEASE_REF" ]] || { echo 'OPENVPN3_REF must match config/openvpn3-release.json' >&2; exit 1; }
+[[ "$OPENVPN3_REF" == "$RELEASE_REF" ]] || { echo 'OPENVPN3_REF must match resources/settings/openvpn3-release.json' >&2; exit 1; }
 OPENVPN3_KEEP_WORKDIR="${OPENVPN3_KEEP_WORKDIR:-0}"
 JOBS="${OPENVPN3_BUILD_JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
 MACOS_DEPLOYMENT_TARGET="${OPENVPN3_MACOS_DEPLOYMENT_TARGET:-11.0}"

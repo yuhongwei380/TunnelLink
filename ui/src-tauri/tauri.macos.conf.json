@@ -1,7 +1,7 @@
 {
   "bundle": {
     "targets": ["app", "dmg"],
-    "resources": { "../.cache/native/bin/macos/": "bin/macos/" },
+    "resources": { "../../.cache/native/bin/macos/": "bin/macos/" },
     "macOS": {
       "minimumSystemVersion": "13.3",
       "dmg": {

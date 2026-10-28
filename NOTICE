@@ -22,11 +22,11 @@ under LICENSES/.
 Complete corresponding source (AGPL section 6):
 - This client's full source: the public repository above.
 - OpenVPN 3 Core source at the exact pinned release tag and commit
-  recorded in config/openvpn3-release.json, and per shipped build in
+  recorded in resources/settings/openvpn3-release.json, and per shipped build in
   the installed bin/<platform>/ovpncli-build.json.
 - Build-system patches applied to the upstream checkout
   (cmake/FindCoreDeps.cmake OpenSSL/fmt link handling) are recorded in
-  build/windows/build-openvpn3.ps1 and form part of the corresponding
+  make/windows/build-openvpn3.ps1 and form part of the corresponding
   source.
 Conveying model (AGPL section 6(d)): this project conveys installers by
 offering access from a designated place (its public release page), and

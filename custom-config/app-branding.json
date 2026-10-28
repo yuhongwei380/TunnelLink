@@ -1,0 +1,6 @@
+{
+  "_comment": "品牌与安装包配置。统一构建优先使用 custom-config/app-branding.json；直接构建使用 resources/settings/app-branding.json，修改后运行 npm run sync:branding 并重新构建。appId 为系统应用标识，修改后配置和卸载独立；productName 决定安装包、应用、快捷方式和窗口名称；defaultLocale 为首次启动语言（CN 中文、EN 英文），已保存的用户语言选择优先。以 _ 开头的键仅作说明。",
+  "appId": "com.example.openvpn-client-phoenix",
+  "productName": "OpenVPNClient",
+  "defaultLocale": "CN"
+}

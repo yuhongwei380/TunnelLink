@@ -43,7 +43,7 @@ export async function setupEnvironment({ root, platform }) {
     });
     if (result.error || result.status !== 0) {
       throw new Error(
-        `Dependency setup failed (${result.error?.message ?? `exit ${result.status}`}). Resolve the reported issue and rerun node install.mjs.`,
+        `Dependency setup failed (${result.error?.message ?? `exit ${result.status}`}). Resolve the reported issue and rerun node build.mjs.`,
       );
     }
     const environment = JSON.parse(await fs.readFile(environmentFile, 'utf8'));

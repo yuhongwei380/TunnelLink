@@ -156,7 +156,7 @@ fn app_install_to_applications(
 
 #[tauri::command]
 fn app_get_ui_copy(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
-    const DEFAULT_UI_COPY: &[u8] = include_bytes!("../../config/ui-copy.json");
+    const DEFAULT_UI_COPY: &[u8] = include_bytes!("../../../resources/settings/ui-copy.json");
     let directory = app
         .path()
         .app_config_dir()

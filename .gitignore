@@ -16,7 +16,7 @@ Desktop.ini
 
 # Final installers and the required Tauri alias into .cache/tauri/gen
 /build_dist/
-/src-tauri/gen/
+/ui/src-tauri/gen/
 CMakeFiles/
 CMakeCache.txt
 *.exe
@@ -40,15 +40,15 @@ CMakeCache.txt
 *.app/
 
 # VPN build input and legacy private directory
-/vpn-config/*
-!/vpn-config/README.md
-!/vpn-config/app-branding.json
+/custom-config/*
+!/custom-config/README.md
+!/custom-config/app-branding.json
 /private/*
 
 # Local environment and private connection profiles
 .env*
 !.env.example
 *.ovpn
-!/config/client.ovpn
+!/resources/settings/client.ovpn
 
-# package-lock.json and src-tauri/Cargo.lock are intentional source inputs.
+# package-lock.json and ui/src-tauri/Cargo.lock are intentional source inputs.

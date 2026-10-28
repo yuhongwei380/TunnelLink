@@ -48,17 +48,17 @@ async function fixture(t) {
   });
   const upstreamRepo = path.join(directory, 'upstream repo');
   const root = path.join(directory, 'private build');
-  await fs.mkdir(path.join(upstreamRepo, 'config'), { recursive: true });
+  await fs.mkdir(path.join(upstreamRepo, 'resources/settings'), { recursive: true });
   await fs.mkdir(path.join(upstreamRepo, 'make/windows'), { recursive: true });
   await fs.mkdir(path.join(upstreamRepo, 'make/macos'), { recursive: true });
-  await fs.mkdir(path.join(root, 'config'), { recursive: true });
+  await fs.mkdir(path.join(root, 'resources/settings'), { recursive: true });
   await fs.writeFile(
     path.join(upstreamRepo, '.gitattributes'),
     '* text=auto\n*.sh text eol=lf\n*.ps1 text eol=crlf\n',
   );
   await fs.writeFile(path.join(upstreamRepo, '.gitignore'), '/.cache/packaging/\n');
   await fs.writeFile(
-    path.join(upstreamRepo, 'config/client.ovpn'),
+    path.join(upstreamRepo, 'resources/settings/client.ovpn'),
     'client\nremote upstream.example.invalid 1194\n',
   );
   await fs.writeFile(path.join(upstreamRepo, 'package-lock.json'), '{}\n');
@@ -78,7 +78,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 await fs.mkdir('.cache/packaging', { recursive: true });
 const file = path.resolve('.cache/packaging', process.platform === 'win32' ? 'Private Client-Setup.exe' : 'Private Client.dmg');
-const content = await fs.readFile('config/client.ovpn');
+const content = await fs.readFile('resources/settings/client.ovpn');
 await fs.writeFile(file, content);
 await fs.writeFile('.cache/packaging/build-verification.json', JSON.stringify({ artifacts: [
   { file, bytes: content.length, sha256: createHash('sha256').update(content).digest('hex') }
@@ -100,7 +100,7 @@ await fs.writeFile('.cache/packaging/build-verification.json', JSON.stringify({ 
   );
   const commit = git(upstreamRepo, 'rev-parse', 'HEAD');
   await fs.writeFile(
-    path.join(root, 'config/upstream.json'),
+    path.join(root, 'resources/settings/upstream.json'),
     JSON.stringify({ repository: upstreamRepo, commit }),
   );
   const profileFile = path.join(directory, 'private profile $company.ovpn');
@@ -154,7 +154,7 @@ test('Windows dependency setup resolves the shared OpenSSL helper', async () => 
 test('upstream revisions must be complete pinned commits', async (t) => {
   const f = await fixture(t);
   await fs.writeFile(
-    path.join(f.root, 'config/upstream.json'),
+    path.join(f.root, 'resources/settings/upstream.json'),
     JSON.stringify({ repository: f.upstreamRepo, commit: 'main' }),
   );
   await assert.rejects(loadUpstream(f.root), /40-character commit/);
@@ -193,22 +193,22 @@ test('source fetches the pinned commit and replaces only the managed profile', a
   const prepared = await prepareSource({ ...f, platform: 'windows' });
   assert.equal(git(prepared.sourceDir, 'rev-parse', 'HEAD'), f.upstream.commit);
   assert.deepEqual(
-    await fs.readFile(path.join(prepared.sourceDir, 'config/client.ovpn')),
+    await fs.readFile(path.join(prepared.sourceDir, 'resources/settings/client.ovpn')),
     f.profile.contents,
   );
   assert.equal(prepared.profileSha256, f.profile.sha256);
   assert.equal(git(f.upstreamRepo, 'status', '--porcelain'), '');
-  assert.equal(git(prepared.sourceDir, 'diff', '--name-only'), 'config/client.ovpn');
+  assert.equal(git(prepared.sourceDir, 'diff', '--name-only'), 'resources/settings/client.ovpn');
 });
 
 test('the merged installer snapshots the current working tree without copying private inputs', async (t) => {
   const f = await fixture(t);
-  await fs.writeFile(path.join(f.root, 'config/client.ovpn'), 'client\n');
-  await fs.mkdir(path.join(f.root, 'vpn-config'));
-  await fs.copyFile(f.profileFile, path.join(f.root, 'vpn-config/client.ovpn'));
+  await fs.writeFile(path.join(f.root, 'resources/settings/client.ovpn'), 'client\n');
+  await fs.mkdir(path.join(f.root, 'custom-config'));
+  await fs.copyFile(f.profileFile, path.join(f.root, 'custom-config/client.ovpn'));
   await fs.mkdir(path.join(f.root, 'private'));
   await fs.copyFile(f.profileFile, path.join(f.root, 'private/client.ovpn'));
-  await fs.mkdir(path.join(f.root, 'src-tauri'));
+  await fs.mkdir(path.join(f.root, 'ui/src-tauri'), { recursive: true });
   prepareTauriLayout(f.root);
   await fs.writeFile(path.join(f.root, '.cache/tauri/gen/cached-schema.json'), '{}');
   await fs.mkdir(path.join(f.root, '.cache/native/bin'), { recursive: true });
@@ -223,13 +223,13 @@ test('the merged installer snapshots the current working tree without copying pr
   });
   assert.notEqual(prepared.sourceDir, f.root);
   assert.deepEqual(
-    await fs.readFile(path.join(prepared.sourceDir, 'config/client.ovpn')),
+    await fs.readFile(path.join(prepared.sourceDir, 'resources/settings/client.ovpn')),
     f.profile.contents,
   );
   await assert.rejects(fs.stat(path.join(prepared.sourceDir, 'private')));
-  await assert.rejects(fs.stat(path.join(prepared.sourceDir, 'vpn-config')));
+  await assert.rejects(fs.stat(path.join(prepared.sourceDir, 'custom-config')));
   await assert.rejects(fs.stat(path.join(prepared.sourceDir, 'build_dist')));
-  await assert.rejects(fs.lstat(path.join(prepared.sourceDir, 'src-tauri/gen')));
+  await assert.rejects(fs.lstat(path.join(prepared.sourceDir, 'ui/src-tauri/gen')));
   assert.deepEqual(await fs.readdir(path.join(prepared.sourceDir, '.cache')), ['native']);
   assert.equal(
     await fs.readFile(path.join(prepared.sourceDir, '.cache/native/bin/engine'), 'utf8'),
@@ -239,23 +239,28 @@ test('the merged installer snapshots the current working tree without copying pr
 
 test('local preparation uses validated VPN branding and falls back to the source default', async (t) => {
   const f = await fixture(t);
-  await fs.writeFile(path.join(f.root, 'config/client.ovpn'), 'client\n');
+  await fs.writeFile(path.join(f.root, 'resources/settings/client.ovpn'), 'client\n');
   const defaultBranding = { appId: 'example.client', productName: 'Client', defaultLocale: 'CN' };
   const customBranding = { ...defaultBranding, defaultLocale: 'EN' };
   await fs.writeFile(
-    path.join(f.root, 'config/app-branding.json'),
+    path.join(f.root, 'resources/settings/app-branding.json'),
     JSON.stringify(defaultBranding),
   );
-  await fs.mkdir(path.join(f.root, 'vpn-config'));
-  await fs.copyFile(f.profileFile, path.join(f.root, 'vpn-config/client.ovpn'));
-  const customPath = path.join(f.root, 'vpn-config/app-branding.json');
+  await fs.mkdir(path.join(f.root, 'custom-config'));
+  await fs.copyFile(f.profileFile, path.join(f.root, 'custom-config/client.ovpn'));
+  const customPath = path.join(f.root, 'custom-config/app-branding.json');
   await fs.writeFile(customPath, JSON.stringify(customBranding));
   const options = { root: f.root, localSource: true };
-  const target = path.join(f.root, '.cache/work/windows/source/config/app-branding.json');
+  const target = path.join(
+    f.root,
+    '.cache/work/windows/source/resources/settings/app-branding.json',
+  );
   await runBuild(['--platform', 'windows', '--prepare-only'], options);
   assert.deepEqual(JSON.parse(await fs.readFile(target, 'utf8')), customBranding);
   assert.deepEqual(
-    JSON.parse(await fs.readFile(path.join(f.root, 'config/app-branding.json'), 'utf8')),
+    JSON.parse(
+      await fs.readFile(path.join(f.root, 'resources/settings/app-branding.json'), 'utf8'),
+    ),
     defaultBranding,
   );
   await fs.writeFile(customPath, '{invalid');
@@ -274,7 +279,7 @@ test('repeat preparation uses cached source without a reachable remote or needle
   const f = await fixture(t);
   const options = { ...f, platform: 'windows' };
   const prepared = await prepareSource(options);
-  const target = path.join(prepared.sourceDir, 'config/client.ovpn');
+  const target = path.join(prepared.sourceDir, 'resources/settings/client.ovpn');
   const fixedTime = new Date('2020-01-01T00:00:00Z');
   await fs.utimes(target, fixedTime, fixedTime);
   const unreachable = path.join(f.root, 'nonexistent remote');
@@ -293,11 +298,11 @@ test('switching profiles replaces previous contents and uses separate platform c
   assert.equal(original.sourceDir, changed.sourceDir);
   assert.notEqual(mac.sourceDir, changed.sourceDir);
   assert.deepEqual(
-    await fs.readFile(path.join(changed.sourceDir, 'config/client.ovpn')),
+    await fs.readFile(path.join(changed.sourceDir, 'resources/settings/client.ovpn')),
     profile.contents,
   );
   assert.deepEqual(
-    await fs.readFile(path.join(mac.sourceDir, 'config/client.ovpn')),
+    await fs.readFile(path.join(mac.sourceDir, 'resources/settings/client.ovpn')),
     f.profile.contents,
   );
 });
@@ -321,7 +326,7 @@ test('upstream generators changing CRLF to LF do not block cache reuse', async (
   await fs.writeFile(file, '{}\n');
   await assert.doesNotReject(prepareSource({ ...f, platform: 'windows' }));
   assert.deepEqual(
-    await fs.readFile(path.join(prepared.sourceDir, 'config/client.ovpn')),
+    await fs.readFile(path.join(prepared.sourceDir, 'resources/settings/client.ovpn')),
     f.profile.contents,
   );
 });
@@ -330,7 +335,7 @@ test('source pin upgrades preserve the supplied private profile', async (t) => {
   const f = await fixture(t);
   const old = await prepareSource({ ...f, platform: 'windows' });
   await fs.writeFile(
-    path.join(f.upstreamRepo, 'config/client.ovpn'),
+    path.join(f.upstreamRepo, 'resources/settings/client.ovpn'),
     'client\nremote new-upstream.example.invalid\n',
   );
   git(f.upstreamRepo, 'add', '.');
@@ -350,7 +355,7 @@ test('source pin upgrades preserve the supplied private profile', async (t) => {
   assert.equal(old.sourceDir, updated.sourceDir);
   assert.equal(git(updated.sourceDir, 'rev-parse', 'HEAD'), upstream.commit);
   assert.deepEqual(
-    await fs.readFile(path.join(updated.sourceDir, 'config/client.ovpn')),
+    await fs.readFile(path.join(updated.sourceDir, 'resources/settings/client.ovpn')),
     f.profile.contents,
   );
 });
@@ -497,8 +502,8 @@ test(
   { skip: !nativePlatform },
   async (t) => {
     const f = await fixture(t);
-    await fs.mkdir(path.join(f.root, 'vpn-config'));
-    await fs.copyFile(f.profileFile, path.join(f.root, 'vpn-config/client.ovpn'));
+    await fs.mkdir(path.join(f.root, 'custom-config'));
+    await fs.copyFile(f.profileFile, path.join(f.root, 'custom-config/client.ovpn'));
     let setups = 0;
     const prepareEnvironment = async ({ root, platform }) => {
       assert.equal(root, f.root);

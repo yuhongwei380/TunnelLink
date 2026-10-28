@@ -11,7 +11,7 @@ import {
 import { formatBytes, formatTime } from '../format';
 import type { Messages } from '../messages';
 import type { VpnState, VpnStats } from '../types';
-import release from '../../../config/openvpn3-release.json';
+import release from '../../../resources/settings/openvpn3-release.json';
 
 type Props = {
   status: VpnState;

@@ -6,30 +6,47 @@ Windows 安装包在 Windows 本机构建；macOS 应用与 DMG 在 Mac 上构�
 
 ## 统一入口
 
-仓库根目录的 `node install.mjs` 是面向私有配置的统一构建入口。它自动识别当前操作系统，把当前工作树复制到隔离的 `.cache/work/<平台>/source`，在编译前替换缓存中的 `config/client.ovpn`，然后调用本页后面的 Windows 或 macOS 原生打包脚本。安装包与 `build-info.json`（记录源码版本、配置哈希和安装包哈希）只保存在 `build_dist/<平台>/` 下，重复构建直接覆盖同名安装包；校验通过后，构建缓存 `.cache/work/<平台>/source/.cache/packaging/` 中的安装包副本会被删除，磁盘上不会留下第二份安装包。
+仓库根目录的 `node build.mjs` 是面向私有配置的统一构建入口。它自动识别当前操作系统，把当前工作树复制到隔离的 `.cache/work/<平台>/source`，在编译前替换缓存中的 `resources/settings/client.ovpn`，然后调用本页后面的 Windows 或 macOS 原生打包脚本。安装包与 `build-info.json`（记录源码版本、配置哈希和安装包哈希）只保存在 `build_dist/<平台>/` 下，重复构建直接覆盖同名安装包；校验通过后，构建缓存 `.cache/work/<平台>/source/.cache/packaging/` 中的安装包副本会被删除，磁盘上不会留下第二份安装包。
 
-发布本仓库的新打包逻辑后，直接从包含该提交的工作树执行统一入口即可；构建目录不会把 `.git`、私有配置、依赖缓存或旧安装包复制进去。
+所有命令均在仓库根目录执行。先将完整、内嵌证书的连接配置放入 `custom-config/client.ovpn`，按需修改 `custom-config/app-branding.json`，再执行：
 
-统一入口要求 Node.js 22+，Windows 构建要求 x64 Node.js 和 Windows 主机，macOS 构建要求 Intel 或 Apple Silicon Mac。首次构建可自动准备缺少的工具；使用 `--no-auto-install-deps` 跳过自动安装。`--prepare-only` 只复制当前源码并替换私有配置，不安装依赖、不编译。平台专用参数和缓存目录见仓库根目录的 `README.md`。
+```sh
+node build.mjs
+```
+
+统一入口也可通过 `npm run package:unified` 调用；`npm run setup:unified` 等同于 `node build.mjs --prepare-only`。`npm run build` 只生成前端静态文件，不执行安装包构建。
+
+`custom-config/app-branding.json` 存在时，会覆盖隔离源码中的 `resources/settings/app-branding.json`；不存在时使用仓库默认品牌配置。连接配置可通过 `node build.mjs --profile PATH` 指定其他文件。配置要求与 Git 忽略规则见[自定义构建配置](../custom-config/README.md)。
+
+发布本仓库的新打包逻辑后，直接从包含该提交的工作树执行统一入口即可；`.git`、`custom-config/`、旧私有目录、Node.js 依赖与旧安装包不会复制进去。已准备的原生引擎、依赖下载和驱动缓存会复用，所需的连接配置与品牌覆盖仅写入隔离源码。
+
+统一入口要求 Node.js 22+，Windows 构建要求 x64 Node.js 和 Windows 主机，macOS 构建要求 Intel 或 Apple Silicon Mac。首次构建可自动准备缺少的工具；使用 `--no-auto-install-deps` 跳过自动安装。`--prepare-only` 只复制当前源码并替换私有配置，不安装依赖、不编译。运行 `node build.mjs --help` 查看全部参数。
 
 ## 构建链与输出
 
 平台专用脚本分别保存在 `make/windows/` 和 `make/macos/`；`make/` 根目录只保留通用脚本。
 
-| 入口或目录                                                  | 用途                                                         |
-| ----------------------------------------------------------- | ------------------------------------------------------------ |
-| `make/windows/`                                             | Windows 引擎编译、驱动准备、NSIS 安装钩子、安装包构建与验证  |
-| `make/macos/`                                               | macOS 引擎编译、应用/DMG 构建与运行库验证                    |
-| `install.mjs`、`make/lib/`、`make/tests/unified/`           | 统一依赖准备、隔离源码快照、私有配置替换、产物归集与回归测试 |
-| `make/tests/`                                               | 构建与打包测试、前端逻辑测试及共享夹具                       |
-| `make/tauri.mjs`                                            | 选择 Rust 工具链、同步元数据并启动 Tauri CLI                 |
-| `make/collect-tauri.mjs`                                    | 归集当前版本安装包并生成哈希记录                             |
-| `make/sync-branding.mjs`、`make/prepare-agreement.mjs`      | 同步应用名称和版本，生成安装器协议 RTF                       |
-| `make/openvpn3-release.mjs`、`make/record-engine-build.mjs` | 版本、源码提交、引擎哈希与许可记录                           |
-| `make/prepare-tauri.mjs`                                    | 调用对应平台的资源校验和签名逻辑                             |
-| `make/verify-desktop-stack.mjs`                             | 检查 Tauri 依赖、配置与旧运行时遗留                          |
+| 入口或目录                                                  | 用途                                                        |
+| ----------------------------------------------------------- | ----------------------------------------------------------- |
+| `make/windows/`                                             | Windows 引擎编译、驱动准备、NSIS 安装钩子、安装包构建与验证 |
+| `make/macos/`                                               | macOS 引擎编译、应用/DMG 构建与运行库验证                   |
+| `build.mjs`、`make/build.mjs`、`make/lib/`                  | 统一构建入口、依赖准备、隔离源码快照、配置替换与产物归集    |
+| `custom-config/`                                            | 统一构建使用的本地连接配置与品牌覆盖                        |
+| `resources/settings/`                                       | 默认连接配置、品牌、文案和依赖版本锁                        |
+| `ui/src-tauri/`                                             | Rust 原生后端、Cargo 锁文件、桌面图标和 Tauri 平台配置      |
+| `make/tests/`                                               | 构建与打包测试、前端逻辑测试及共享夹具                      |
+| `make/tauri.mjs`                                            | 选择 Rust 工具链、同步元数据并启动 Tauri CLI                |
+| `make/collect-tauri.mjs`                                    | 归集当前版本安装包并生成哈希记录                            |
+| `make/sync-branding.mjs`、`make/prepare-agreement.mjs`      | 同步应用名称和版本，生成安装器协议 RTF                      |
+| `make/openvpn3-release.mjs`、`make/record-engine-build.mjs` | 版本、源码提交、引擎哈希与许可记录                          |
+| `make/prepare-tauri.mjs`                                    | 调用对应平台的资源校验和签名逻辑                            |
+| `make/verify-desktop-stack.mjs`                             | 检查 Tauri 依赖、配置与旧运行时遗留                         |
 
 这些 Node.js 脚本只在构建机运行，安装包不携带 Node.js 或 Electron 运行时。
+
+`make/tauri.mjs` 从 `ui/` 启动 Tauri CLI，原生配置文件位于 `ui/src-tauri/tauri*.conf.json`；前端构建钩子和资源路径已按此目录布局配置。使用仓库根目录的 npm 命令执行开发、编译和打包。
+
+下面的平台专用脚本直接使用当前工作树中的 `resources/settings/`，不应用 `custom-config/` 的配置覆盖。需要带自定义配置的隔离构建时，使用上述 `node build.mjs` 入口。
 
 最终安装包统一放在 `build_dist/<平台>/`；前端静态文件位于 `.cache/frontend/`。统一入口的中间安装包位于隔离源码的 `.cache/packaging/`。Tauri 原始产物位于 `.cache/cargo-target/` 下对应目标的 `bundle/` 目录。
 
@@ -81,11 +98,11 @@ npm run dist:win
 
 ### 驱动与 WebView2
 
-`config/windows-tap-driver.json` 固定 TAP-Windows6 9.27.0 的官方下载地址和 SHA-256。构建钩子下载 `dist.win10.zip`，缓存到 `.cache/tap-windows6/`，校验后将 amd64 驱动和许可文件放到 `.cache/native/drivers/windows-x64/tap-windows6/`。源码地址保存在来源记录中，源码压缩包不随安装包分发。
+`resources/settings/windows-tap-driver.json` 固定 TAP-Windows6 9.27.0 的官方下载地址和 SHA-256。构建钩子下载 `dist.win10.zip`，缓存到 `.cache/tap-windows6/`，校验后将 amd64 驱动和许可文件放到 `.cache/native/drivers/windows-x64/tap-windows6/`。源码地址保存在来源记录中，源码压缩包不随安装包分发。
 
 安装器通过 `make/windows/installer-hooks.nsh` 调用 `make/windows/install-tap-driver.ps1`，校验签名、复用健康的 `tap0901` 适配器，必要时安装或修复。安装失败会终止并记录 `driver-install.log`；卸载时保留共享驱动和适配器。当前不使用 DCO。安装包只包含 `make/windows/install-tap-driver.ps1` 这一运行时辅助脚本；同目录的编译、打包和验证工具不作为资源分发。
 
-TAP 驱动已离线内置，WebView2 默认复用系统版本。缺少运行时时，安装器会联网下载。隔离网络部署可在 `src-tauri/tauri.windows.conf.json` 中把 `webviewInstallMode.type` 改为 `offlineInstaller`，代价是安装包变大。安装器要求 WebView2 111+。
+TAP 驱动已离线内置，WebView2 默认复用系统版本。缺少运行时时，安装器会联网下载。隔离网络部署可在 `ui/src-tauri/tauri.windows.conf.json` 中把 `webviewInstallMode.type` 改为 `offlineInstaller`，代价是安装包变大。安装器要求 WebView2 111+。
 
 ### 开发机驱动准备
 
@@ -164,7 +181,7 @@ npm run verify:installer:win -- -Installer "build_dist/windows/OpenVPNClient-Tau
 
 ## 版本与许可
 
-[`config/openvpn3-release.json`](../config/openvpn3-release.json) 是版本的唯一来源，当前锁定的版本、发布标签和完整提交均以该文件为准。升级时先核实官方发布标签与提交，再更新该文件并运行：
+[`resources/settings/openvpn3-release.json`](../resources/settings/openvpn3-release.json) 是版本的唯一来源，当前锁定的版本、发布标签和完整提交均以该文件为准。升级时先核实官方发布标签与提交，再更新该文件并运行：
 
 ```sh
 npm run sync:branding

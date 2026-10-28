@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 
 $ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 Set-Location $ProjectRoot
-$releaseLock = Get-Content -LiteralPath (Join-Path $ProjectRoot 'config/openvpn3-release.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+$releaseLock = Get-Content -LiteralPath (Join-Path $ProjectRoot 'resources/settings/openvpn3-release.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 
 $OpenVpnBinDir = Join-Path $ProjectRoot ".cache\native\bin\windows-x64"
 $OpenVpnExe = Join-Path $ProjectRoot ".cache\native\bin\windows-x64\ovpncli.exe"
