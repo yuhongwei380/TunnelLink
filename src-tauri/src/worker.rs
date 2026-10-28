@@ -50,7 +50,7 @@ pub fn engine_path() -> Result<PathBuf, String> {
             "windows-x64/ovpncli.exe"
         };
         let development = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../native/bin")
+            .join("../.cache/native/bin")
             .join(platform);
         if development.is_file() {
             return Ok(development);

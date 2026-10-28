@@ -1,10 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import os from 'node:os';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { projectRoot, verifyEngineRelease } from '../openvpn3-release.mjs';
+import { createTempDirectory } from '../lib/paths.mjs';
 
 export const driverManifest = JSON.parse(
   await fs.readFile(path.join(projectRoot, 'config/windows-tap-driver.json'), 'utf8'),
@@ -25,7 +25,7 @@ export async function verifyDriverFiles(directory) {
 }
 
 export async function verifyWindowsEngine(root = projectRoot) {
-  const directory = path.join(root, 'native/bin/windows-x64');
+  const directory = path.join(root, '.cache/native/bin/windows-x64');
   const instructions = 'Run npm run package:win -- -ForceOpenVpnBuild to build the tap0901 engine.';
   let metadata;
   try {
@@ -77,10 +77,10 @@ async function fetchVerified(asset, cacheDirectory) {
 
 export async function prepareWindowsDriver(root = projectRoot) {
   const cacheDirectory = path.join(root, '.cache/tap-windows6');
-  const outputDirectory = path.join(root, 'native/drivers/windows-x64/tap-windows6');
+  const outputDirectory = path.join(root, '.cache/native/drivers/windows-x64/tap-windows6');
   await fs.mkdir(cacheDirectory, { recursive: true });
   const archive = await fetchVerified(driverManifest.archive, cacheDirectory);
-  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'openvpn-tap-'));
+  const temporaryDirectory = await createTempDirectory('openvpn-tap-', root);
   try {
     if (process.platform === 'win32') {
       execFileSync(

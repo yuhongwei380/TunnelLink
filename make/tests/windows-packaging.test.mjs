@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import os from 'node:os';
+import { createTempDirectory } from '../lib/paths.mjs';
 import path from 'node:path';
 import { prepareTauri } from '../prepare-tauri.mjs';
 import { projectRoot, verifyEngineRelease } from '../openvpn3-release.mjs';
@@ -15,7 +15,7 @@ import {
 import { engineFixture } from './helpers/engine-fixture.mjs';
 
 test('Windows resources keep build tools out of the installed runtime', async (t) => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'openvpn-windows-resources-'));
+  const directory = await createTempDirectory('openvpn-windows-resources-');
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const configDirectory = path.join(projectRoot, 'src-tauri');
   const config = JSON.parse(
@@ -73,7 +73,7 @@ for (const [field, value] of Object.entries({
 
 test('the same release gate protects macOS engine bundles', async (t) => {
   const fixture = await engineFixture(t);
-  const mac = path.join(fixture.directory, 'native/bin/macos');
+  const mac = path.join(fixture.directory, '.cache/native/bin/macos');
   await fs.mkdir(mac);
   await fs.copyFile(path.join(fixture.bin, 'ovpncli.exe'), path.join(mac, 'ovpncli'));
   await fs.copyFile(
@@ -132,7 +132,7 @@ test('driver manifest pins every shipped executable/driver file', () => {
 });
 
 test('modified driver payloads are rejected', async (t) => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'openvpn-driver-test-'));
+  const directory = await createTempDirectory('openvpn-driver-test-');
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   await fs.writeFile(path.join(directory, 'devcon.exe'), 'modified-driver-tool');
   await assert.rejects(verifyDriverFiles(directory), /checksum mismatch: devcon.exe/);

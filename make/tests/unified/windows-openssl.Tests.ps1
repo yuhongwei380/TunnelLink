@@ -1,6 +1,6 @@
 param([Parameter(Mandatory = $true)][string]$WorkDirectory)
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot '../make/windows/openssl.ps1')
+. (Join-Path $PSScriptRoot '../../windows/openssl.ps1')
 
 function Assert-True($Value, [string]$Message) {
     if (-not $Value) { throw $Message }

@@ -16,6 +16,6 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "make/tests/ui/**/*.ts", "vite.config.ts"],
-  "exclude": ["node_modules", "dist", ".cache"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "../make/tests/ui/**/*.ts", "vite.config.ts"],
+  "exclude": ["../node_modules", "../.cache", "../build_dist"]
 }

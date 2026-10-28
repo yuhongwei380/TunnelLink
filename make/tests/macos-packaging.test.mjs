@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import os from 'node:os';
+import { createTempDirectory } from '../lib/paths.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { prepareTauri } from '../prepare-tauri.mjs';
@@ -15,7 +15,7 @@ import {
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 async function fixture(t, definitions) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'openvpn-mac-test-'));
+  const directory = await createTempDirectory('openvpn-mac-test-');
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const runtime = path.join(directory, 'runtime');
   const images = new Map();

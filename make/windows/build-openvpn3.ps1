@@ -24,12 +24,12 @@ $releaseLock = Get-Content -LiteralPath (Join-Path $ProjectRoot 'config/openvpn3
 if (-not $OpenVpn3Ref) { $OpenVpn3Ref = $releaseLock.ref }
 if ($OpenVpn3Ref -ne $releaseLock.ref) { throw 'OpenVpn3Ref must match config/openvpn3-release.json.' }
 if ([string]::IsNullOrWhiteSpace($WorkDir)) {
-  $WorkDir = Join-Path $env:TEMP ("openvpn3-src-" + [Guid]::NewGuid().ToString("N"))
+  $WorkDir = Join-Path $ProjectRoot (".cache/work/windows/openvpn3-src-" + [Guid]::NewGuid().ToString("N"))
 }
 
 $SrcDir = Join-Path $WorkDir "openvpn3"
 $BuildDir = Join-Path $WorkDir "build"
-$OutputBin = Join-Path $ProjectRoot "native\bin\windows-x64\ovpncli.exe"
+$OutputBin = Join-Path $ProjectRoot ".cache\native\bin\windows-x64\ovpncli.exe"
 # A caller-supplied work directory must be new. Never erase existing checkouts.
 $WorkDir = [IO.Path]::GetFullPath($WorkDir)
 $SrcDir = Join-Path $WorkDir 'openvpn3'
@@ -98,8 +98,8 @@ function Get-AsioIncludeOrNull {
   }
 
   $candidates = @(
-    (Join-Path $ProjectRoot "third_party\asio\asio\include"),
-    (Join-Path $ProjectRoot "third_party\asio\include")
+    (Join-Path $ProjectRoot ".cache\deps\asio\asio\include"),
+    (Join-Path $ProjectRoot ".cache\deps\asio\include")
   )
   foreach ($candidate in $candidates) {
     if (Test-AsioIncludeValid $candidate) {
@@ -121,8 +121,8 @@ function Get-FmtIncludeOrNull {
   }
 
   $candidates = @(
-    (Join-Path $ProjectRoot "third_party\fmt-master\include"),
-    (Join-Path $ProjectRoot "third_party\fmt\include")
+    (Join-Path $ProjectRoot ".cache\deps\fmt-master\include"),
+    (Join-Path $ProjectRoot ".cache\deps\fmt\include")
   )
   foreach ($candidate in $candidates) {
     if (Test-FmtIncludeValid $candidate) {
@@ -279,9 +279,9 @@ function Ensure-AsioIncludeDir {
     throw "ASIO include dir not found. Set ASIO_INCLUDE_DIR to a folder containing asio.hpp."
   }
 
-  $thirdPartyRoot = Join-Path $ProjectRoot "third_party"
+  $thirdPartyRoot = Join-Path $ProjectRoot ".cache/deps"
   $asioRoot = Join-Path $thirdPartyRoot "asio"
-  $zipPath = Join-Path $env:TEMP "asio-master.zip"
+  $zipPath = Join-Path $thirdPartyRoot "asio-master.zip"
 
   New-Item -ItemType Directory -Path $thirdPartyRoot -Force | Out-Null
   if (Test-Path $asioRoot) {
@@ -313,9 +313,9 @@ function Ensure-FmtIncludeDir {
     throw "fmt include dir not found. Set FMT_INCLUDE_DIR to a folder containing fmt/core.h."
   }
 
-  $thirdPartyRoot = Join-Path $ProjectRoot "third_party"
+  $thirdPartyRoot = Join-Path $ProjectRoot ".cache/deps"
   $fmtRoot = Join-Path $thirdPartyRoot "fmt-master"
-  $zipPath = Join-Path $env:TEMP "fmt-master.zip"
+  $zipPath = Join-Path $thirdPartyRoot "fmt-master.zip"
 
   New-Item -ItemType Directory -Path $thirdPartyRoot -Force | Out-Null
   if (Test-Path $fmtRoot) {
@@ -340,7 +340,9 @@ function Ensure-FmtIncludeDir {
 function Install-CMakeFallbackMsi {
   $isArm64 = $env:PROCESSOR_ARCHITECTURE -eq "ARM64"
   $url = if ($isArm64) { $CMakeMsiUrlArm64 } else { $CMakeMsiUrlX64 }
-  $msi = Join-Path $env:TEMP ([System.IO.Path]::GetFileName($url))
+  $downloadDirectory = Join-Path $ProjectRoot '.cache/downloads'
+  New-Item -ItemType Directory -Path $downloadDirectory -Force | Out-Null
+  $msi = Join-Path $downloadDirectory ([System.IO.Path]::GetFileName($url))
 
   Write-Host "Downloading CMake MSI: $url"
   Invoke-WebRequest -Uri $url -OutFile $msi
@@ -696,7 +698,7 @@ try {
     throw "ovpncli.exe not found under build output."
   }
 
-  Write-Host "[5/6] Installing ovpncli.exe into native/bin/windows-x64..."
+  Write-Host "[5/6] Installing ovpncli.exe into .cache/native/bin/windows-x64..."
   $outputDir = Split-Path $OutputBin -Parent
   New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
   Copy-Item -Path $BuiltBin -Destination $OutputBin -Force

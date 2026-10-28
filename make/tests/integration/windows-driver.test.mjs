@@ -10,7 +10,7 @@ import { engineFixture } from '../helpers/engine-fixture.mjs';
 // Requires npm run prepare:driver:win. These tests validate real downloaded payloads.
 test('the actual prepared driver payload matches the pinned official hashes', async () => {
   // Run npm run prepare:driver:win first. No drivers are installed by this test.
-  await verifyDriverFiles(path.join(root, 'native/drivers/windows-x64/tap-windows6'));
+  await verifyDriverFiles(path.join(root, '.cache/native/drivers/windows-x64/tap-windows6'));
 });
 
 test('the Windows packaging hook stages the offline driver, installer payload, and licenses', async (t) => {
@@ -29,7 +29,7 @@ test('the Windows packaging hook stages the offline driver, installer payload, a
     );
   }
   await prepareTauri({ platform: 'win32', arch: 'x64', root: fixture.directory });
-  const output = path.join(fixture.directory, 'native/drivers/windows-x64/tap-windows6');
+  const output = path.join(fixture.directory, '.cache/native/drivers/windows-x64/tap-windows6');
   await verifyDriverFiles(output);
   await assert.rejects(fs.access(path.join(output, driverManifest.source.name)), {
     code: 'ENOENT',

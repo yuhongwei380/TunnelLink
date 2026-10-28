@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import os from 'node:os';
+import { createTempDirectory } from '../lib/paths.mjs';
 import path from 'node:path';
 import { verifyDesktopStack } from '../verify-desktop-stack.mjs';
 
 async function fixture(t) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'tauri-stack-test-'));
+  const root = await createTempDirectory('tauri-stack-test-');
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.mkdir(path.join(root, 'src-tauri'));
   await fs.writeFile(

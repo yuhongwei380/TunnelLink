@@ -17,12 +17,13 @@ import {
   prepareSource,
   readProfile,
   withBuildLock,
-} from '../scripts/lib/build.mjs';
-import { runBuild } from '../scripts/build.mjs';
-import { setupEnvironment } from '../scripts/lib/setup.mjs';
+} from '../../lib/build.mjs';
+import { runBuild } from '../../build.mjs';
+import { setupEnvironment } from '../../lib/setup.mjs';
+import { prepareTauriLayout } from '../../lib/paths.mjs';
 
-const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const fixtureRoot = path.join(projectRoot, '.work/tests');
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+const fixtureRoot = path.join(projectRoot, '.cache/work/tests');
 const hash = (content) => createHash('sha256').update(content).digest('hex');
 const git = (root, ...args) =>
   execFileSync(
@@ -55,7 +56,7 @@ async function fixture(t) {
     path.join(upstreamRepo, '.gitattributes'),
     '* text=auto\n*.sh text eol=lf\n*.ps1 text eol=crlf\n',
   );
-  await fs.writeFile(path.join(upstreamRepo, '.gitignore'), '/make/dist/\n');
+  await fs.writeFile(path.join(upstreamRepo, '.gitignore'), '/.cache/packaging/\n');
   await fs.writeFile(
     path.join(upstreamRepo, 'config/client.ovpn'),
     'client\nremote upstream.example.invalid 1194\n',
@@ -75,11 +76,11 @@ async function fixture(t) {
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-await fs.mkdir('make/dist', { recursive: true });
-const file = path.resolve('make/dist', process.platform === 'win32' ? 'Private Client-Setup.exe' : 'Private Client.dmg');
+await fs.mkdir('.cache/packaging', { recursive: true });
+const file = path.resolve('.cache/packaging', process.platform === 'win32' ? 'Private Client-Setup.exe' : 'Private Client.dmg');
 const content = await fs.readFile('config/client.ovpn');
 await fs.writeFile(file, content);
-await fs.writeFile('make/dist/build-verification.json', JSON.stringify({ artifacts: [
+await fs.writeFile('.cache/packaging/build-verification.json', JSON.stringify({ artifacts: [
   { file, bytes: content.length, sha256: createHash('sha256').update(content).digest('hex') }
 ] }));
 `,
@@ -145,11 +146,8 @@ test('OS selection is automatic and unsupported hosts fail without prompting', (
 });
 
 test('Windows dependency setup resolves the shared OpenSSL helper', async () => {
-  const setupScript = await fs.readFile(
-    path.join(projectRoot, 'scripts/windows/setup.ps1'),
-    'utf8',
-  );
-  assert.match(setupScript, /\.\.\/\.\.\/make\/windows\/openssl\.ps1/);
+  const setupScript = await fs.readFile(path.join(projectRoot, 'make/windows/setup.ps1'), 'utf8');
+  assert.match(setupScript, /\.\/openssl\.ps1/);
   await fs.access(path.join(projectRoot, 'make/windows/openssl.ps1'));
 });
 
@@ -210,6 +208,13 @@ test('the merged installer snapshots the current working tree without copying pr
   await fs.copyFile(f.profileFile, path.join(f.root, 'vpn-config/client.ovpn'));
   await fs.mkdir(path.join(f.root, 'private'));
   await fs.copyFile(f.profileFile, path.join(f.root, 'private/client.ovpn'));
+  await fs.mkdir(path.join(f.root, 'src-tauri'));
+  prepareTauriLayout(f.root);
+  await fs.writeFile(path.join(f.root, '.cache/tauri/gen/cached-schema.json'), '{}');
+  await fs.mkdir(path.join(f.root, '.cache/native/bin'), { recursive: true });
+  await fs.writeFile(path.join(f.root, '.cache/native/bin/engine'), 'prepared engine');
+  await fs.mkdir(path.join(f.root, 'build_dist'));
+  await fs.writeFile(path.join(f.root, 'build_dist/old-installer.exe'), 'old package');
   const prepared = await prepareLocalSource({
     root: f.root,
     platform: 'windows',
@@ -223,6 +228,13 @@ test('the merged installer snapshots the current working tree without copying pr
   );
   await assert.rejects(fs.stat(path.join(prepared.sourceDir, 'private')));
   await assert.rejects(fs.stat(path.join(prepared.sourceDir, 'vpn-config')));
+  await assert.rejects(fs.stat(path.join(prepared.sourceDir, 'build_dist')));
+  await assert.rejects(fs.lstat(path.join(prepared.sourceDir, 'src-tauri/gen')));
+  assert.deepEqual(await fs.readdir(path.join(prepared.sourceDir, '.cache')), ['native']);
+  assert.equal(
+    await fs.readFile(path.join(prepared.sourceDir, '.cache/native/bin/engine'), 'utf8'),
+    'prepared engine',
+  );
 });
 
 test('local preparation uses validated VPN branding and falls back to the source default', async (t) => {
@@ -239,7 +251,7 @@ test('local preparation uses validated VPN branding and falls back to the source
   const customPath = path.join(f.root, 'vpn-config/app-branding.json');
   await fs.writeFile(customPath, JSON.stringify(customBranding));
   const options = { root: f.root, localSource: true };
-  const target = path.join(f.root, '.work/windows/source/config/app-branding.json');
+  const target = path.join(f.root, '.cache/work/windows/source/config/app-branding.json');
   await runBuild(['--platform', 'windows', '--prepare-only'], options);
   assert.deepEqual(JSON.parse(await fs.readFile(target, 'utf8')), customBranding);
   assert.deepEqual(
@@ -360,11 +372,11 @@ test('wrong remotes and non-repository cache directories are not overwritten', a
   const prepared = await prepareSource({ ...f, platform: 'windows' });
   git(prepared.sourceDir, 'remote', 'set-url', 'origin', path.join(f.root, 'wrong'));
   await assert.rejects(prepareSource({ ...f, platform: 'windows' }), /origin does not match/);
-  await fs.mkdir(path.join(f.root, '.work/macos/source'), { recursive: true });
-  await fs.writeFile(path.join(f.root, '.work/macos/source/keep.txt'), 'do not erase');
+  await fs.mkdir(path.join(f.root, '.cache/work/macos/source'), { recursive: true });
+  await fs.writeFile(path.join(f.root, '.cache/work/macos/source/keep.txt'), 'do not erase');
   await assert.rejects(prepareSource({ ...f, platform: 'macos' }), /dedicated Git checkout/);
   assert.equal(
-    await fs.readFile(path.join(f.root, '.work/macos/source/keep.txt'), 'utf8'),
+    await fs.readFile(path.join(f.root, '.cache/work/macos/source/keep.txt'), 'utf8'),
     'do not erase',
   );
 });
@@ -388,7 +400,7 @@ test('concurrent builds are excluded and errors release the lock', async (t) => 
 });
 
 test('platform options are forwarded without shell interpolation', () => {
-  const sourceDir = path.join(projectRoot, '.work/source with $spaces');
+  const sourceDir = path.join(projectRoot, '.cache/work/source with $spaces');
   const windows = packageInvocation(
     { sourceDir, platform: 'windows' },
     { forceEngine: true, noAutoInstallDeps: true },
@@ -412,7 +424,7 @@ test('platform options are forwarded without shell interpolation', () => {
 async function artifactFixture(t) {
   const f = await fixture(t);
   const prepared = await prepareSource({ ...f, platform: 'windows' });
-  const dist = path.join(prepared.sourceDir, 'make/dist');
+  const dist = path.join(prepared.sourceDir, '.cache/packaging');
   await fs.mkdir(dist, { recursive: true });
   const file = path.join(dist, 'Private Client-Setup.exe');
   const content = Buffer.from('fixture installer');
@@ -422,11 +434,11 @@ async function artifactFixture(t) {
   return { ...f, prepared, dist, file, content, report };
 }
 
-test('installer collection verifies hashes and yields a single copy under dist', async (t) => {
+test('installer collection verifies hashes and yields a single copy under build_dist', async (t) => {
   const f = await artifactFixture(t);
   await fs.writeFile(path.join(f.dist, 'old-installer.exe'), 'old installer must not be collected');
   const first = await collectArtifacts(f);
-  assert.equal(first.outputDir, path.join(f.root, 'dist', 'windows'));
+  assert.equal(first.outputDir, path.join(f.root, 'build_dist', 'windows'));
   assert.deepEqual((await fs.readdir(first.outputDir)).sort(), [
     'Private Client-Setup.exe',
     'build-info.json',
@@ -469,7 +481,7 @@ test('tampered installers and paths outside the upstream dist directory are reje
   f.report.artifacts[0].file = path.join(f.root, 'outside.exe');
   await fs.writeFile(path.join(f.dist, 'build-verification.json'), JSON.stringify(f.report));
   await assert.rejects(collectArtifacts(f), /unexpected installer path/);
-  await assert.rejects(fs.access(path.join(f.root, 'dist')), { code: 'ENOENT' });
+  await assert.rejects(fs.access(path.join(f.root, 'build_dist')), { code: 'ENOENT' });
 });
 
 test('empty artifact reports cannot produce successful output', async (t) => {
@@ -495,12 +507,14 @@ test(
     };
     await runBuild([], { root: f.root, prepareEnvironment });
     assert.equal(setups, 1);
-    const output = path.join(f.root, 'dist', nativePlatform);
+    const output = path.join(f.root, 'build_dist', nativePlatform);
     const expected =
       nativePlatform === 'windows' ? 'Private Client-Setup.exe' : 'Private Client.dmg';
     assert.deepEqual((await fs.readdir(output)).sort(), ['build-info.json', expected].sort());
     await assert.rejects(
-      fs.access(path.join(f.root, '.work', nativePlatform, 'source', 'make', 'dist', expected)),
+      fs.access(
+        path.join(f.root, '.cache/work', nativePlatform, 'source', '.cache', 'packaging', expected),
+      ),
       { code: 'ENOENT' },
     );
     await runBuild(['--no-auto-install-deps'], { root: f.root, prepareEnvironment });
@@ -525,7 +539,7 @@ test(
       root: f.root,
       prepareEnvironment,
     });
-    await assert.rejects(fs.access(path.join(f.root, 'dist')), { code: 'ENOENT' });
+    await assert.rejects(fs.access(path.join(f.root, 'build_dist')), { code: 'ENOENT' });
   },
 );
 
@@ -534,7 +548,7 @@ test(
   { skip: !nativePlatform },
   async (t) => {
     const f = await fixture(t);
-    const setupDirectory = path.join(f.root, 'scripts', nativePlatform);
+    const setupDirectory = path.join(f.root, 'make', nativePlatform);
     await fs.mkdir(setupDirectory, { recursive: true });
     const helper = path.join(f.root, 'fake-setup.mjs');
     await fs.writeFile(
@@ -562,7 +576,7 @@ fs.writeFileSync(process.env.OPENVPN_BUILD_ENV_FILE, JSON.stringify({
       assert.ok(process.env.PATH.startsWith(path.dirname(process.execPath) + path.delimiter));
       await fs.writeFile(helper, 'process.exit(17);');
       await assert.rejects(setupEnvironment({ root: f.root, platform: nativePlatform }), /exit 17/);
-      assert.deepEqual(await fs.readdir(path.join(f.root, '.work', nativePlatform)), []);
+      assert.deepEqual(await fs.readdir(path.join(f.root, '.cache/work', nativePlatform)), []);
     } finally {
       process.env.PATH = originalPath;
       if (originalToolchain === undefined) delete process.env.RUSTUP_TOOLCHAIN;
@@ -585,7 +599,7 @@ test(
         '-ExecutionPolicy',
         'Bypass',
         '-File',
-        path.join(projectRoot, 'tests/windows-openssl.Tests.ps1'),
+        path.join(projectRoot, 'make/tests/unified/windows-openssl.Tests.ps1'),
         '-WorkDirectory',
         f.root,
       ],
@@ -618,7 +632,7 @@ test(
     const script =
       nativePlatform === 'windows' ? 'make/windows/package.ps1' : 'make/macos/package.sh';
     await fs.writeFile(path.join(prepared.sourceDir, script), 'exit 23\n');
-    const dist = path.join(prepared.sourceDir, 'make/dist');
+    const dist = path.join(prepared.sourceDir, '.cache/packaging');
     await fs.mkdir(dist, { recursive: true });
     await fs.writeFile(
       path.join(dist, 'build-verification.json'),

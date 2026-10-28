@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatBytes, formatTime } from '../../../src/format.ts';
+import { formatBytes, formatTime } from '../../../ui/src/format.ts';
 
 test('session metrics preserve byte unit boundaries', () => {
   assert.equal(formatBytes(0), '0 B');

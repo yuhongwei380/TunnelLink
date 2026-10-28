@@ -3,9 +3,9 @@ import { Check, FileText, Info, X } from 'lucide-react';
 import { AppLogo } from './AppLogo';
 import { useDialog } from '../hooks/useDialog';
 import type { Messages } from '../messages';
-import release from '../../config/openvpn3-release.json';
-import agreement from '../../resources/legal/USER-AGREEMENT.txt?raw';
-import notices from '../../LICENSES/THIRD-PARTY-NOTICES.txt?raw';
+import release from '../../../config/openvpn3-release.json';
+import agreement from '../../../resources/legal/USER-AGREEMENT.txt?raw';
+import notices from '../../../LICENSES/THIRD-PARTY-NOTICES.txt?raw';
 
 export const AGREEMENT_REVISION = '2026-10-25';
 

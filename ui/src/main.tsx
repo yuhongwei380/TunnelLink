@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
 import './desktop';
-import appIcon from '../resources/brand/app-icon.svg';
+import appIcon from '../../resources/brand/app-icon.svg';
 
 const favicon = document.createElement('link');
 favicon.rel = 'icon';

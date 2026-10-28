@@ -11,7 +11,7 @@ import {
 import { formatBytes, formatTime } from '../format';
 import type { Messages } from '../messages';
 import type { VpnState, VpnStats } from '../types';
-import release from '../../config/openvpn3-release.json';
+import release from '../../../config/openvpn3-release.json';
 
 type Props = {
   status: VpnState;
@@ -44,9 +44,7 @@ export function ConnectionOverview({
         : t.offline;
 
   return (
-    <div
-      className="page-content connection-page"
-    >
+    <div className="page-content connection-page">
       <section
         className={`connection-card ${connected ? 'is-connected' : connecting ? 'is-connecting' : connectionFailed ? 'has-error' : ''}`}
         aria-label={t.status}

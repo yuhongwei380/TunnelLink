@@ -11,11 +11,12 @@ OPENVPN3_KEEP_WORKDIR="${OPENVPN3_KEEP_WORKDIR:-0}"
 JOBS="${OPENVPN3_BUILD_JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
 MACOS_DEPLOYMENT_TARGET="${OPENVPN3_MACOS_DEPLOYMENT_TARGET:-11.0}"
 
-WORKDIR="${OPENVPN3_WORKDIR:-$(mktemp -d "${TMPDIR:-/tmp}/openvpn3-src.XXXXXX")}"
+mkdir -p "$PROJECT_ROOT/.cache/work/macos"
+WORKDIR="${OPENVPN3_WORKDIR:-$(mktemp -d "$PROJECT_ROOT/.cache/work/macos/openvpn3-src.XXXXXX")}"
 SRC_DIR="$WORKDIR/openvpn3"
 BUILD_DIR="$WORKDIR/build-openvpn3"
-OUTPUT_BIN="$PROJECT_ROOT/native/bin/macos/ovpncli"
-OUTPUT_LIB_DIR="$PROJECT_ROOT/native/bin/macos/lib"
+OUTPUT_BIN="$PROJECT_ROOT/.cache/native/bin/macos/ovpncli"
+OUTPUT_LIB_DIR="$PROJECT_ROOT/.cache/native/bin/macos/lib"
 
 array_contains() {
   local needle="$1"
@@ -81,7 +82,7 @@ if [[ ! -f "$BUILT_BIN" ]]; then
   exit 1
 fi
 
-echo "[5/6] Installing ovpncli into native/bin/macos..."
+echo "[5/6] Installing ovpncli into .cache/native/bin/macos..."
 mkdir -p "$(dirname "$OUTPUT_BIN")"
 cp "$BUILT_BIN" "$OUTPUT_BIN"
 chmod +x "$OUTPUT_BIN"

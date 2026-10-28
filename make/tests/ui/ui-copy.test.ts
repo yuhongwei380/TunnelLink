@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import defaultUiCopy from '../../../config/ui-copy.json';
-import { mergeUiCopy } from '../../../src/ui-copy.ts';
+import { mergeUiCopy } from '../../../ui/src/ui-copy.ts';
 
 test('partial custom copy falls back by field and preserves the other locale', () => {
   const original = structuredClone(defaultUiCopy);

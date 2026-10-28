@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { runBuild } from './scripts/build.mjs';
-import { setupEnvironment } from './scripts/lib/setup.mjs';
+import { runBuild } from './make/build.mjs';
+import { setupEnvironment } from './make/lib/setup.mjs';
 
 runBuild(process.argv.slice(2), { prepareEnvironment: setupEnvironment, localSource: true }).catch(
   (error) => {

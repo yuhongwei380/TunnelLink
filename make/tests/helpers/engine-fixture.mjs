@@ -1,13 +1,13 @@
 import fs from 'node:fs/promises';
-import os from 'node:os';
+import { createTempDirectory } from '../../lib/paths.mjs';
 import path from 'node:path';
 import { projectRoot as root, readRelease } from '../../openvpn3-release.mjs';
 import { sha256 } from '../../windows/prepare-driver.mjs';
 
 export async function engineFixture(t) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'openvpn-engine-test-'));
+  const directory = await createTempDirectory('openvpn-engine-test-');
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
-  const bin = path.join(directory, 'native/bin/windows-x64');
+  const bin = path.join(directory, '.cache/native/bin/windows-x64');
   await fs.mkdir(bin, { recursive: true });
   await fs.writeFile(path.join(bin, 'ovpncli.exe'), 'test-engine');
   await fs.writeFile(path.join(bin, 'libssl-3-x64.dll'), 'test-ssl');

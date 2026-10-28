@@ -15,9 +15,9 @@
 
 1. 安装 Node.js 22 或更新版本，并将完整、内嵌证书的配置保存为 `vpn-config/client.ovpn`。如果此前使用 `private/client.ovpn`，请将其移动到新位置。
 2. 在 Windows x64 或 macOS（Apple Silicon / Intel）本机执行 `node install.mjs`。
-3. 入口会检查平台、准备依赖、把当前源码复制到隔离缓存、替换配置、编译引擎并校验安装包，产物只保存到 `dist/<平台>/`（重复构建覆盖同名安装包，构建缓存中不留副本）。
+3. 入口会检查平台、准备依赖、把当前源码复制到隔离缓存、替换配置、编译引擎并校验安装包，产物只保存到 `build_dist/<平台>/`（重复构建覆盖同名安装包，构建缓存中不留副本）。
 
-只准备源码和配置、不安装依赖或编译时执行 `node install.mjs --prepare-only`。已有工具链希望完全手动管理时，加上 `--no-auto-install-deps`；强制或跳过引擎编译分别使用 `--force-engine` 和 `--skip-engine`。私有配置会编译进客户端，请不要把 `vpn-config/client.ovpn` 或生成的 `dist/` 内容提交到 Git。
+只准备源码和配置、不安装依赖或编译时执行 `node install.mjs --prepare-only`。已有工具链希望完全手动管理时，加上 `--no-auto-install-deps`；强制或跳过引擎编译分别使用 `--force-engine` 和 `--skip-engine`。私有配置会编译进客户端，请不要把 `vpn-config/client.ovpn` 或生成的 `build_dist/` 内容提交到 Git。
 
 统一构建优先使用 `vpn-config/app-branding.json`，在隔离构建目录中覆盖 `config/app-branding.json`。修改其中 `defaultLocale` 为 `CN` 或 `EN` 后重新构建，即可生成不同默认语言的安装包；手动切换过语言的用户仍使用其保存的选择。若该文件不存在，则使用 `config/app-branding.json`。
 

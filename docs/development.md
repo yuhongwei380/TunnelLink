@@ -39,30 +39,36 @@ npm run tauri:dev
 
 ## 代码目录
 
-| 路径                                | 职责                                                  |
-| ----------------------------------- | ----------------------------------------------------- |
-| `src/App.tsx`                       | 应用布局、语言、桌面关闭事件和弹窗协调                |
-| `src/components/`                   | 连接概览、隧道示意，以及登录、日志、协议和退出弹窗    |
-| `src/hooks/useVpnConnection.ts`     | 状态轮询、凭据加载、连接和断开操作                    |
-| `src/hooks/useDialog.ts`            | 原生对话框的开关与初始焦点                            |
-| `src/desktop.ts`                    | Tauri invoke 适配；浏览器预览不安装原生接口           |
-| `src/types.ts`、`src/global.d.ts`   | 共享接口类型与 Window 扩展                            |
-| `src/messages.ts`、`src/ui-copy.ts` | 双语文案与用户文案合并                                |
-| `src/logs.ts`、`src/format.ts`      | 日志筛选、复制文本及会话数据格式化                    |
-| `src/index.css`                     | 界面样式、响应式规则与动效                            |
-| `src-tauri/src/lib.rs`              | Tauri commands、单实例与窗口生命周期                  |
-| `src-tauri/src/vpn.rs`              | 连接控制、日志、状态与系统凭据                        |
-| `src-tauri/src/worker.rs`           | 原生监督进程、引擎启动、停止及心跳                    |
-| `src-tauri/src/windows_process.rs`  | Windows 控制台、Job Object 和进程清理                 |
-| `make/`                            | 通用 Tauri 构建调度、版本同步、资源准备和产物归集     |
-| `make/windows/`                    | Windows 引擎编译、驱动准备、安装器、打包和验证        |
-| `make/macos/`                      | macOS 引擎编译、应用/DMG 打包和运行库验证             |
-| `make/tests/`                      | 构建、打包与前端逻辑测试                              |
-| `config/`                           | 固定连接配置、品牌、文案及版本锁                      |
-| `native/`                           | 已准备的原生引擎、驱动和目录占位文件                  |
-| `resources/`                        | 品牌资源、字体许可、协议、第三方许可和 TAP 接口头文件 |
+| 路径                                      | 职责                                               |
+| ----------------------------------------- | -------------------------------------------------- |
+| `ui/src/App.tsx`                          | 应用布局、语言、桌面关闭事件和弹窗协调             |
+| `ui/src/components/`                      | 连接概览、隧道示意，以及登录、日志、协议和退出弹窗 |
+| `ui/src/hooks/useVpnConnection.ts`        | 状态轮询、凭据加载、连接和断开操作                 |
+| `ui/src/hooks/useDialog.ts`               | 原生对话框的开关与初始焦点                         |
+| `ui/src/desktop.ts`                       | Tauri invoke 适配；浏览器预览不安装原生接口        |
+| `ui/src/types.ts`、`ui/src/global.d.ts`   | 共享接口类型与 Window 扩展                         |
+| `ui/src/messages.ts`、`ui/src/ui-copy.ts` | 双语文案与用户文案合并                             |
+| `ui/src/logs.ts`、`ui/src/format.ts`      | 日志筛选、复制文本及会话数据格式化                 |
+| `ui/src/index.css`                        | 界面样式、响应式规则与动效                         |
+| `src-tauri/src/lib.rs`                    | Tauri commands、单实例与窗口生命周期               |
+| `src-tauri/src/vpn.rs`                    | 连接控制、日志、状态与系统凭据                     |
+| `src-tauri/src/worker.rs`                 | 原生监督进程、引擎启动、停止及心跳                 |
+| `src-tauri/src/windows_process.rs`        | Windows 控制台、Job Object 和进程清理              |
+| `make/`                                   | 通用 Tauri 构建调度、版本同步、资源准备和产物归集  |
+| `make/windows/`                           | Windows 引擎编译、驱动准备、安装器、打包和验证     |
+| `make/macos/`                             | macOS 引擎编译、应用/DMG 打包和运行库验证          |
+| `make/tests/`                             | 构建、打包与前端逻辑测试                           |
+| `config/`                                 | 固定连接配置、品牌、文案及版本锁                   |
+| `.cache/native/`                          | 已准备的原生引擎、运行库与驱动                     |
+| `resources/`                              | 品牌资源与用户协议；依赖许可集中在 `LICENSES/`     |
 
-`package-lock.json` 和 `src-tauri/Cargo.lock` 是需要保存的依赖锁文件。`node_modules/`、`.cache/`、`dist/`、`src-tauri/target/`、`src-tauri/gen/`、下载的 `third_party/`、原生二进制与安装包不提交。
+`package-lock.json` 和 `src-tauri/Cargo.lock` 是需要保存的依赖锁文件。`node_modules/`、`.cache/`、`build_dist/`、`src-tauri/gen/` 目录链接与原生二进制不提交。
+
+前端入口、源码与 Vite/TypeScript 配置统一位于 `ui/`，npm 清单和依赖锁仍位于根目录。构建、环境准备和独立测试统一位于 `make/`。
+
+前端输出位于 `.cache/frontend/`，Rust 输出位于 `.cache/cargo-target/`，下载依赖位于 `.cache/deps/`，隔离源码位于 `.cache/work/`，生成的安装器协议位于 `.cache/legal/`。Tauri 打包工具使用本地缓存，位于 Cargo 输出目录下的 `.tauri/`。Tauri 固定读取 `src-tauri/gen/`，构建入口会自动建立指向 `.cache/tauri/gen/` 的目录链接，实际生成文件保存在缓存中。安装后的应用仍使用操作系统规定的用户配置和临时目录。
+
+`npm run clean` 清理前端、Rust 和打包中间产物，保留下载依赖、原生引擎和私有配置；`npm run clean:dist` 单独清理 `build_dist/` 中的最终安装包。
 
 ## 配置修改
 
@@ -73,8 +79,8 @@ npm run tauri:dev
 
 ## 界面约定
 
-- 颜色、布局、响应式规则与动效统一维护在 `src/index.css`。主色为 `#155EEF`，连接面板为 `#0B1F3A`，隧道强调色为 `#0E9F9A`；状态分别使用绿色、橙色和红色，并保留文字说明。
-- 默认窗口固定为 800 × 480，不支持调整大小或最大化。连接页保留一个主要连接操作、真实隧道状态、会话数据、网关信息和诊断入口。
+- 颜色、布局、响应式规则与动效统一维护在 `ui/src/index.css`。主色为 `#155EEF`，连接面板为 `#0B1F3A`，隧道强调色为 `#0E9F9A`；状态分别使用绿色、橙色和红色，并保留文字说明。
+- 默认窗口固定为 840 × 640，不支持调整大小或最大化。连接页保留一个主要连接操作、真实隧道状态、会话数据、网关信息和诊断入口。
 - Inter 字体离线打包，中文使用 PingFang SC 或 Microsoft YaHei，功能图标使用 Lucide。字体许可保存在 `LICENSES/Inter-OFL.txt`。
 - 项目 Logo 的唯一源文件为 `resources/brand/app-icon.svg`，侧栏、关于窗口和 favicon 共用该 SVG。修改后运行 `npm run icons:generate`，同步生成 `src-tauri/icons/` 中的桌面 PNG、Windows ICO 与 macOS ICNS。
 - 页面、弹窗和交互过渡控制在 180–240ms，并遵循 `prefers-reduced-motion: reduce`。隧道示意仅在正在连接时播放连接动效，`ConnectionVisual` 不代表测量得到的网络拓扑。

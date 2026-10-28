@@ -18,7 +18,8 @@ for (let i = 0; i < text.length; i++) {
   else if (code > 127) body += `\\u${code > 32767 ? code - 65536 : code}?`;
   else body += char;
 }
-const output = path.join(projectRoot, 'resources/legal/USER-AGREEMENT.rtf');
+const output = path.join(projectRoot, '.cache/legal/USER-AGREEMENT.rtf');
+await fs.mkdir(path.dirname(output), { recursive: true });
 const rtf = '{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0 Segoe UI;}}\\uc1\\f0\\fs20\n' + body + '\n}\n';
 if (
   (await fs.readFile(output, 'ascii').catch((error) => {

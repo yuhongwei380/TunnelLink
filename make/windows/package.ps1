@@ -10,8 +10,8 @@ $ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 Set-Location $ProjectRoot
 $releaseLock = Get-Content -LiteralPath (Join-Path $ProjectRoot 'config/openvpn3-release.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 
-$OpenVpnBinDir = Join-Path $ProjectRoot "native\bin\windows-x64"
-$OpenVpnExe = Join-Path $ProjectRoot "native\bin\windows-x64\ovpncli.exe"
+$OpenVpnBinDir = Join-Path $ProjectRoot ".cache\native\bin\windows-x64"
+$OpenVpnExe = Join-Path $ProjectRoot ".cache\native\bin\windows-x64\ovpncli.exe"
 $BuildOpenVpnScript = Join-Path $PSScriptRoot "build-openvpn3.ps1"
 
 $engineMatchesBundledDriver = $false
@@ -70,9 +70,10 @@ npm run dist:win
 if ($LASTEXITCODE -ne 0) { throw "Windows packaging failed (exit code $LASTEXITCODE)." }
 
 Write-Host "[5/5] Verifying Tauri artifacts..."
-$artifacts = Get-ChildItem -Path "make\dist\*-Setup-*.exe" -ErrorAction SilentlyContinue
+$outputDirectory = if ($env:OPENVPN_BUILD_OUTPUT) { $env:OPENVPN_BUILD_OUTPUT } else { Join-Path $ProjectRoot 'build_dist/windows' }
+$artifacts = Get-ChildItem -LiteralPath $outputDirectory -Filter '*-Setup-*.exe' -ErrorAction SilentlyContinue
 if (-not $artifacts) {
-  throw "No Windows setup .exe generated under make\dist\."
+  throw "No Windows setup .exe generated under $outputDirectory."
 }
 
 Write-Host "Build completed. Windows installer:"

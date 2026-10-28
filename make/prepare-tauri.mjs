@@ -14,7 +14,7 @@ export async function prepareTauri({ root, platform, arch }) {
     await prepareWindowsDriver(root);
   } else if (platform === 'darwin') {
     const architectures = targetMacArchitectures(arch);
-    const binary = path.join(root, 'native/bin/macos/ovpncli');
+    const binary = path.join(root, '.cache/native/bin/macos/ovpncli');
     await verifyMacRuntime(binary, { architectures });
     const metadata = await verifyEngineRelease(binary, root);
     // install_name_tool changes invalidate Mach-O signatures. Sign at build time,

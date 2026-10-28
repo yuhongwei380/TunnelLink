@@ -7,7 +7,7 @@
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:35198",
     "beforeBuildCommand": "npm run build && node make/prepare-tauri.mjs",
-    "frontendDist": "../dist"
+    "frontendDist": "../.cache/frontend"
   },
   "app": {
     "windows": [
@@ -31,12 +31,14 @@
   },
   "bundle": {
     "active": true,
+    "useLocalToolsDir": true,
     "targets": "all",
     "category": "Utility",
-    "licenseFile": "../resources/legal/USER-AGREEMENT.rtf",
+    "licenseFile": "../.cache/legal/USER-AGREEMENT.rtf",
     "resources": {
       "../resources/legal/": "legal/",
-      "../LICENSES/": "legal/licenses/"
+      "../LICENSES/": "legal/licenses/",
+      "../.cache/legal/USER-AGREEMENT.rtf": "legal/USER-AGREEMENT.rtf"
     },
     "icon": [
       "icons/32x32.png",

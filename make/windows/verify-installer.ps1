@@ -21,6 +21,9 @@ foreach ($file in Get-ChildItem -LiteralPath (Join-Path $projectRoot 'resources/
   $packaged = Join-Path (Join-Path $inspectionRoot 'legal') $relative
   if ((Get-FileHash -LiteralPath $packaged).Hash -ne (Get-FileHash -LiteralPath $file.FullName).Hash) { throw ('Packaged agreement/license differs: ' + $relative) }
 }
+$agreementSource = Join-Path $projectRoot '.cache/legal/USER-AGREEMENT.rtf'
+$agreementPackaged = Join-Path $inspectionRoot 'legal/USER-AGREEMENT.rtf'
+if ((Get-FileHash -LiteralPath $agreementPackaged).Hash -ne (Get-FileHash -LiteralPath $agreementSource).Hash) { throw 'Packaged installer agreement differs from the generated RTF.' }
 foreach ($file in Get-ChildItem -LiteralPath (Join-Path $projectRoot 'LICENSES') -File -Recurse) {
   $relative = $file.FullName.Substring((Join-Path $projectRoot 'LICENSES').Length).TrimStart('\', '/')
   $packaged = Join-Path (Join-Path $inspectionRoot 'legal\licenses') $relative
@@ -29,7 +32,7 @@ foreach ($file in Get-ChildItem -LiteralPath (Join-Path $projectRoot 'LICENSES')
 if (Test-Path -LiteralPath (Join-Path $engineRoot 'openvpn3-source.tar.gz')) { throw 'OpenVPN source archive must not be bundled.' }
 if ($metadata.tapComponentId -ne 'tap0901' -or $metadata.platform -ne 'x64') { throw 'Unexpected native engine target.' }
 if ((Get-FileHash -LiteralPath $engine -Algorithm SHA256).Hash -ne $metadata.sha256) { throw 'Packaged engine hash mismatch.' }
-foreach ($file in Get-ChildItem -LiteralPath (Join-Path $projectRoot 'native\bin\windows-x64') -File) {
+foreach ($file in Get-ChildItem -LiteralPath (Join-Path $projectRoot '.cache\native\bin\windows-x64') -File) {
   $packaged = Join-Path $engineRoot $file.Name
   if ((Get-FileHash -LiteralPath $packaged -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash) {
     throw ('Native resource differs from its verified input: ' + $file.Name)

@@ -36,7 +36,9 @@ if (!productName) {
   throw new Error('config/app-branding.json missing field: productName');
 }
 
-const defaultLocale = String(branding.defaultLocale || 'CN').trim().toUpperCase();
+const defaultLocale = String(branding.defaultLocale || 'CN')
+  .trim()
+  .toUpperCase();
 if (defaultLocale !== 'CN' && defaultLocale !== 'EN') {
   throw new Error('config/app-branding.json field defaultLocale must be CN or EN');
 }
@@ -73,4 +75,6 @@ if (fs.existsSync(lockPath)) {
   }
   writeJson(lockPath, lock);
 }
-console.log(`Branding synced: appId=${appId}, productName=${productName}, defaultLocale=${defaultLocale}`);
+console.log(
+  `Branding synced: appId=${appId}, productName=${productName}, defaultLocale=${defaultLocale}`,
+);

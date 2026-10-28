@@ -1,9 +1,6 @@
 node_modules/
 .cache/
-dist/
-build/dist/
-src-tauri/target/
+build_dist/
 src-tauri/gen/
 package-lock.json
 resources/
-native/

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { assertBuildHost } from './build.mjs';
+import { buildEnvironment } from './paths.mjs';
 
 const environmentKeys = new Set([
   'PATH',
@@ -14,7 +15,7 @@ const environmentKeys = new Set([
 
 export async function setupEnvironment({ root, platform }) {
   assertBuildHost(platform);
-  const directory = path.join(root, '.work', platform);
+  const directory = path.join(root, '.cache/work', platform);
   await fs.mkdir(directory, { recursive: true, mode: 0o700 });
   const environmentFile = path.join(directory, `environment-${randomUUID()}.json`);
   const command = platform === 'windows' ? 'powershell.exe' : 'bash';
@@ -25,16 +26,16 @@ export async function setupEnvironment({ root, platform }) {
           '-ExecutionPolicy',
           'Bypass',
           '-File',
-          path.join(root, 'scripts/windows/setup.ps1'),
+          path.join(root, 'make/windows/setup.ps1'),
         ]
-      : [path.join(root, 'scripts/macos/setup.sh')];
+      : [path.join(root, 'make/macos/setup.sh')];
   try {
     const result = spawnSync(command, args, {
       cwd: root,
       stdio: 'inherit',
       windowsHide: true,
       env: {
-        ...process.env,
+        ...buildEnvironment(root),
         OPENVPN_BUILD_NODE: process.execPath,
         OPENVPN_BUILD_ARCH: process.arch,
         OPENVPN_BUILD_ENV_FILE: environmentFile,

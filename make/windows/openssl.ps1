@@ -84,7 +84,7 @@ function Read-OpenSslRelease {
 }
 
 function Get-OpenSslCacheDirectory($Release) {
-    return [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "../../.work/windows/deps/openssl-$($Release.version)"))
+    return [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "../../.cache/work/windows/deps/openssl-$($Release.version)"))
 }
 
 function Get-OpenSslImageRoot([string]$Directory) {

@@ -1,4 +1,4 @@
-import appIcon from '../../resources/brand/app-icon.svg';
+import appIcon from '../../../resources/brand/app-icon.svg';
 
 export function AppLogo() {
   return (

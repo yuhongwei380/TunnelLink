@@ -31,7 +31,7 @@ into an isolated build cache, replaces the private profile, and builds an
 installer. Node.js 22+ is required.
 Windows packages must be built on Windows; macOS packages on macOS.
 Relative --profile paths are resolved from the current working directory.
-Source: .work/<platform>/source; installers: dist/<platform>/ — each build
+Source: .cache/work/<platform>/source; installers: build_dist/<platform>/ — each build
 replaces the previous installers there; no installer copy is left in the cache.`;
 
 export async function runBuild(

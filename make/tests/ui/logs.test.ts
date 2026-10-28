@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { filterLogs, formatLogs, isErrorLog } from '../../../src/logs.ts';
+import { filterLogs, formatLogs, isErrorLog } from '../../../ui/src/logs.ts';
 
 const event = (line: string, source = 'openvpn') => ({ ts: '2026-10-23T10:00:00Z', source, line });
 

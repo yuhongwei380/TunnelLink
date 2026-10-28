@@ -3,8 +3,8 @@
     "targets": ["nsis"],
     "icon": ["icons/icon.ico"],
     "resources": {
-      "../native/bin/windows-x64/": "bin/windows-x64/",
-      "../native/drivers/windows-x64/": "drivers/windows-x64/",
+      "../.cache/native/bin/windows-x64/": "bin/windows-x64/",
+      "../.cache/native/drivers/windows-x64/": "drivers/windows-x64/",
       "../make/windows/install-tap-driver.ps1": "windows/install-tap-driver.ps1"
     },
     "windows": {

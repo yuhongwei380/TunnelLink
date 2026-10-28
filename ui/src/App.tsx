@@ -12,12 +12,16 @@ import { LogsDialog } from './components/LogsDialog';
 import { useVpnConnection } from './hooks/useVpnConnection';
 import { getMessages } from './messages';
 import { mergeUiCopy, type Locale, type UiCopy } from './ui-copy';
-import release from '../config/openvpn3-release.json';
-import defaultUiCopy from '../config/ui-copy.json';
-import branding from '../config/app-branding.json';
+import release from '../../config/openvpn3-release.json';
+import defaultUiCopy from '../../config/ui-copy.json';
+import branding from '../../config/app-branding.json';
 
 const configuredLocale: Locale =
-  String(branding.defaultLocale || 'CN').trim().toUpperCase() === 'EN' ? 'en' : 'zh';
+  String(branding.defaultLocale || 'CN')
+    .trim()
+    .toUpperCase() === 'EN'
+    ? 'en'
+    : 'zh';
 
 export default function App() {
   const [locale, setLocale] = useState<Locale>(() => {

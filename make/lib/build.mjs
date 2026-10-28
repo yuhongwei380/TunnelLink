@@ -1,10 +1,10 @@
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import path from 'node:path';
-import { tmpdir } from 'node:os';
 import { createHash, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
+import { buildEnvironment } from './paths.mjs';
 
 const profileTarget = 'config/client.ovpn';
 
@@ -217,7 +217,7 @@ export async function readBranding(file) {
 }
 
 export async function withBuildLock(root, platform, action) {
-  const directory = path.join(root, '.work', platform);
+  const directory = path.join(root, '.cache/work', platform);
   await fs.mkdir(directory, { recursive: true, mode: 0o700 });
   const lockPath = path.join(directory, 'build.lock');
   let lock;
@@ -241,7 +241,7 @@ export async function withBuildLock(root, platform, action) {
 }
 
 export async function prepareSource({ root, platform, upstream, profile }) {
-  const sourceDir = path.join(root, '.work', platform, 'source');
+  const sourceDir = path.join(root, '.cache/work', platform, 'source');
   await fs.mkdir(path.dirname(sourceDir), { recursive: true, mode: 0o700 });
   if (!(await exists(sourceDir))) {
     console.log(`Fetching upstream source for ${platform}...`);
@@ -318,35 +318,42 @@ export async function prepareSource({ root, platform, upstream, profile }) {
 }
 
 export async function prepareLocalSource({ root, platform, upstream, profile, branding }) {
-  const sourceDir = path.join(root, '.work', platform, 'source');
+  const sourceDir = path.join(root, '.cache/work', platform, 'source');
   const relativeSource = path.relative(root, sourceDir);
   if (!relativeSource || relativeSource.startsWith('..') || path.isAbsolute(relativeSource)) {
     throw new Error(`Unsafe local source directory: ${sourceDir}`);
   }
-  const stagingDir = path.join(tmpdir(), `.openvpn3-local-source-${randomUUID()}`);
+  const stagingDir = path.join(root, '.cache/staging', `source-${randomUUID()}`);
   await fs.mkdir(path.dirname(sourceDir), { recursive: true, mode: 0o700 });
   const excludedRoots = new Set([
     '.git',
-    '.work',
     '.cache',
     'node_modules',
     'vpn-config',
     'private',
-    'dist',
+    'build_dist',
   ]);
+  await fs.mkdir(path.dirname(stagingDir), { recursive: true, mode: 0o700 });
   try {
-    await fs.cp(root, stagingDir, {
-      recursive: true,
-      filter: (entry) => {
-        const relative = path.relative(root, entry);
-        if (!relative) return true;
-        if (relative === 'make/dist' || relative.startsWith(`make${path.sep}dist${path.sep}`)) {
-          return false;
-        }
-        const first = relative.split(path.sep)[0];
-        return !excludedRoots.has(first) && !relative.startsWith(`src-tauri${path.sep}target`);
-      },
-    });
+    await fs.mkdir(stagingDir, { mode: 0o700 });
+    for (const name of await fs.readdir(root)) {
+      if (excludedRoots.has(name)) continue;
+      await fs.cp(path.join(root, name), path.join(stagingDir, name), {
+        recursive: true,
+        filter: (entry) => {
+          const relative = path.relative(root, entry);
+          return relative !== path.join('src-tauri', 'gen');
+        },
+      });
+    }
+    // Reuse prepared build inputs without copying the source cache, private
+    // profiles, or old installers back into the isolated working tree.
+    for (const name of ['native', 'deps', 'tap-windows6']) {
+      const input = path.join(root, '.cache', name);
+      if (await exists(input)) {
+        await fs.cp(input, path.join(stagingDir, '.cache', name), { recursive: true });
+      }
+    }
     await fs.rm(sourceDir, { recursive: true, force: true });
     await fs.cp(stagingDir, sourceDir, { recursive: true });
   } finally {
@@ -380,7 +387,10 @@ export function packageInvocation(prepared, options, baseEnv = process.env) {
         ...(options.skipEngine ? ['-SkipOpenVpnBuild'] : []),
         ...(options.noAutoInstallDeps ? ['-NoAutoInstallDeps'] : []),
       ],
-      env: { ...baseEnv },
+      env: {
+        ...baseEnv,
+        OPENVPN_BUILD_OUTPUT: path.join(prepared.sourceDir, '.cache/packaging'),
+      },
     };
   }
   return {
@@ -388,6 +398,7 @@ export function packageInvocation(prepared, options, baseEnv = process.env) {
     args: [path.join(prepared.sourceDir, 'make/macos/package.sh')],
     env: {
       ...baseEnv,
+      OPENVPN_BUILD_OUTPUT: path.join(prepared.sourceDir, '.cache/packaging'),
       FORCE_OPENVPN3_BUILD: options.forceEngine ? '1' : '0',
       SKIP_OPENVPN3_BUILD: options.skipEngine ? '1' : '0',
     },
@@ -397,13 +408,15 @@ export function packageInvocation(prepared, options, baseEnv = process.env) {
 export async function buildPackage(prepared, options) {
   assertBuildHost(prepared.platform);
   // Require a report from this invocation so an old installer cannot pass as a new build.
-  await fs.rm(path.join(prepared.sourceDir, 'make/dist/build-verification.json'), { force: true });
-  const invocation = packageInvocation(prepared, options);
+  await fs.rm(path.join(prepared.sourceDir, '.cache/packaging/build-verification.json'), {
+    force: true,
+  });
+  const invocation = packageInvocation(prepared, options, buildEnvironment(prepared.sourceDir));
   run(invocation.command, invocation.args, { cwd: prepared.sourceDir, env: invocation.env });
 }
 
 export async function collectArtifacts({ root, prepared }) {
-  const upstreamDist = path.join(prepared.sourceDir, 'make/dist');
+  const upstreamDist = path.join(prepared.sourceDir, '.cache/packaging');
   const report = JSON.parse(
     await fs.readFile(path.join(upstreamDist, 'build-verification.json'), 'utf8'),
   );
@@ -440,9 +453,9 @@ export async function collectArtifacts({ root, prepared }) {
     artifacts.push({ file: name, bytes: stat.size, sha256: entry.sha256 });
   }
   const builtAt = new Date().toISOString();
-  const outputDir = path.join(root, 'dist', prepared.platform);
+  const outputDir = path.join(root, 'build_dist', prepared.platform);
   await fs.mkdir(outputDir, { recursive: true, mode: 0o700 });
-  // dist/<platform> holds exactly the installers of this build: repeated
+  // build_dist/<platform> holds exactly the installers of this build: repeated
   // builds replace the same-name installer in place, and stale files from
   // older versions or renamed products never pile up next to it.
   const current = new Set(artifacts.map((artifact) => artifact.file));
@@ -451,10 +464,7 @@ export async function collectArtifacts({ root, prepared }) {
     await fs.rm(path.join(outputDir, name));
   }
   for (const artifact of artifacts) {
-    await fs.copyFile(
-      path.join(upstreamDist, artifact.file),
-      path.join(outputDir, artifact.file),
-    );
+    await fs.copyFile(path.join(upstreamDist, artifact.file), path.join(outputDir, artifact.file));
     await fs.chmod(path.join(outputDir, artifact.file), 0o600);
   }
   const manifest = {
@@ -470,7 +480,7 @@ export async function collectArtifacts({ root, prepared }) {
     JSON.stringify(manifest, null, 2) + '\n',
     { mode: 0o600 },
   );
-  // The installer under dist/<platform> is the only delivered copy. Remove the
+  // The installer under build_dist/<platform> is the only delivered copy. Remove the
   // intermediate copies left in the build cache so one build never leaves two
   // identical setups on disk.
   for (const name of await fs.readdir(upstreamDist)) {

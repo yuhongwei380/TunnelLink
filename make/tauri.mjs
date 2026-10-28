@@ -2,9 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { buildEnvironment, prepareTauriLayout } from './lib/paths.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const env = { ...process.env };
+const env = buildEnvironment(root);
+prepareTauriLayout(root);
 const inheritedPath = process.env.PATH || process.env.Path || '';
 for (const key of Object.keys(env)) if (key.toLowerCase() === 'path') delete env[key];
 env.PATH = path.dirname(process.execPath) + path.delimiter + inheritedPath;

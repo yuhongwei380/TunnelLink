@@ -1,6 +1,6 @@
 # Standalone tests; no Pester dependency and no driver installation or elevation.
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot '..\..\make\windows\install-tap-driver.ps1')
+. (Join-Path $PSScriptRoot '..\windows\install-tap-driver.ps1')
 
 function Assert-Test($condition, [string]$message) {
   if (-not $condition) { throw $message }
@@ -21,7 +21,9 @@ Assert-Test ($found.Count -eq 1 -and $found[0].PNPDeviceID -eq 'ready') 'Adapter
 
 # Regression: the bundled manifest.json is BOM-less UTF-8 with a Chinese comment; on an
 # ANSI (GBK) host Windows PowerShell 5.1 default decoding corrupts the JSON (installer bug 2026-10).
-$manifestRoot = Join-Path ([IO.Path]::GetTempPath()) ('tap-driver-' + [guid]::NewGuid())
+$testCache = Join-Path $PSScriptRoot '../../.cache/tmp'
+New-Item -ItemType Directory -Path $testCache -Force | Out-Null
+$manifestRoot = Join-Path $testCache ('tap-driver-' + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $manifestRoot | Out-Null
 try {
   $manifestText = Get-Content -LiteralPath (Join-Path $PSScriptRoot '..\..\config\windows-tap-driver.json') -Raw -Encoding UTF8
