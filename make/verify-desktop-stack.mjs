@@ -38,6 +38,10 @@ export async function verifyDesktopStack(root) {
     'build/after-pack.cjs',
     'build/installer/windows-driver.nsh',
     'build/build-win-in-docker.sh',
+    'make/before-pack.cjs',
+    'make/after-pack.cjs',
+    'make/installer/windows-driver.nsh',
+    'make/build-win-in-docker.sh',
   ]) {
     const exists = await fs.stat(path.join(root, entry)).then(
       () => true,

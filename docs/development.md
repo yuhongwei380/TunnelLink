@@ -4,7 +4,7 @@
 
 客户端使用 Tauri 2、Rust、React、TypeScript 和 Vite。React 负责界面，Rust 负责系统凭据、VPN 状态、原生进程监督和窗口生命周期，OpenVPN 3 Core 以原生引擎随安装包分发。
 
-Node.js 仅用于前端开发、构建、资源准备和测试，不作为桌面运行时分发。`build/` 中的 JavaScript 脚本是当前 Tauri 构建链的一部分；桌面配置统一位于 `src-tauri/tauri*.conf.json`。
+Node.js 仅用于前端开发、构建、资源准备和测试，不作为桌面运行时分发。`make/` 中的 JavaScript 脚本是当前 Tauri 构建链的一部分；桌面配置统一位于 `src-tauri/tauri*.conf.json`。
 
 ## 环境与启动
 
@@ -35,7 +35,7 @@ npm run tauri:dev
 
 实际连接需要准备对应平台的原生引擎。Windows 开发程序以管理员权限运行，开发模式不会自动安装 TAP 驱动；准备步骤见[构建与发布](building.md)。
 
-`build/tauri.mjs` 优先使用项目中的 `.cache/rust/cargo` 和 `.cache/rust/rustup`，不存在时使用 PATH 中的 Rust 工具链。
+`make/tauri.mjs` 优先使用项目中的 `.cache/rust/cargo` 和 `.cache/rust/rustup`，不存在时使用 PATH 中的 Rust 工具链。
 
 ## 代码目录
 
@@ -54,10 +54,10 @@ npm run tauri:dev
 | `src-tauri/src/vpn.rs`              | 连接控制、日志、状态与系统凭据                        |
 | `src-tauri/src/worker.rs`           | 原生监督进程、引擎启动、停止及心跳                    |
 | `src-tauri/src/windows_process.rs`  | Windows 控制台、Job Object 和进程清理                 |
-| `build/`                            | 通用 Tauri 构建调度、版本同步、资源准备和产物归集     |
-| `build/windows/`                    | Windows 引擎编译、驱动准备、安装器、打包和验证        |
-| `build/macos/`                      | macOS 引擎编译、应用/DMG 打包和运行库验证             |
-| `build/tests/`                      | 构建、打包与前端逻辑测试                              |
+| `make/`                            | 通用 Tauri 构建调度、版本同步、资源准备和产物归集     |
+| `make/windows/`                    | Windows 引擎编译、驱动准备、安装器、打包和验证        |
+| `make/macos/`                      | macOS 引擎编译、应用/DMG 打包和运行库验证             |
+| `make/tests/`                      | 构建、打包与前端逻辑测试                              |
 | `config/`                           | 固定连接配置、品牌、文案及版本锁                      |
 | `native/`                           | 已准备的原生引擎、驱动和目录占位文件                  |
 | `resources/`                        | 品牌资源、字体许可、协议、第三方许可和 TAP 接口头文件 |
@@ -113,4 +113,4 @@ npm run build
 | `npm run check:native`   | Rust 编译检查，需要原生构建环境          |
 | `npm run clean`          | 清理前端输出和归集的安装包               |
 
-测试按职责保存：`build/tests/ui/` 为前端逻辑，`build/tests/helpers/` 为共享夹具，`build/tests/integration/` 为依赖真实下载资源的集成测试。驱动安装逻辑的 PowerShell 测试和集成测试步骤见[构建与发布](building.md#验证安装包)。
+测试按职责保存：`make/tests/ui/` 为前端逻辑，`make/tests/helpers/` 为共享夹具，`make/tests/integration/` 为依赖真实下载资源的集成测试。驱动安装逻辑的 PowerShell 测试和集成测试步骤见[构建与发布](building.md#验证安装包)。

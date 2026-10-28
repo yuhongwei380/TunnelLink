@@ -25,7 +25,7 @@ if (args[0] === 'cargo') {
   commandArgs = args.slice(1);
 } else {
   // Tauri reads its version before beforeBuildCommand, so sync before launching it.
-  const sync = spawnSync(process.execPath, [path.join(root, 'build/sync-branding.mjs')], {
+  const sync = spawnSync(process.execPath, [path.join(root, 'make/sync-branding.mjs')], {
     cwd: root,
     env,
     stdio: 'inherit',
@@ -34,7 +34,7 @@ if (args[0] === 'cargo') {
   if (sync.status !== 0) process.exit(sync.status ?? 1);
   // Keep the native desktop resources in lockstep with the canonical SVG.
   // Tauri otherwise reuses a stale ICO when packaging a Windows executable.
-  const icons = spawnSync(process.execPath, [path.join(root, 'build/generate-icons.mjs')], {
+  const icons = spawnSync(process.execPath, [path.join(root, 'make/generate-icons.mjs')], {
     cwd: root,
     env,
     stdio: 'inherit',

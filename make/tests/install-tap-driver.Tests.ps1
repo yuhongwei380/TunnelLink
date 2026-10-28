@@ -1,6 +1,6 @@
 # Standalone tests; no Pester dependency and no driver installation or elevation.
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot '..\..\build\windows\install-tap-driver.ps1')
+. (Join-Path $PSScriptRoot '..\..\make\windows\install-tap-driver.ps1')
 
 function Assert-Test($condition, [string]$message) {
   if (-not $condition) { throw $message }

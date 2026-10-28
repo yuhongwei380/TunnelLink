@@ -578,7 +578,7 @@ endfunction()
 }
 
 Write-Host "[1/6] Checking/installing required commands..."
-Write-Host "build/windows/build-openvpn3.ps1 version: $ScriptVersion"
+Write-Host "make/windows/build-openvpn3.ps1 version: $ScriptVersion"
 Write-Host "Target TAP ComponentId: $TapComponentId (the matching driver and adapter must be installed on the client machine)."
 Refresh-PathInCurrentSession
 
@@ -704,7 +704,7 @@ try {
   Copy-MsvcRuntimeDlls -visualStudioPath $vsPath -destinationDir $outputDir -targetPlatform $Platform
   # Bind the selected driver to the actual binary so packaging cannot reuse a
   # Connect-specific or stale engine with the standalone tap0901 driver.
-  Invoke-NativeChecked -exe 'node' -ArgumentList @((Join-Path $ProjectRoot 'build/record-engine-build.mjs'), $SrcDir, $OutputBin, $Platform.ToLowerInvariant(), $TapComponentId.ToLowerInvariant()) -step 'record release provenance and licenses'
+  Invoke-NativeChecked -exe 'node' -ArgumentList @((Join-Path $ProjectRoot 'make/record-engine-build.mjs'), $SrcDir, $OutputBin, $Platform.ToLowerInvariant(), $TapComponentId.ToLowerInvariant()) -step 'record release provenance and licenses'
   Write-Host "[6/6] Done. ovpncli.exe available at: $OutputBin"
 }
 finally {

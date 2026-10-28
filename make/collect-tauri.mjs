@@ -10,7 +10,7 @@ export async function collectTauri(root, args, env) {
     ? path.resolve(root, env.CARGO_TARGET_DIR)
     : path.join(root, 'src-tauri/target');
   const buildRoot = path.join(targetRoot, target, args.includes('--debug') ? 'debug' : 'release');
-  const output = path.join(root, 'build/dist');
+  const output = path.join(root, 'make/dist');
   await fs.mkdir(output, { recursive: true });
   const pkg = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
   const branding = JSON.parse(
@@ -45,7 +45,7 @@ export async function collectTauri(root, args, env) {
     }
   }
   if (!artifacts.length) throw new Error('No Tauri installer was generated.');
-  // The collected copy in build/dist is the one deliverable. Remove the
+  // The collected copy in make/dist is the one deliverable. Remove the
   // installer(s) still sitting in Cargo's bundle tree (current and older
   // releases) so a filesystem search never finds two identical setups.
   for (const directory of [
@@ -64,7 +64,7 @@ export async function collectTauri(root, args, env) {
       console.log(`Removed bundled installer: ${path.join(directory, name)}`);
     }
   }
-  // build/dist keeps exactly the installer(s) of this build; previous runs
+  // make/dist keeps exactly the installer(s) of this build; previous runs
   // (older versions or renamed products) must not pile up next to it.
   const keep = new Set(artifacts.map((file) => path.resolve(file)));
   for (const name of await fs.readdir(output)) {

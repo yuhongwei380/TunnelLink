@@ -5,7 +5,7 @@
     "resources": {
       "../native/bin/windows-x64/": "bin/windows-x64/",
       "../native/drivers/windows-x64/": "drivers/windows-x64/",
-      "../build/windows/install-tap-driver.ps1": "windows/install-tap-driver.ps1"
+      "../make/windows/install-tap-driver.ps1": "windows/install-tap-driver.ps1"
     },
     "windows": {
       "minimumWebview2Version": "111.0.0.0",
@@ -14,7 +14,7 @@
         "installMode": "perMachine",
         "installerIcon": "icons/icon.ico",
         "uninstallerIcon": "icons/icon.ico",
-        "installerHooks": "../build/windows/installer-hooks.nsh",
+        "installerHooks": "../make/windows/installer-hooks.nsh",
         "displayLanguageSelector": true,
         "languages": ["SimpChinese", "English"]
       }

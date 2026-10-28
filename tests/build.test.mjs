@@ -48,25 +48,25 @@ async function fixture(t) {
   const upstreamRepo = path.join(directory, 'upstream repo');
   const root = path.join(directory, 'private build');
   await fs.mkdir(path.join(upstreamRepo, 'config'), { recursive: true });
-  await fs.mkdir(path.join(upstreamRepo, 'build/windows'), { recursive: true });
-  await fs.mkdir(path.join(upstreamRepo, 'build/macos'), { recursive: true });
+  await fs.mkdir(path.join(upstreamRepo, 'make/windows'), { recursive: true });
+  await fs.mkdir(path.join(upstreamRepo, 'make/macos'), { recursive: true });
   await fs.mkdir(path.join(root, 'config'), { recursive: true });
   await fs.writeFile(
     path.join(upstreamRepo, '.gitattributes'),
     '* text=auto\n*.sh text eol=lf\n*.ps1 text eol=crlf\n',
   );
-  await fs.writeFile(path.join(upstreamRepo, '.gitignore'), '/build/dist/\n');
+  await fs.writeFile(path.join(upstreamRepo, '.gitignore'), '/make/dist/\n');
   await fs.writeFile(
     path.join(upstreamRepo, 'config/client.ovpn'),
     'client\nremote upstream.example.invalid 1194\n',
   );
   await fs.writeFile(path.join(upstreamRepo, 'package-lock.json'), '{}\n');
   await fs.writeFile(
-    path.join(upstreamRepo, 'build/windows/package.ps1'),
+    path.join(upstreamRepo, 'make/windows/package.ps1'),
     "& node (Join-Path $PSScriptRoot '../../fake-package.mjs')\nexit $LASTEXITCODE\n",
   );
   await fs.writeFile(
-    path.join(upstreamRepo, 'build/macos/package.sh'),
+    path.join(upstreamRepo, 'make/macos/package.sh'),
     '#!/usr/bin/env bash\nset -euo pipefail\nnode fake-package.mjs\n',
   );
   await fs.writeFile(
@@ -75,11 +75,11 @@ async function fixture(t) {
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-await fs.mkdir('build/dist', { recursive: true });
-const file = path.resolve('build/dist', process.platform === 'win32' ? 'Private Client-Setup.exe' : 'Private Client.dmg');
+await fs.mkdir('make/dist', { recursive: true });
+const file = path.resolve('make/dist', process.platform === 'win32' ? 'Private Client-Setup.exe' : 'Private Client.dmg');
 const content = await fs.readFile('config/client.ovpn');
 await fs.writeFile(file, content);
-await fs.writeFile('build/dist/build-verification.json', JSON.stringify({ artifacts: [
+await fs.writeFile('make/dist/build-verification.json', JSON.stringify({ artifacts: [
   { file, bytes: content.length, sha256: createHash('sha256').update(content).digest('hex') }
 ] }));
 `,
@@ -149,8 +149,8 @@ test('Windows dependency setup resolves the shared OpenSSL helper', async () => 
     path.join(projectRoot, 'scripts/windows/setup.ps1'),
     'utf8',
   );
-  assert.match(setupScript, /\.\.\/\.\.\/build\/windows\/openssl\.ps1/);
-  await fs.access(path.join(projectRoot, 'build/windows/openssl.ps1'));
+  assert.match(setupScript, /\.\.\/\.\.\/make\/windows\/openssl\.ps1/);
+  await fs.access(path.join(projectRoot, 'make/windows/openssl.ps1'));
 });
 
 test('upstream revisions must be complete pinned commits', async (t) => {
@@ -395,7 +395,7 @@ test('platform options are forwarded without shell interpolation', () => {
     {},
   );
   assert.equal(windows.command, 'powershell.exe');
-  assert.ok(windows.args.includes(path.join(sourceDir, 'build/windows/package.ps1')));
+  assert.ok(windows.args.includes(path.join(sourceDir, 'make/windows/package.ps1')));
   assert.deepEqual(windows.args.slice(-2), ['-ForceOpenVpnBuild', '-NoAutoInstallDeps']);
   const mac = packageInvocation(
     { sourceDir, platform: 'macos' },
@@ -403,7 +403,7 @@ test('platform options are forwarded without shell interpolation', () => {
     { APPLE_SIGNING_IDENTITY: 'test identity', FORCE_OPENVPN3_BUILD: '1' },
   );
   assert.equal(mac.command, 'bash');
-  assert.deepEqual(mac.args, [path.join(sourceDir, 'build/macos/package.sh')]);
+  assert.deepEqual(mac.args, [path.join(sourceDir, 'make/macos/package.sh')]);
   assert.equal(mac.env.FORCE_OPENVPN3_BUILD, '0');
   assert.equal(mac.env.SKIP_OPENVPN3_BUILD, '1');
   assert.equal(mac.env.APPLE_SIGNING_IDENTITY, 'test identity');
@@ -412,7 +412,7 @@ test('platform options are forwarded without shell interpolation', () => {
 async function artifactFixture(t) {
   const f = await fixture(t);
   const prepared = await prepareSource({ ...f, platform: 'windows' });
-  const dist = path.join(prepared.sourceDir, 'build/dist');
+  const dist = path.join(prepared.sourceDir, 'make/dist');
   await fs.mkdir(dist, { recursive: true });
   const file = path.join(dist, 'Private Client-Setup.exe');
   const content = Buffer.from('fixture installer');
@@ -500,7 +500,7 @@ test(
       nativePlatform === 'windows' ? 'Private Client-Setup.exe' : 'Private Client.dmg';
     assert.deepEqual((await fs.readdir(output)).sort(), ['build-info.json', expected].sort());
     await assert.rejects(
-      fs.access(path.join(f.root, '.work', nativePlatform, 'source', 'build', 'dist', expected)),
+      fs.access(path.join(f.root, '.work', nativePlatform, 'source', 'make', 'dist', expected)),
       { code: 'ENOENT' },
     );
     await runBuild(['--no-auto-install-deps'], { root: f.root, prepareEnvironment });
@@ -616,9 +616,9 @@ test(
     const f = await fixture(t);
     const prepared = await prepareSource({ ...f, platform: nativePlatform });
     const script =
-      nativePlatform === 'windows' ? 'build/windows/package.ps1' : 'build/macos/package.sh';
+      nativePlatform === 'windows' ? 'make/windows/package.ps1' : 'make/macos/package.sh';
     await fs.writeFile(path.join(prepared.sourceDir, script), 'exit 23\n');
-    const dist = path.join(prepared.sourceDir, 'build/dist');
+    const dist = path.join(prepared.sourceDir, 'make/dist');
     await fs.mkdir(dist, { recursive: true });
     await fs.writeFile(
       path.join(dist, 'build-verification.json'),

@@ -15,7 +15,7 @@ export default defineConfig({
         '**/.cache/**',
         '**/src-tauri/target/**',
         '**/src-tauri/gen/**',
-        '**/build/dist/**',
+        '**/make/dist/**',
         '**/dist/**',
       ],
     },

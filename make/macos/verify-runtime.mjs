@@ -166,7 +166,7 @@ export async function verifyMacRuntime(binary, { architectures, inspect = inspec
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   if (!process.argv[2])
-    throw new Error('Usage: node build/macos/verify-runtime.mjs /path/to/ovpncli [arm64|x86_64]');
+    throw new Error('Usage: node make/macos/verify-runtime.mjs /path/to/ovpncli [arm64|x86_64]');
   const result = await verifyMacRuntime(process.argv[2], {
     architectures: process.argv[3] ? [process.argv[3]] : undefined,
   });

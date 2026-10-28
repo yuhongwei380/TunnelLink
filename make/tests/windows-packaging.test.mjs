@@ -21,7 +21,7 @@ test('Windows resources keep build tools out of the installed runtime', async (t
   const config = JSON.parse(
     await fs.readFile(path.join(configDirectory, 'tauri.windows.conf.json'), 'utf8'),
   );
-  const buildDirectory = path.join(projectRoot, 'build');
+  const buildDirectory = path.join(projectRoot, 'make');
   for (const [source, destination] of Object.entries(config.bundle.resources)) {
     const input = path.resolve(configDirectory, source);
     const relative = path.relative(buildDirectory, input);

@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 if (-not $env:OPENVPN_BUILD_ENV_FILE -or -not $env:OPENVPN_BUILD_NODE) {
     throw 'Run node install.mjs from the repository root.'
 }
-$openSslScript = Join-Path $PSScriptRoot '../../build/windows/openssl.ps1'
+$openSslScript = Join-Path $PSScriptRoot '../../make/windows/openssl.ps1'
 if (-not (Test-Path -LiteralPath $openSslScript -PathType Leaf)) {
     throw "OpenSSL helper not found: $openSslScript"
 }

@@ -294,8 +294,8 @@ export async function prepareSource({ root, platform, upstream, profile }) {
   }
   for (const relative of [
     profileTarget,
-    'build/windows/package.ps1',
-    'build/macos/package.sh',
+    'make/windows/package.ps1',
+    'make/macos/package.sh',
     'package-lock.json',
   ]) {
     const file = path.join(sourceDir, relative);
@@ -340,7 +340,7 @@ export async function prepareLocalSource({ root, platform, upstream, profile, br
       filter: (entry) => {
         const relative = path.relative(root, entry);
         if (!relative) return true;
-        if (relative === 'build/dist' || relative.startsWith(`build${path.sep}dist${path.sep}`)) {
+        if (relative === 'make/dist' || relative.startsWith(`make${path.sep}dist${path.sep}`)) {
           return false;
         }
         const first = relative.split(path.sep)[0];
@@ -375,7 +375,7 @@ export function packageInvocation(prepared, options, baseEnv = process.env) {
         '-ExecutionPolicy',
         'Bypass',
         '-File',
-        path.join(prepared.sourceDir, 'build/windows/package.ps1'),
+        path.join(prepared.sourceDir, 'make/windows/package.ps1'),
         ...(options.forceEngine ? ['-ForceOpenVpnBuild'] : []),
         ...(options.skipEngine ? ['-SkipOpenVpnBuild'] : []),
         ...(options.noAutoInstallDeps ? ['-NoAutoInstallDeps'] : []),
@@ -385,7 +385,7 @@ export function packageInvocation(prepared, options, baseEnv = process.env) {
   }
   return {
     command: 'bash',
-    args: [path.join(prepared.sourceDir, 'build/macos/package.sh')],
+    args: [path.join(prepared.sourceDir, 'make/macos/package.sh')],
     env: {
       ...baseEnv,
       FORCE_OPENVPN3_BUILD: options.forceEngine ? '1' : '0',
@@ -397,13 +397,13 @@ export function packageInvocation(prepared, options, baseEnv = process.env) {
 export async function buildPackage(prepared, options) {
   assertBuildHost(prepared.platform);
   // Require a report from this invocation so an old installer cannot pass as a new build.
-  await fs.rm(path.join(prepared.sourceDir, 'build/dist/build-verification.json'), { force: true });
+  await fs.rm(path.join(prepared.sourceDir, 'make/dist/build-verification.json'), { force: true });
   const invocation = packageInvocation(prepared, options);
   run(invocation.command, invocation.args, { cwd: prepared.sourceDir, env: invocation.env });
 }
 
 export async function collectArtifacts({ root, prepared }) {
-  const upstreamDist = path.join(prepared.sourceDir, 'build/dist');
+  const upstreamDist = path.join(prepared.sourceDir, 'make/dist');
   const report = JSON.parse(
     await fs.readFile(path.join(upstreamDist, 'build-verification.json'), 'utf8'),
   );

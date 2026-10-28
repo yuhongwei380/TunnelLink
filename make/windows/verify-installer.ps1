@@ -49,7 +49,7 @@ $signatures = foreach ($name in @('devcon.exe', 'tap0901.sys', 'tap0901.cat')) {
   [pscustomobject]@{ file=$name; status=[string]$signature.Status }
 }
 $driverScript = Join-Path $inspectionRoot 'windows\install-tap-driver.ps1'
-if ((Get-FileHash -LiteralPath $driverScript).Hash -ne (Get-FileHash -LiteralPath (Join-Path $projectRoot 'build\windows\install-tap-driver.ps1')).Hash) {
+if ((Get-FileHash -LiteralPath $driverScript).Hash -ne (Get-FileHash -LiteralPath (Join-Path $projectRoot 'make\windows\install-tap-driver.ps1')).Hash) {
   throw 'Driver installation script is missing or differs from the source.'
 }
 $versionOutput = & $engine --version 2>&1 | Out-String

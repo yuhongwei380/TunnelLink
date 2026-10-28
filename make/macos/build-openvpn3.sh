@@ -137,7 +137,7 @@ for dep in "${deps[@]}"; do
   done
 done
 
-node "$PROJECT_ROOT/build/macos/verify-runtime.mjs" "$OUTPUT_BIN"
-node "$PROJECT_ROOT/build/record-engine-build.mjs" "$SRC_DIR" "$OUTPUT_BIN" "$(uname -m)"
+node "$PROJECT_ROOT/make/macos/verify-runtime.mjs" "$OUTPUT_BIN"
+node "$PROJECT_ROOT/make/record-engine-build.mjs" "$SRC_DIR" "$OUTPUT_BIN" "$(uname -m)"
 
 echo "Done. ovpncli available at: $OUTPUT_BIN"

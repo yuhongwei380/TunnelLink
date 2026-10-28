@@ -19,9 +19,9 @@ __pycache__/
 Thumbs.db
 Desktop.ini
 
-# Frontend, native compiler and installer output; keep build/ scripts tracked
+# Frontend, native compiler and installer output; keep make/ scripts tracked
 /dist/
-/build/dist/
+/make/dist/
 /.work/
 target/
 /src-tauri/gen/

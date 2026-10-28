@@ -62,7 +62,7 @@ npm ci
 if ($LASTEXITCODE -ne 0) { throw "npm ci failed (exit code $LASTEXITCODE)." }
 
 Write-Host "[3/5] Checking Rust toolchain..."
-node build/tauri.mjs cargo --version
+node make/tauri.mjs cargo --version
 if ($LASTEXITCODE -ne 0) { throw "Install Rust stable (MSVC) with rustup before packaging." }
 
 Write-Host "[4/5] Building Windows installer..."
@@ -70,9 +70,9 @@ npm run dist:win
 if ($LASTEXITCODE -ne 0) { throw "Windows packaging failed (exit code $LASTEXITCODE)." }
 
 Write-Host "[5/5] Verifying Tauri artifacts..."
-$artifacts = Get-ChildItem -Path "build\dist\*-Setup-*.exe" -ErrorAction SilentlyContinue
+$artifacts = Get-ChildItem -Path "make\dist\*-Setup-*.exe" -ErrorAction SilentlyContinue
 if (-not $artifacts) {
-  throw "No Windows setup .exe generated under build\dist\."
+  throw "No Windows setup .exe generated under make\dist\."
 }
 
 Write-Host "Build completed. Windows installer:"
