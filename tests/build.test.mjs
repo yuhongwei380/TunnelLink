@@ -422,12 +422,11 @@ async function artifactFixture(t) {
   return { ...f, prepared, dist, file, content, report };
 }
 
-test('installer collection verifies hashes and isolates every private build', async (t) => {
+test('installer collection verifies hashes and yields a single copy under dist', async (t) => {
   const f = await artifactFixture(t);
   await fs.writeFile(path.join(f.dist, 'old-installer.exe'), 'old installer must not be collected');
   const first = await collectArtifacts(f);
-  const second = await collectArtifacts(f);
-  assert.notEqual(first.outputDir, second.outputDir);
+  assert.equal(first.outputDir, path.join(f.root, 'dist', 'windows'));
   assert.deepEqual((await fs.readdir(first.outputDir)).sort(), [
     'Private Client-Setup.exe',
     'build-info.json',
@@ -436,8 +435,29 @@ test('installer collection verifies hashes and isolates every private build', as
     await fs.readFile(path.join(first.outputDir, 'Private Client-Setup.exe')),
     f.content,
   );
-  assert.equal(first.manifest.profileSha256, f.profile.sha256);
-  const manifest = await fs.readFile(path.join(first.outputDir, 'build-info.json'), 'utf8');
+  // No second installer copy survives anywhere: the build cache is stripped.
+  await assert.rejects(fs.access(f.file), { code: 'ENOENT' });
+  await assert.rejects(fs.access(path.join(f.dist, 'old-installer.exe')), { code: 'ENOENT' });
+  // A rebuild replaces the installer in place instead of adding directories.
+  await fs.writeFile(path.join(first.outputDir, 'Old Product-Setup.exe'), 'stale build');
+  const rebuilt = Buffer.from('rebuilt installer');
+  await fs.writeFile(f.file, rebuilt);
+  const rebuildReport = {
+    artifacts: [{ file: f.file, bytes: rebuilt.length, sha256: hash(rebuilt) }],
+  };
+  await fs.writeFile(path.join(f.dist, 'build-verification.json'), JSON.stringify(rebuildReport));
+  const second = await collectArtifacts(f);
+  assert.equal(second.outputDir, first.outputDir);
+  assert.deepEqual((await fs.readdir(second.outputDir)).sort(), [
+    'Private Client-Setup.exe',
+    'build-info.json',
+  ]);
+  assert.deepEqual(
+    await fs.readFile(path.join(second.outputDir, 'Private Client-Setup.exe')),
+    rebuilt,
+  );
+  assert.equal(second.manifest.profileSha256, f.profile.sha256);
+  const manifest = await fs.readFile(path.join(second.outputDir, 'build-info.json'), 'utf8');
   assert.equal(JSON.parse(manifest).upstream.commit, f.upstream.commit);
   assert.ok(!manifest.includes('private.example.invalid'));
 });
@@ -476,10 +496,16 @@ test(
     await runBuild([], { root: f.root, prepareEnvironment });
     assert.equal(setups, 1);
     const output = path.join(f.root, 'dist', nativePlatform);
-    assert.equal((await fs.readdir(output)).length, 1);
+    const expected =
+      nativePlatform === 'windows' ? 'Private Client-Setup.exe' : 'Private Client.dmg';
+    assert.deepEqual((await fs.readdir(output)).sort(), ['build-info.json', expected].sort());
+    await assert.rejects(
+      fs.access(path.join(f.root, '.work', nativePlatform, 'source', 'build', 'dist', expected)),
+      { code: 'ENOENT' },
+    );
     await runBuild(['--no-auto-install-deps'], { root: f.root, prepareEnvironment });
     assert.equal(setups, 1);
-    assert.equal((await fs.readdir(output)).length, 2);
+    assert.deepEqual((await fs.readdir(output)).sort(), ['build-info.json', expected].sort());
   },
 );
 

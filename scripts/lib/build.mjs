@@ -440,14 +440,20 @@ export async function collectArtifacts({ root, prepared }) {
     artifacts.push({ file: name, bytes: stat.size, sha256: entry.sha256 });
   }
   const builtAt = new Date().toISOString();
-  const buildId = `${builtAt.replace(/[:.]/g, '-')}-${randomUUID().slice(0, 8)}`;
-  const outputDir = path.join(root, 'dist', prepared.platform, buildId);
+  const outputDir = path.join(root, 'dist', prepared.platform);
   await fs.mkdir(outputDir, { recursive: true, mode: 0o700 });
+  // dist/<platform> holds exactly the installers of this build: repeated
+  // builds replace the same-name installer in place, and stale files from
+  // older versions or renamed products never pile up next to it.
+  const current = new Set(artifacts.map((artifact) => artifact.file));
+  for (const name of await fs.readdir(outputDir)) {
+    if (!/\.(exe|dmg|msi)$/i.test(name) || current.has(name)) continue;
+    await fs.rm(path.join(outputDir, name));
+  }
   for (const artifact of artifacts) {
     await fs.copyFile(
       path.join(upstreamDist, artifact.file),
       path.join(outputDir, artifact.file),
-      fs.constants.COPYFILE_EXCL,
     );
     await fs.chmod(path.join(outputDir, artifact.file), 0o600);
   }
@@ -462,7 +468,14 @@ export async function collectArtifacts({ root, prepared }) {
   await fs.writeFile(
     path.join(outputDir, 'build-info.json'),
     JSON.stringify(manifest, null, 2) + '\n',
-    { mode: 0o600, flag: 'wx' },
+    { mode: 0o600 },
   );
+  // The installer under dist/<platform> is the only delivered copy. Remove the
+  // intermediate copies left in the build cache so one build never leaves two
+  // identical setups on disk.
+  for (const name of await fs.readdir(upstreamDist)) {
+    if (!/\.(exe|dmg|msi)$/i.test(name)) continue;
+    await fs.rm(path.join(upstreamDist, name));
+  }
   return { outputDir, manifest };
 }
