@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   AlertCircle,
   ArrowRight,
@@ -29,6 +29,8 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
   const [logFilter, setLogFilter] = useState<LogFilter>('all');
   const logsPending = useRef(false);
   const logsDialogRef = useDialog(open);
+  const consoleRef = useRef<HTMLElement>(null);
+  const followLatest = useRef(true);
   const isDesktop = Boolean(window.vpn);
   const errorCount = logs.filter(isErrorLog).length;
 
@@ -53,6 +55,7 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
 
   useEffect(() => {
     if (!open) return;
+    followLatest.current = true;
     void loadLogs();
     const timer = window.setInterval(() => void loadLogs(), 1000);
     return () => window.clearInterval(timer);
@@ -69,7 +72,10 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
     }
   };
   const filteredLogs = filterLogs(logs, query, logFilter);
-  const visibleLogs = filteredLogs.slice(-8);
+  useLayoutEffect(() => {
+    const console = consoleRef.current;
+    if (open && console && followLatest.current) console.scrollTop = console.scrollHeight;
+  }, [open, logs, query, logFilter]);
   const copyLogs = async () => {
     try {
       await navigator.clipboard.writeText(formatLogs(filteredLogs));
@@ -89,23 +95,12 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
     >
       <div className="logs-dialog-heading">
         <div>
-          <span className="eyebrow">DIAGNOSTICS</span>
-          <h2 id="logs-dialog-title">{t.logsTitle}</h2>
+          <h2 id="logs-dialog-title">
+            {t.logsTitle} <span className="count-badge">{logs.length}</span>
+          </h2>
           <p>{t.logsDesc}</p>
         </div>
-        <button className="dialog-close" onClick={onClose} aria-label={t.close}>
-          <X size={20} />
-        </button>
-      </div>
-      <section className="logs-panel" aria-label={t.logsTitle}>
-        <div className="logs-panel-header">
-          <div>
-            <span className="logs-title-icon">
-              <Terminal size={18} />
-            </span>
-            <h3>{t.logStream}</h3>
-            <span className="count-badge">{logs.length}</span>
-          </div>
+        <div className="logs-heading-actions">
           <span className="live-label">
             {isDesktop ? (
               <>
@@ -116,7 +111,12 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
               t.preview
             )}
           </span>
+          <button className="dialog-close" onClick={onClose} aria-label={t.close}>
+            <X size={20} />
+          </button>
         </div>
+      </div>
+      <section className="logs-panel" aria-label={t.logsTitle}>
         <div className="logs-controls">
           <div className="log-filters" aria-label={t.logStream}>
             <button aria-pressed={logFilter === 'all'} onClick={() => setLogFilter('all')}>
@@ -127,6 +127,21 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
               {t.errorsOnly}
               {errorCount > 0 && <span>{errorCount}</span>}
             </button>
+          </div>
+          <div className="log-search-field">
+            <Search size={17} />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t.search}
+              aria-label={t.search}
+            />
+            {query && (
+              <button onClick={() => setQuery('')} aria-label={t.clearSearch}>
+                <X size={15} />
+              </button>
+            )}
           </div>
           <div className="logs-toolbar">
             <button
@@ -156,21 +171,6 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
             </button>
           </div>
         </div>
-        <div className="log-search-field">
-          <Search size={17} />
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t.search}
-            aria-label={t.search}
-          />
-          {query && (
-            <button onClick={() => setQuery('')} aria-label={t.clearSearch}>
-              <X size={15} />
-            </button>
-          )}
-        </div>
         {logsError && (
           <div className="logs-error" role="alert">
             <AlertCircle size={16} />
@@ -182,8 +182,17 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
           <span>{t.source}</span>
           <span>{t.message}</span>
         </div>
-        <section className="log-console" aria-label={t.logStream}>
-          {!visibleLogs.length ? (
+        <section
+          ref={consoleRef}
+          className="log-console"
+          aria-label={t.logStream}
+          onScroll={(event) => {
+            const target = event.currentTarget;
+            followLatest.current =
+              target.scrollHeight - target.scrollTop - target.clientHeight < 24;
+          }}
+        >
+          {!filteredLogs.length ? (
             <div className="logs-empty">
               <span className="empty-illustration">
                 <Terminal size={30} strokeWidth={1.4} />
@@ -212,7 +221,7 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
               )}
             </div>
           ) : (
-            visibleLogs.map((entry, index) => (
+            filteredLogs.map((entry, index) => (
               <div
                 className={`log-entry ${isErrorLog(entry) ? 'log-error' : ''}`}
                 key={`${entry.ts}-${index}`}
@@ -230,11 +239,7 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
           )}
         </section>
         <div className="logs-footnote">
-          <span>
-            {filteredLogs.length > visibleLogs.length
-              ? `${t.latestEvents} ${visibleLogs.length} / ${filteredLogs.length}`
-              : `${filteredLogs.length} ${t.events}`}
-          </span>
+          <span>{`${filteredLogs.length} ${t.events}`}</span>
           <span>
             <LockKeyhole size={12} />
             {t.logPrivacy}

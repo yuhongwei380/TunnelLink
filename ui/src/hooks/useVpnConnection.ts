@@ -214,7 +214,11 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
     setAction(status === 'CONNECTING' ? 'cancelling' : 'disconnecting');
     setBusy(true);
     try {
-      const result = await window.vpn.disconnect();
+      // Keep fast operations visible long enough for the progress indicator to register.
+      const [result] = await Promise.all([
+        window.vpn.disconnect(),
+        new Promise<void>((resolve) => window.setTimeout(resolve, 600)),
+      ]);
       if (!result.ok) throw new Error(result.error || t.disconnectFailed);
       connectionErrorOverride.current = '';
       setStatusError('');

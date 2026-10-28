@@ -5059,6 +5059,10 @@ dialog[data-closing='true']::backdrop {
   .connection-page .connection-action-row .connection-action {
     transition: background-color 160ms ease !important;
   }
+  /* Keep the connection progress indicator visible, at a gentler speed. */
+  .connection-page .connection-action .connection-button-content .spin {
+    animation: spin 2.4s linear infinite !important;
+  }
 }
 
 /* Balance the two overview cards in the fixed desktop window. */
@@ -5070,10 +5074,23 @@ dialog[data-closing='true']::backdrop {
   }
   .connection-page .connection-card {
     display: flex;
-    align-items: center;
+    align-items: stretch;
+    padding-top: 50px;
+    padding-bottom: 20px;
+  }
+  .connection-page .connection-heading .status-badge {
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 720;
+    letter-spacing: -0.4px;
   }
   .connection-page .connection-copy {
     width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .connection-page .connection-action-row {
+    margin-top: auto;
   }
   .connection-page .details-card {
     margin-top: 16px;
@@ -5092,5 +5109,110 @@ dialog[data-closing='true']::backdrop {
   .connection-page .details-card-footer {
     margin-top: 6px;
     padding-top: 4px;
+  }
+}
+
+/* Keep diagnostics controls compact and give the event stream the available height. */
+.logs-dialog {
+  gap: 10px;
+  padding: 16px;
+}
+.logs-dialog-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 22px;
+}
+.logs-dialog-heading p {
+  margin-top: 2px;
+  font-size: 13px;
+}
+.logs-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.logs-heading-actions .live-label,
+.logs-dialog .count-badge {
+  font-size: 12px;
+}
+.logs-dialog .logs-controls {
+  flex: 0 0 auto;
+  gap: 10px;
+  padding: 8px 12px;
+}
+.logs-dialog .log-filters {
+  flex: 0 0 auto;
+}
+.logs-dialog .log-filters button {
+  min-height: 38px;
+  padding: 0 10px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.logs-dialog .log-search-field {
+  flex: 1 1 160px;
+  min-width: 0;
+  min-height: 40px;
+  margin: 0;
+}
+.logs-dialog .log-search-field input {
+  font-size: 13px;
+}
+.logs-dialog .logs-toolbar {
+  flex: 0 0 auto;
+}
+.logs-dialog .logs-toolbar button {
+  width: 40px;
+  height: 40px;
+}
+.logs-dialog .log-column-labels,
+.logs-dialog .log-entry {
+  grid-template-columns: 190px 70px minmax(0, 1fr);
+  gap: 12px;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+.logs-dialog .log-column-labels {
+  flex: 0 0 auto;
+}
+.logs-dialog .log-console {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.logs-dialog .log-entry {
+  line-height: 1.5;
+}
+.logs-dialog .log-entry time,
+.logs-dialog .log-source {
+  font-size: inherit;
+}
+.logs-dialog .log-entry p {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+.logs-dialog .logs-footnote {
+  padding: 7px 14px;
+  font-size: 12px;
+}
+@media (max-width: 620px) {
+  .logs-dialog .logs-controls {
+    flex-wrap: wrap;
+  }
+  .logs-dialog .log-search-field {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .logs-dialog .logs-toolbar {
+    margin-left: auto;
+  }
+  .logs-dialog .log-entry {
+    grid-template-columns: 1fr auto;
+    gap: 3px 8px;
+  }
+  .logs-dialog .log-entry p {
+    grid-column: 1 / -1;
   }
 }
