@@ -16,32 +16,15 @@ import release from '../config/openvpn3-release.json';
 import defaultUiCopy from '../config/ui-copy.json';
 import branding from '../config/app-branding.json';
 
-const privateBrandingModules = import.meta.glob('../private/app-branding.json', {
-  eager: true,
-  import: 'default',
-});
-const privateBranding = Object.values(privateBrandingModules)[0] as
-  | Record<string, unknown>
-  | undefined;
-const effectiveBranding = { ...branding, ...privateBranding };
-
 const configuredLocale: Locale =
-  String(effectiveBranding.defaultLocale || 'CN').trim().toUpperCase() === 'EN' ? 'en' : 'zh';
-
-// Private quick configuration (git-ignored), baked into the build when present.
-const privateUiCopyModules = import.meta.glob('../private/ui-copy.json', {
-  eager: true,
-  import: 'default',
-});
-const privateUiCopy = Object.values(privateUiCopyModules)[0];
-const bakedUiCopy = mergeUiCopy(defaultUiCopy, privateUiCopy);
+  String(branding.defaultLocale || 'CN').trim().toUpperCase() === 'EN' ? 'en' : 'zh';
 
 export default function App() {
   const [locale, setLocale] = useState<Locale>(() => {
     const saved = localStorage.getItem('vpn-ui-locale');
     return saved === 'zh' || saved === 'en' ? saved : configuredLocale;
   });
-  const [uiCopy, setUiCopy] = useState<UiCopy>(() => bakedUiCopy);
+  const [uiCopy, setUiCopy] = useState<UiCopy>(() => defaultUiCopy);
 
   const t = getMessages(locale, uiCopy);
   const [logsOpen, setLogsOpen] = useState(false);
@@ -86,7 +69,7 @@ export default function App() {
   useEffect(() => {
     window.vpn
       ?.getUiCopy()
-      .then((copy) => setUiCopy(mergeUiCopy(bakedUiCopy, copy)))
+      .then((copy) => setUiCopy(mergeUiCopy(defaultUiCopy, copy)))
       .catch(() => {});
   }, []);
   useEffect(() => {

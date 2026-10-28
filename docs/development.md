@@ -67,7 +67,7 @@ npm run tauri:dev
 ## 配置修改
 
 - `config/client.ovpn`：编译进原生客户端的固定配置；修改后需要重新构建客户端。
-- `config/app-branding.json`：应用名称、标识与默认界面语言（`defaultLocale`：`CN` 默认中文 / `EN` 默认英文，仅影响首次启动，用户手动切换后记住用户选择）；修改后运行 `npm run sync:branding`。个人/私有定制放 `private/app-branding.json`（Git 忽略），编译时自动叠加覆盖同名键，见 `private/README.md`。
+- `config/app-branding.json`：应用名称、标识与默认界面语言（`defaultLocale`：`CN` 默认中文 / `EN` 默认英文，仅影响首次启动，用户手动切换后记住用户选择）；修改后运行 `npm run sync:branding`。品牌、安装包名与界面文案的定制都直接修改 `config/` 下的对应文件（随仓库提交）。
 - `config/openvpn3-release.json`：OpenVPN 版本、标签和提交的唯一来源；升级流程见[构建与发布](building.md#版本与许可)。
 - `config/ui-copy.json`：新用户默认文案。已生成的用户文案文件不会被覆盖，修改方式见[使用说明中的文案配置](../README.md#修改连接页文案)。
 

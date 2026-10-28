@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { readBranding } from './app-branding.mjs';
 import { readRelease } from './openvpn3-release.mjs';
 
 const rootDir = process.cwd();
 const pkgPath = path.join(rootDir, 'package.json');
+const brandingPath = path.join(rootDir, 'config', 'app-branding.json');
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -16,7 +16,11 @@ function writeJson(filePath, value) {
     fs.writeFileSync(filePath, content, 'utf8');
 }
 
-const branding = readBranding(rootDir);
+if (!fs.existsSync(brandingPath)) {
+  throw new Error(`Branding file not found: ${brandingPath}`);
+}
+
+const branding = readJson(brandingPath);
 const appId = String(branding.appId || '').trim();
 const productName = String(branding.productName || '').trim();
 const packageName = productName

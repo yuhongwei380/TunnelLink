@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { readBranding } from './app-branding.mjs';
 import { verifyMacRuntime } from './macos/verify-runtime.mjs';
 
 export async function collectTauri(root, args, env) {
@@ -14,7 +13,9 @@ export async function collectTauri(root, args, env) {
   const output = path.join(root, 'build/dist');
   await fs.mkdir(output, { recursive: true });
   const pkg = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
-  const branding = readBranding(root);
+  const branding = JSON.parse(
+    await fs.readFile(path.join(root, 'config/app-branding.json'), 'utf8'),
+  );
   const artifacts = [];
   if (process.platform === 'win32') {
     const directory = path.join(buildRoot, 'bundle/nsis');
@@ -44,6 +45,34 @@ export async function collectTauri(root, args, env) {
     }
   }
   if (!artifacts.length) throw new Error('No Tauri installer was generated.');
+  // The collected copy in build/dist is the one deliverable. Remove the
+  // installer(s) still sitting in Cargo's bundle tree (current and older
+  // releases) so a filesystem search never finds two identical setups.
+  for (const directory of [
+    path.join(buildRoot, 'bundle/nsis'),
+    path.join(buildRoot, 'bundle/dmg'),
+  ]) {
+    let names;
+    try {
+      names = await fs.readdir(directory);
+    } catch {
+      continue;
+    }
+    for (const name of names) {
+      if (!/\.(exe|dmg|msi)$/i.test(name)) continue;
+      await fs.rm(path.join(directory, name));
+      console.log(`Removed bundled installer: ${path.join(directory, name)}`);
+    }
+  }
+  // build/dist keeps exactly the installer(s) of this build; previous runs
+  // (older versions or renamed products) must not pile up next to it.
+  const keep = new Set(artifacts.map((file) => path.resolve(file)));
+  for (const name of await fs.readdir(output)) {
+    const file = path.join(output, name);
+    if (!/\.(exe|dmg|msi)$/i.test(name) || keep.has(path.resolve(file))) continue;
+    await fs.rm(file);
+    console.log(`Removed stale installer: ${file}`);
+  }
   const verification = {
     framework: 'Tauri 2',
     version: pkg.version,

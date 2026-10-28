@@ -19,15 +19,18 @@ test('partial custom copy falls back by field and preserves the other locale', (
 });
 
 test('invalid copy shapes and non-string overrides retain defaults', () => {
+  // The file carries a "_comment" documentation key; mergeUiCopy keeps only
+  // whitelisted fields, so compare against the whitelisted baseline.
+  const baseline = mergeUiCopy(defaultUiCopy, {});
   for (const value of [undefined, null, false, 42, 'text', [], { zh: [] }]) {
-    assert.deepEqual(mergeUiCopy(defaultUiCopy, value), defaultUiCopy);
+    assert.deepEqual(mergeUiCopy(defaultUiCopy, value), baseline);
   }
 
   const copy = mergeUiCopy(defaultUiCopy, {
     zh: { overview: { title: null, description: 123, extra: 'ignored' } },
     en: { connection: false },
   });
-  assert.deepEqual(copy, defaultUiCopy);
+  assert.deepEqual(copy, baseline);
 });
 
 test('an empty string is an intentional copy override', () => {
