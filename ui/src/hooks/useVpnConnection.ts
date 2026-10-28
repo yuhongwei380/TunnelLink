@@ -127,8 +127,17 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
       dismissedConnectionError.current = '';
       return;
     }
-    if (!authOpen && statusError !== dismissedConnectionError.current) setConnectionErrorOpen(true);
-  }, [statusError, authOpen]);
+    if (
+      authOpen ||
+      busy ||
+      status !== 'DISCONNECTED' ||
+      statusError === dismissedConnectionError.current
+    )
+      return;
+    // Brief status failures during startup/reconnect should not flash a modal.
+    const timer = window.setTimeout(() => setConnectionErrorOpen(true), 250);
+    return () => window.clearTimeout(timer);
+  }, [statusError, authOpen, busy, status]);
 
   const dismissConnectionError = useCallback(() => {
     dismissedConnectionError.current = statusError;

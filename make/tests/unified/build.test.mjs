@@ -275,6 +275,59 @@ test('local preparation uses validated VPN branding and falls back to the source
   assert.deepEqual(JSON.parse(await fs.readFile(target, 'utf8')), defaultBranding);
 });
 
+test('local snapshots preserve compiler and dependency caches while updating and removing source files', async (t) => {
+  const f = await fixture(t);
+  await fs.mkdir(path.join(f.root, 'ui/src-tauri'), { recursive: true });
+  await fs.writeFile(path.join(f.root, 'resources/settings/client.ovpn'), 'client\n');
+  await fs.writeFile(path.join(f.root, 'source.txt'), 'first');
+  await fs.writeFile(path.join(f.root, 'obsolete.txt'), 'remove me');
+  const options = {
+    ...f,
+    platform: 'windows',
+    branding: Buffer.from('{"productName":"Private"}\n'),
+  };
+  const { sourceDir } = await prepareLocalSource(options);
+  for (const file of [
+    '.cache/cargo-target/incremental/object',
+    '.cache/work/windows/engine/build/object',
+    'node_modules/cached-module/package.json',
+    '.cache/native/bin/engine',
+  ]) {
+    await fs.mkdir(path.dirname(path.join(sourceDir, file)), { recursive: true });
+    await fs.writeFile(path.join(sourceDir, file), file);
+  }
+  prepareTauriLayout(sourceDir);
+  const profile = path.join(sourceDir, 'resources/settings/client.ovpn');
+  const branding = path.join(sourceDir, 'resources/settings/app-branding.json');
+  // Use a fixed older time so this assertion does not depend on clock resolution.
+  await fs.utimes(profile, 1000, 1000);
+  await fs.utimes(branding, 1000, 1000);
+  await fs.writeFile(path.join(f.root, 'source.txt'), 'second');
+  await fs.unlink(path.join(f.root, 'obsolete.txt'));
+  await prepareLocalSource(options);
+  assert.equal(await fs.readFile(path.join(sourceDir, 'source.txt'), 'utf8'), 'second');
+  await assert.rejects(fs.access(path.join(sourceDir, 'obsolete.txt')), { code: 'ENOENT' });
+  for (const file of [
+    '.cache/cargo-target/incremental/object',
+    '.cache/work/windows/engine/build/object',
+    'node_modules/cached-module/package.json',
+    '.cache/native/bin/engine',
+  ]) {
+    assert.equal(await fs.readFile(path.join(sourceDir, file), 'utf8'), file);
+  }
+  assert.equal((await fs.stat(profile)).mtimeMs, 1000000);
+  assert.equal((await fs.stat(branding)).mtimeMs, 1000000);
+  assert.equal(
+    await fs.realpath(path.join(sourceDir, 'ui/src-tauri/gen')),
+    path.join(sourceDir, '.cache/tauri/gen'),
+  );
+  await prepareLocalSource({
+    ...options,
+    profile: { contents: Buffer.from('client\nremote changed.invalid\n'), sha256: 'changed' },
+  });
+  assert.equal(await fs.readFile(profile, 'utf8'), 'client\nremote changed.invalid\n');
+});
+
 test('repeat preparation uses cached source without a reachable remote or needless rewrites', async (t) => {
   const f = await fixture(t);
   const options = { ...f, platform: 'windows' };

@@ -12,7 +12,7 @@ JOBS="${OPENVPN3_BUILD_JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
 MACOS_DEPLOYMENT_TARGET="${OPENVPN3_MACOS_DEPLOYMENT_TARGET:-11.0}"
 
 mkdir -p "$PROJECT_ROOT/.cache/work/macos"
-WORKDIR="${OPENVPN3_WORKDIR:-$(mktemp -d "$PROJECT_ROOT/.cache/work/macos/openvpn3-src.XXXXXX")}"
+WORKDIR="${OPENVPN3_WORKDIR:-$PROJECT_ROOT/.cache/work/macos/openvpn3-$RELEASE_COMMIT-$(uname -m)-$MACOS_DEPLOYMENT_TARGET}"
 SRC_DIR="$WORKDIR/openvpn3"
 BUILD_DIR="$WORKDIR/build-openvpn3"
 OUTPUT_BIN="$PROJECT_ROOT/.cache/native/bin/macos/ovpncli"
@@ -46,14 +46,10 @@ list_dependencies() {
   otool -L "$1" | sed -n 's/^[[:space:]]*\(.*\) (compatibility version .*$/\1/p'
 }
 
-cleanup() {
-  if [[ "$OPENVPN3_KEEP_WORKDIR" == "1" ]]; then
-    echo "Keeping workdir: $WORKDIR"
-    return
-  fi
-  rm -rf "$WORKDIR"
-}
-trap cleanup EXIT
+if [[ "${FORCE_OPENVPN3_BUILD:-0}" != "1" ]] && node "$PROJECT_ROOT/make/engine-cache.mjs" verify macos "$(uname -m)" Release; then
+  node "$PROJECT_ROOT/make/macos/verify-runtime.mjs" "$OUTPUT_BIN"
+  exit 0
+fi
 
 echo "[1/5] Checking build tools..."
 command -v git >/dev/null
@@ -64,8 +60,8 @@ command -v install_name_tool >/dev/null
 command -v node >/dev/null
 command -v lipo >/dev/null
 
-echo "[2/5] Cloning OpenVPN3 ($OPENVPN3_REF) from official repo..."
-git clone --depth 1 --branch "$OPENVPN3_REF" "$OPENVPN3_REPO_URL" "$SRC_DIR"
+echo "[2/5] Checking cached OpenVPN3 source ($OPENVPN3_REF)..."
+node "$PROJECT_ROOT/make/engine-cache.mjs" source "$WORKDIR" "$OPENVPN3_REPO_URL"
 [[ "$(git -C "$SRC_DIR" rev-parse HEAD)" == "$RELEASE_COMMIT" ]] || { echo 'Fetched source does not match the pinned release commit.' >&2; exit 1; }
 
 echo "[3/5] Configuring OpenVPN3 build..."
@@ -74,7 +70,9 @@ cmake -S "$SRC_DIR" -B "$BUILD_DIR" \
   -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOS_DEPLOYMENT_TARGET"
 
 echo "[4/5] Building ovpncli..."
-cmake --build "$BUILD_DIR" --target ovpncli -j "$JOBS"
+build_args=(--build "$BUILD_DIR" --target ovpncli -j "$JOBS")
+if [[ "${FORCE_OPENVPN3_BUILD:-0}" == "1" ]]; then build_args+=(--clean-first); fi
+cmake "${build_args[@]}"
 
 BUILT_BIN="$BUILD_DIR/test/ovpncli/ovpncli"
 if [[ ! -f "$BUILT_BIN" ]]; then
@@ -142,3 +140,4 @@ node "$PROJECT_ROOT/make/macos/verify-runtime.mjs" "$OUTPUT_BIN"
 node "$PROJECT_ROOT/make/record-engine-build.mjs" "$SRC_DIR" "$OUTPUT_BIN" "$(uname -m)"
 
 echo "Done. ovpncli available at: $OUTPUT_BIN"
+echo "Source and compiler cache retained: $WORKDIR"

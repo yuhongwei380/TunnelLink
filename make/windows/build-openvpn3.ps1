@@ -8,6 +8,7 @@ param(
   [string]$TapComponentId = "tap0901",
   [string]$WorkDir = "",
   [switch]$KeepWorkDir,
+  [switch]$Force,
   [bool]$AutoInstallDeps = $true,
   [string]$CMakeMsiUrlX64 = "https://github.com/Kitware/CMake/releases/download/v4.3.1/cmake-4.3.1-windows-x86_64.msi",
   [string]$CMakeMsiUrlArm64 = "https://github.com/Kitware/CMake/releases/download/v4.3.1/cmake-4.3.1-windows-arm64.msi",
@@ -16,7 +17,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$ScriptVersion = "2026-10-23.2"
+$ScriptVersion = "2026-10-28.1"
 
 $ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 . (Join-Path $PSScriptRoot 'openssl.ps1')
@@ -24,17 +25,28 @@ $releaseLock = Get-Content -LiteralPath (Join-Path $ProjectRoot 'resources/setti
 if (-not $OpenVpn3Ref) { $OpenVpn3Ref = $releaseLock.ref }
 if ($OpenVpn3Ref -ne $releaseLock.ref) { throw 'OpenVpn3Ref must match resources/settings/openvpn3-release.json.' }
 if ([string]::IsNullOrWhiteSpace($WorkDir)) {
-  $WorkDir = Join-Path $ProjectRoot (".cache/work/windows/openvpn3-src-" + [Guid]::NewGuid().ToString("N"))
+  $cacheVariant = ($Generator + '-' + $Platform + '-' + $Configuration + '-' + $TapComponentId + '-' + $ScriptVersion) -replace '[^A-Za-z0-9_.-]', '_'
+  $WorkDir = Join-Path $ProjectRoot (".cache/work/windows/openvpn3-" + $releaseLock.commit + '-' + $cacheVariant)
 }
 
 $SrcDir = Join-Path $WorkDir "openvpn3"
 $BuildDir = Join-Path $WorkDir "build"
 $OutputBin = Join-Path $ProjectRoot ".cache\native\bin\windows-x64\ovpncli.exe"
-# A caller-supplied work directory must be new. Never erase existing checkouts.
+# Keep source and CMake outputs for incremental builds, including after failures.
 $WorkDir = [IO.Path]::GetFullPath($WorkDir)
 $SrcDir = Join-Path $WorkDir 'openvpn3'
 $BuildDir = Join-Path $WorkDir 'build'
-if (Test-Path -LiteralPath $WorkDir) { throw "Build work directory already exists; choose a new directory: $WorkDir" }
+
+if (-not $Force) {
+  & node (Join-Path $ProjectRoot 'make/engine-cache.mjs') verify windows $Platform.ToLowerInvariant() $Configuration $TapComponentId
+  if ($LASTEXITCODE -eq 0) { return }
+}
+
+function Write-PatchedFile([string]$Path, [string]$Contents) {
+  if ([IO.File]::ReadAllText($Path) -cne $Contents) {
+    [IO.File]::WriteAllText($Path, $Contents, [Text.UTF8Encoding]::new($false))
+  }
+}
 
 function Refresh-PathInCurrentSession {
   $extra = @(
@@ -555,16 +567,22 @@ endfunction()
 "@
     $findCoreDeps = $findCoreDeps -replace '(?ms)\n\s*find_package\(fmt REQUIRED\)\s*\n\s*target_link_libraries\(\$\{target\} fmt::fmt\)\s*', "`n$patchedFmt`n"
   }
+  else {
+    # A reused checkout may point at a different local fmt installation now.
+    $fmtIncludeCMake = ($fmtIncludeDir -replace '\\', '/')
+    $fmtPattern = '(# OPENVPN_CLIENT_CUS_WIN_PATCH_FMT_HEADER_ONLY\r?\n\s*target_compile_definitions\([^\r\n]+\)\r?\n\s*target_include_directories\(\$\{target\} PRIVATE ")[^"]*("\))'
+    $findCoreDeps = [regex]::Replace($findCoreDeps, $fmtPattern, [Text.RegularExpressions.MatchEvaluator]{ param($match) $match.Groups[1].Value + $fmtIncludeCMake + $match.Groups[2].Value })
+  }
 
   if ($findCoreDeps -match "OPENVPN_CLIENT_CUS_WIN_PATCH|OPENVPN_CLIENT_CUS_WIN_PATCH_NO_LZ4") {
-    Set-Content -Path $findCoreDepsPath -Value $findCoreDeps -Encoding utf8
+    Write-PatchedFile $findCoreDepsPath $findCoreDeps
   }
 
   $ovpnCliCmake = Get-Content -Raw -Path $ovpnCliCmakePath
   if ($ovpnCliCmake -notmatch "OPENVPN_CLIENT_CUS_WIN_PATCH_OVPNCLIAGENT") {
     # Disable ovpncliagent target on Windows for minimal build to avoid jsoncpp/pkg-config dependency path.
     $ovpnCliCmake = $ovpnCliCmake -replace 'if \(WIN32\)', 'if (WIN32 AND FALSE) # OPENVPN_CLIENT_CUS_WIN_PATCH_OVPNCLIAGENT'
-    Set-Content -Path $ovpnCliCmakePath -Value $ovpnCliCmake -Encoding utf8
+    Write-PatchedFile $ovpnCliCmakePath $ovpnCliCmake
   }
 
   # Recent Core releases configure additional JSON/agent executables at the
@@ -576,7 +594,7 @@ endfunction()
     $pattern = '(?m)^\s*add_subdirectory\(' + [regex]::Escape($directory) + '\)\s*$'
     $rootCmake = [regex]::Replace($rootCmake, $pattern, "# OPENVPN_CLIENT_CUS_WIN_PATCH_MINIMAL_TARGETS: skipped $directory")
   }
-  Set-Content -LiteralPath $rootCmakePath -Value $rootCmake -Encoding utf8
+  Write-PatchedFile $rootCmakePath $rootCmake
 }
 
 Write-Host "[1/6] Checking/installing required commands..."
@@ -654,8 +672,8 @@ Write-Host "  BuildDir: $BuildDir"
 New-Item -ItemType Directory -Path $WorkDir -Force | Out-Null
 
 try {
-  Write-Host "[2/6] Cloning OpenVPN3 ($OpenVpn3Ref)..."
-  Invoke-NativeChecked -exe $gitPath -ArgumentList @("clone", "--depth", "1", "--branch", $OpenVpn3Ref, $OpenVpn3RepoUrl, $SrcDir) -step "git clone"
+  Write-Host "[2/6] Checking cached OpenVPN3 source ($OpenVpn3Ref)..."
+  Invoke-NativeChecked -exe 'node' -ArgumentList @((Join-Path $ProjectRoot 'make/engine-cache.mjs'), 'source', $WorkDir, $OpenVpn3RepoUrl) -step 'prepare cached engine source'
   if (-not (Test-Path $SrcDir)) {
     throw "git clone returned success but source directory does not exist: $SrcDir"
   }
@@ -685,7 +703,9 @@ try {
   }
 
   Write-Host "[4/6] Building ovpncli..."
-  Invoke-NativeChecked -exe $cmakePath -ArgumentList @("--build", $BuildDir, "--config", $Configuration, "--target", "ovpncli") -step "cmake build ovpncli"
+  $cmakeBuildArgs = @("--build", $BuildDir, "--config", $Configuration, "--target", "ovpncli")
+  if ($Force) { $cmakeBuildArgs += '--clean-first' }
+  Invoke-NativeChecked -exe $cmakePath -ArgumentList $cmakeBuildArgs -step "cmake build ovpncli"
 
   $Candidates = @(
     (Join-Path $BuildDir "test\ovpncli\$Configuration\ovpncli.exe"),
@@ -706,17 +726,9 @@ try {
   Copy-MsvcRuntimeDlls -visualStudioPath $vsPath -destinationDir $outputDir -targetPlatform $Platform
   # Bind the selected driver to the actual binary so packaging cannot reuse a
   # Connect-specific or stale engine with the standalone tap0901 driver.
-  Invoke-NativeChecked -exe 'node' -ArgumentList @((Join-Path $ProjectRoot 'make/record-engine-build.mjs'), $SrcDir, $OutputBin, $Platform.ToLowerInvariant(), $TapComponentId.ToLowerInvariant()) -step 'record release provenance and licenses'
+  Invoke-NativeChecked -exe 'node' -ArgumentList @((Join-Path $ProjectRoot 'make/record-engine-build.mjs'), $SrcDir, $OutputBin, $Platform.ToLowerInvariant(), $TapComponentId.ToLowerInvariant(), $Configuration) -step 'record release provenance and licenses'
   Write-Host "[6/6] Done. ovpncli.exe available at: $OutputBin"
 }
 finally {
-  if ($KeepWorkDir) {
-    Write-Host "Keeping work directory: $WorkDir"
-  }
-  else {
-    # WorkDir was absent before this invocation and is now our private build tree.
-    $cleanupTarget = (Resolve-Path -LiteralPath $WorkDir).Path
-    if ($cleanupTarget -ne $WorkDir -or $cleanupTarget -eq [IO.Path]::GetPathRoot($cleanupTarget)) { throw 'Unsafe build cleanup path.' }
-    Remove-Item -LiteralPath $cleanupTarget -Recurse -Force
-  }
+  Write-Host "Source and compiler cache retained: $WorkDir"
 }

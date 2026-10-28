@@ -348,31 +348,65 @@ export async function prepareLocalSource({ root, platform, upstream, profile, br
         },
       });
     }
-    // Reuse prepared build inputs without copying the source cache, private
-    // profiles, or old installers back into the isolated working tree.
+    const stagedProfile = path.join(stagingDir, profileTarget);
+    if (!(await fs.lstat(stagedProfile)).isFile()) {
+      throw new Error(`The local source is missing ${profileTarget}.`);
+    }
+    await fs.writeFile(stagedProfile, profile.contents, { mode: 0o600 });
+    if (branding) {
+      await fs.writeFile(path.join(stagingDir, 'resources/settings/app-branding.json'), branding);
+    }
+    // Update source files in place: Cargo/CMake caches and node_modules belong
+    // to this build tree and must survive subsequent snapshots.
+    await syncLocalSource(stagingDir, sourceDir);
+    // Seed prepared inputs once. A later build in the isolated tree may have
+    // produced a newer cache than the repository root.
     for (const name of ['native', 'deps', 'tap-windows6']) {
       const input = path.join(root, '.cache', name);
-      if (await exists(input)) {
-        await fs.cp(input, path.join(stagingDir, '.cache', name), { recursive: true });
+      const destination = path.join(sourceDir, '.cache', name);
+      if ((await exists(input)) && !(await exists(destination))) {
+        await fs.cp(input, destination, { recursive: true });
       }
     }
-    await fs.rm(sourceDir, { recursive: true, force: true });
-    await fs.cp(stagingDir, sourceDir, { recursive: true });
   } finally {
     await fs.rm(stagingDir, { recursive: true, force: true });
   }
   const destination = path.join(sourceDir, profileTarget);
-  if (!(await fs.lstat(destination)).isFile()) {
-    throw new Error(`The local source is missing ${profileTarget}.`);
-  }
-  if (!(await fs.readFile(destination)).equals(profile.contents)) {
-    await fs.writeFile(destination, profile.contents, { mode: 0o600 });
-  }
   await fs.chmod(destination, 0o600);
-  if (branding) {
-    await fs.writeFile(path.join(sourceDir, 'resources/settings/app-branding.json'), branding);
-  }
   return { sourceDir, platform, upstream, profileSha256: profile.sha256 };
+}
+
+async function syncLocalSource(source, destination, relative = '') {
+  const existing = (await exists(destination)) ? await fs.lstat(destination) : null;
+  if (existing?.isSymbolicLink() || (existing && !existing.isDirectory())) {
+    throw new Error(`Local build source must be a regular directory: ${destination}`);
+  }
+  await fs.mkdir(destination, { recursive: true });
+  const entries = new Set(await fs.readdir(source));
+  const preserved = (name) =>
+    (!relative && ['.cache', 'node_modules'].includes(name)) ||
+    path.join(relative, name) === path.join('ui/src-tauri', 'gen');
+  for (const name of await fs.readdir(destination)) {
+    if (!entries.has(name) && !preserved(name)) {
+      await fs.rm(path.join(destination, name), { recursive: true, force: true });
+    }
+  }
+  for (const name of entries) {
+    const input = path.join(source, name);
+    const output = path.join(destination, name);
+    const stat = await fs.lstat(input);
+    const previous = (await exists(output)) ? await fs.lstat(output) : null;
+    if (stat.isDirectory() && previous?.isDirectory()) {
+      await syncLocalSource(input, output, path.join(relative, name));
+    } else if (
+      !stat.isFile() ||
+      !previous?.isFile() ||
+      !(await fs.readFile(input)).equals(await fs.readFile(output))
+    ) {
+      if (previous) await fs.rm(output, { recursive: true, force: true });
+      await fs.cp(input, output, { recursive: true });
+    }
+  }
 }
 
 export function packageInvocation(prepared, options, baseEnv = process.env) {

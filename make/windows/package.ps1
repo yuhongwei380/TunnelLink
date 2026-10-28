@@ -8,25 +8,13 @@ $ErrorActionPreference = "Stop"
 
 $ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 Set-Location $ProjectRoot
-$releaseLock = Get-Content -LiteralPath (Join-Path $ProjectRoot 'resources/settings/openvpn3-release.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 
 $OpenVpnBinDir = Join-Path $ProjectRoot ".cache\native\bin\windows-x64"
 $OpenVpnExe = Join-Path $ProjectRoot ".cache\native\bin\windows-x64\ovpncli.exe"
 $BuildOpenVpnScript = Join-Path $PSScriptRoot "build-openvpn3.ps1"
 
-$engineMatchesBundledDriver = $false
-if (Test-Path -LiteralPath $OpenVpnExe) {
-  try {
-    $engineMetadata = Get-Content -LiteralPath (Join-Path $OpenVpnBinDir 'ovpncli-build.json') -Raw | ConvertFrom-Json
-    $engineMatchesBundledDriver = $engineMetadata.tapComponentId -eq 'tap0901' -and
-      $engineMetadata.platform -eq 'x64' -and
-      $engineMetadata.version -eq $releaseLock.version -and
-      $engineMetadata.sourceRef -eq $releaseLock.ref -and
-      $engineMetadata.sourceCommit -eq $releaseLock.commit -and
-      $engineMetadata.sha256 -eq (Get-FileHash -LiteralPath $OpenVpnExe -Algorithm SHA256).Hash
-  }
-  catch { $engineMatchesBundledDriver = $false }
-}
+& node make/engine-cache.mjs verify windows x64 Release tap0901
+$engineMatchesBundledDriver = $LASTEXITCODE -eq 0
 if ($SkipOpenVpnBuild -and -not $engineMatchesBundledDriver) {
   throw 'The bundled driver requires a verified x64 tap0901 engine. Remove SkipOpenVpnBuild to rebuild it.'
 }
@@ -37,7 +25,7 @@ if ($SkipOpenVpnBuild) {
 }
 elseif ($ForceOpenVpnBuild -or -not $engineMatchesBundledDriver) {
   $autoInstall = if ($NoAutoInstallDeps) { $false } else { $true }
-  & $BuildOpenVpnScript -AutoInstallDeps:$autoInstall
+  & $BuildOpenVpnScript -AutoInstallDeps:$autoInstall -Force:$ForceOpenVpnBuild
 }
 else {
   Write-Host "Existing ovpncli.exe found: $OpenVpnExe"
@@ -58,8 +46,8 @@ if ((-not $sslDll) -or (-not $cryptoDll)) {
 }
 
 Write-Host "[2/5] Installing dependencies..."
-npm ci
-if ($LASTEXITCODE -ne 0) { throw "npm ci failed (exit code $LASTEXITCODE)." }
+node make/install-dependencies.mjs
+if ($LASTEXITCODE -ne 0) { throw "Dependency preparation failed (exit code $LASTEXITCODE)." }
 
 Write-Host "[3/5] Checking Rust toolchain..."
 node make/tauri.mjs cargo --version

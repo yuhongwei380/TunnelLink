@@ -18,7 +18,16 @@ node build.mjs
 
 `custom-config/app-branding.json` 存在时，会覆盖隔离源码中的 `resources/settings/app-branding.json`；不存在时使用仓库默认品牌配置。连接配置可通过 `node build.mjs --profile PATH` 指定其他文件。配置要求与 Git 忽略规则见[自定义构建配置](../custom-config/README.md)。
 
-发布本仓库的新打包逻辑后，直接从包含该提交的工作树执行统一入口即可；`.git`、`custom-config/`、旧私有目录、Node.js 依赖与旧安装包不会复制进去。已准备的原生引擎、依赖下载和驱动缓存会复用，所需的连接配置与品牌覆盖仅写入隔离源码。
+发布本仓库的新打包逻辑后，直接从包含该提交的工作树执行统一入口即可；`.git`、`custom-config/`、旧私有目录、仓库根目录的 Node.js 依赖与旧安装包不会复制进去。隔离源码按内容增量同步，删除已移除的源码文件，同时保留其中的 `.cache/`、`node_modules/` 和 Tauri 生成目录链接；未变化的文件、连接配置和品牌覆盖保留修改时间，供编译器增量构建。
+
+构建默认优先检查本地缓存：
+
+- 原生引擎的版本、固定提交、架构、构建配置及哈希匹配时直接复用；Windows 同时检查 TAP 类型和 OpenSSL DLL。
+- 需要编译引擎时，优先使用 `.cache/work/<平台>/openvpn3-*` 下已检出的固定提交和 CMake 产物，源码命中时不访问上游。首次缺失才拉取锁定提交；失败后保留源码和编译缓存供重试。
+- Node.js 依赖首次由锁文件安装并记录缓存标记，后续检查清单、锁文件、Node.js 版本、系统架构及已安装依赖记录；匹配时跳过 `npm ci`，不匹配时使用 `npm ci --prefer-offline`。
+- Rust 的 `.cache/cargo-target/`、npm 下载缓存和驱动缓存均跨次构建保留。这里只清理交付后的安装包副本，不清理编译缓存。
+
+`node build.mjs --force-engine` 会复用本地源码并执行引擎的干净重编译；`--skip-engine` 要求已有引擎通过校验。直接调用 Windows 引擎脚本时可传 `-Force`；macOS 可设置 `FORCE_OPENVPN3_BUILD=1`。如需完全重新下载源码，可先将对应 `openvpn3-*` 缓存目录移走。Windows 的 `-KeepWorkDir` 和 macOS 的 `OPENVPN3_KEEP_WORKDIR` 兼容保留，工作目录现在默认保留。
 
 统一入口要求 Node.js 22+，Windows 构建要求 x64 Node.js 和 Windows 主机，macOS 构建要求 Intel 或 Apple Silicon Mac。首次构建可自动准备缺少的工具；使用 `--no-auto-install-deps` 跳过自动安装。`--prepare-only` 只复制当前源码并替换私有配置，不安装依赖、不编译。运行 `node build.mjs --help` 查看全部参数。
 

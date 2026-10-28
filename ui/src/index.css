@@ -4963,3 +4963,134 @@ dialog[data-closing='true']::backdrop {
     opacity: 0;
   }
 }
+
+/* Give the desktop overview breathing room without crowding short windows. */
+@media (min-width: 561px) and (min-height: 580px) {
+  .connection-page {
+    padding-top: 24px;
+  }
+  .connection-page .connection-card {
+    padding: 26px 24px 24px;
+  }
+  .connection-page .connection-action-row {
+    margin-top: 26px;
+  }
+  .connection-page .details-card {
+    margin-top: 20px;
+    padding: 20px 24px 14px;
+  }
+  .connection-page .details-card-main .gateway-identity {
+    margin-top: 12px;
+  }
+  .connection-page .details-card-main .gateway-net {
+    margin-top: 16px;
+    column-gap: 28px;
+  }
+  .connection-page .details-card-session {
+    margin-top: 18px;
+    padding-top: 16px;
+  }
+}
+
+/* Make the whole connection surface participate in state changes. */
+.connection-page .connection-card {
+  transition:
+    background-color 480ms ease,
+    box-shadow 480ms ease;
+}
+.connection-page .connection-card[data-phase='connected'] {
+  background-color: #103e43;
+  box-shadow: 0 0 0 1px #34d39935;
+}
+.connection-page .connection-card[data-phase='connecting'] {
+  background-color: #173762;
+}
+.connection-page .connection-card[data-phase='connected'] .connection-action {
+  background-color: #147d71;
+}
+.connection-page .connection-card .connection-button-content {
+  animation-duration: 420ms;
+}
+.connection-page .connection-card[data-phase='connected'] .connection-button-content svg {
+  animation: connection-confirm 600ms ease-out both;
+}
+.connection-page .connection-card[data-phase='connected'] .connection-progress {
+  animation: connection-complete 850ms ease-out both;
+}
+.connection-page .connection-card[data-phase='connected'] .connection-progress > span {
+  width: 100%;
+  background: #6ee7b7;
+}
+.connection-page .details-card .gateway-net strong,
+.connection-page .details-card .metric-card {
+  transition:
+    opacity 400ms ease,
+    color 400ms ease;
+}
+.connection-page .details-card.is-connected .gateway-net strong {
+  animation: connection-content-enter 450ms ease-out both;
+}
+@keyframes connection-confirm {
+  0% {
+    opacity: 0;
+    transform: scale(0.65);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.16);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes connection-complete {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+/* Reduced motion retains a brief colour fade, without rotation or translation. */
+@media (prefers-reduced-motion: reduce) {
+  .connection-page .connection-card,
+  .connection-page .connection-action-row .connection-action {
+    transition: background-color 160ms ease !important;
+  }
+}
+
+/* Balance the two overview cards in the fixed desktop window. */
+@media (min-width: 561px) and (max-width: 840px) and (min-height: 580px) {
+  .connection-page .connection-card,
+  .connection-page .details-card {
+    height: 230px;
+    min-height: 230px;
+  }
+  .connection-page .connection-card {
+    display: flex;
+    align-items: center;
+  }
+  .connection-page .connection-copy {
+    width: 100%;
+  }
+  .connection-page .details-card {
+    margin-top: 16px;
+    padding: 14px 24px 10px;
+  }
+  .connection-page .details-card-main .gateway-identity {
+    margin-top: 4px;
+  }
+  .connection-page .details-card-main .gateway-net {
+    margin-top: 8px;
+  }
+  .connection-page .details-card-session {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+  .connection-page .details-card-footer {
+    margin-top: 6px;
+    padding-top: 4px;
+  }
+}

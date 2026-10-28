@@ -5,7 +5,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { hashFile, readRelease, projectRoot } from './openvpn3-release.mjs';
 
-const [source, binary, platform, tapComponentId] = process.argv.slice(2);
+const [source, binary, platform, tapComponentId, configuration = 'Release'] = process.argv.slice(2);
 const release = await readRelease();
 const git = (...args) =>
   execFileSync('git', ['-C', source, ...args], { encoding: 'utf8', windowsHide: true });
@@ -27,7 +27,7 @@ await fs.writeFile(
       sourceCommit: commit,
       platform,
       ...(tapComponentId ? { tapComponentId } : {}),
-      configuration: 'Release',
+      configuration,
       sha256: await hashFile(binary),
     },
     null,

@@ -80,7 +80,10 @@ export function AuthDialog({
       aria-labelledby="auth-title"
       aria-describedby="auth-description"
       onCancel={onClose}
-      onClose={onClose}
+      onClose={() => {
+        // Native close events are queued; a reopened dialog must ignore an old event.
+        if (!dialogRef.current?.open) onClose();
+      }}
     >
       <div className="auth-dialog-header">
         <span className="auth-icon">

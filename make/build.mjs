@@ -21,13 +21,14 @@ const help = `Usage: node build.mjs [options]
   --platform windows|macos|auto  Build platform (default: detect current OS)
   --profile PATH               Private profile (default: custom-config/client.ovpn)
   --prepare-only               Copy current source and replace profile, without compiling
-  --force-engine               Rebuild the native OpenVPN engine
+  --force-engine               Force a clean native engine rebuild using cached source
   --skip-engine                Reuse an engine verified by the upstream scripts
   --no-auto-install-deps       Use existing tools without automatic installation
   -h, --help                   Show this help
 
 The installer selects the OS, prepares dependencies, copies the current source
-into an isolated build cache, replaces the private profile, and builds an
+into an isolated build cache, reuses verified engine/dependency/compiler caches,
+replaces the private profile, and builds an
 installer. Node.js 22+ is required.
 Windows packages must be built on Windows; macOS packages on macOS.
 Relative --profile paths are resolved from the current working directory.
