@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { readBranding } from './app-branding.mjs';
 import { verifyMacRuntime } from './macos/verify-runtime.mjs';
 
 export async function collectTauri(root, args, env) {
@@ -13,9 +14,7 @@ export async function collectTauri(root, args, env) {
   const output = path.join(root, 'build/dist');
   await fs.mkdir(output, { recursive: true });
   const pkg = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
-  const branding = JSON.parse(
-    await fs.readFile(path.join(root, 'config/app-branding.json'), 'utf8'),
-  );
+  const branding = readBranding(root);
   const artifacts = [];
   if (process.platform === 'win32') {
     const directory = path.join(buildRoot, 'bundle/nsis');

@@ -3,12 +3,10 @@ import {
   AlertCircle,
   ArrowRight,
   ArrowUp,
-  Check,
   Eye,
   EyeOff,
   LoaderCircle,
   LockKeyhole,
-  Server,
   UserRound,
   X,
 } from 'lucide-react';
@@ -187,15 +185,6 @@ export function AuthDialog({
           {!busy && <ArrowRight size={17} />}
         </button>
       </form>
-      <div className="auth-gateway">
-        <Server size={15} />
-        <span>{t.gatewayName}</span>
-        <span className="managed-badge">
-          <Check size={11} />
-          {t.managed}
-        </span>
-      </div>
-      <p className="auth-security-note">{t.securityNote}</p>
     </dialog>
   );
 }

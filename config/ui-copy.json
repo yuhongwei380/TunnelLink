@@ -18,7 +18,8 @@
       "connectingDescription": "正在认证并建立加密隧道，请稍候。",
       "connectedTitle": "已连接",
       "connectedDescription": "VPN 隧道已建立，可以访问企业网络。",
-      "authenticationHint": "使用企业账号验证身份"
+      "authenticationHint": "使用企业账号验证身份",
+      "authenticationTitle": "连接企业网络"
     }
   },
   "en": {
@@ -40,7 +41,8 @@
       "connectingDescription": "Authenticating and setting up your encrypted tunnel.",
       "connectedTitle": "Connected",
       "connectedDescription": "The VPN tunnel is active and enterprise resources are available.",
-      "authenticationHint": "Authenticate with your work account"
+      "authenticationHint": "Authenticate with your work account",
+      "authenticationTitle": "Connect to your workspace"
     }
   }
 }

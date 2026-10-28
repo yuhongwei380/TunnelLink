@@ -18,6 +18,7 @@ export type LocaleCopy = {
     connectedTitle: string;
     connectedDescription: string;
     authenticationHint: string;
+    authenticationTitle: string;
   };
 };
 

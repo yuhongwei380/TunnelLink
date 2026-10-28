@@ -1,7 +1,5 @@
 import {
-  AlertCircle,
   ArrowDownLeft,
-  ArrowRight,
   ArrowUpRight,
   Clock3,
   FileText,
@@ -9,7 +7,6 @@ import {
   LockKeyhole,
   Power,
   Server,
-  ShieldCheck,
 } from 'lucide-react';
 import { formatBytes, formatTime } from '../format';
 import type { Messages } from '../messages';
@@ -48,7 +45,7 @@ export function ConnectionOverview({
 
   return (
     <div
-      className={`page-content connection-page ${connectionFailed ? 'has-connection-error' : ''}`}
+      className="page-content connection-page"
     >
       <section
         className={`connection-card ${connected ? 'is-connected' : connecting ? 'is-connecting' : connectionFailed ? 'has-error' : ''}`}
@@ -82,24 +79,7 @@ export function ConnectionOverview({
             </button>
           </div>
         </div>
-        <span className="connection-security-icon" aria-hidden="true">
-          <ShieldCheck size={43} strokeWidth={1.5} />
-        </span>
       </section>
-
-      {statusError && (
-        <div className="connection-error" role="alert">
-          <AlertCircle size={19} />
-          <div>
-            <strong>{t.connectionError}</strong>
-            <p>{statusError}</p>
-          </div>
-          <button onClick={onOpenLogs}>
-            {t.viewLogs}
-            <ArrowRight size={15} />
-          </button>
-        </div>
-      )}
 
       <section className={`details-card ${connected ? 'is-connected' : ''}`} aria-label={t.gateway}>
         <div className="details-card-main">

@@ -6,7 +6,7 @@ export const MESSAGES = {
     copyright: '© 2026 OpenVPN 企业客户端',
     workspace: '企业网络访问',
     connection: '连接概览',
-    diagnostics: '日志与诊断',
+    diagnostics: '日志',
     status: '连接状态',
     offline: '未连接',
     connecting: '正在建立连接',
@@ -117,6 +117,7 @@ export const MESSAGES = {
     timestamp: '时间',
     message: '事件详情',
     connectionError: '连接需要处理',
+    errorDismiss: '知道了',
     securityNote: '凭据通过本机客户端提交至配置的网关。',
     legalSubtitle: '了解你的客户端，以及开源软件的来源。',
     noMatchesDesc: '试试其他关键词，或重置筛选查看全部事件。',
@@ -134,7 +135,7 @@ export const MESSAGES = {
     copyright: '© 2026 OpenVPN Enterprise Client',
     workspace: 'ENTERPRISE ACCESS',
     connection: 'Connection',
-    diagnostics: 'Diagnostics',
+    diagnostics: 'Logs',
     status: 'CONNECTION STATUS',
     connectionFailed: 'Connection failed',
     offline: 'Disconnected',
@@ -249,6 +250,7 @@ export const MESSAGES = {
     timestamp: 'Time',
     message: 'Event details',
     connectionError: 'Connection needs attention',
+    errorDismiss: 'Got it',
     securityNote: 'Credentials are sent by the desktop client to your configured gateway.',
     legalSubtitle: 'Your client, its origins, and the open source behind it.',
     noMatchesDesc: 'Try another keyword, or reset filters to see all events.',
@@ -283,6 +285,7 @@ export function getMessages(locale: Locale, uiCopy: UiCopy) {
     protectedTitle: custom.connection.connectedTitle,
     connectedDesc: custom.connection.connectedDescription,
     authNote: custom.connection.authenticationHint,
+    login: custom.connection.authenticationTitle,
   };
 }
 

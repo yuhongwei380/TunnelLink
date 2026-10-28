@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { readBranding } from './app-branding.mjs';
 import { readRelease } from './openvpn3-release.mjs';
 
 const rootDir = process.cwd();
 const pkgPath = path.join(rootDir, 'package.json');
-const brandingPath = path.join(rootDir, 'config', 'app-branding.json');
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -16,11 +16,7 @@ function writeJson(filePath, value) {
     fs.writeFileSync(filePath, content, 'utf8');
 }
 
-if (!fs.existsSync(brandingPath)) {
-  throw new Error(`Branding file not found: ${brandingPath}`);
-}
-
-const branding = readJson(brandingPath);
+const branding = readBranding(rootDir);
 const appId = String(branding.appId || '').trim();
 const productName = String(branding.productName || '').trim();
 const packageName = productName
@@ -34,6 +30,11 @@ if (!appId) {
 }
 if (!productName) {
   throw new Error('config/app-branding.json missing field: productName');
+}
+
+const defaultLocale = String(branding.defaultLocale || 'CN').trim().toUpperCase();
+if (defaultLocale !== 'CN' && defaultLocale !== 'EN') {
+  throw new Error('config/app-branding.json field defaultLocale must be CN or EN');
 }
 
 const pkg = readJson(pkgPath);
@@ -68,4 +69,4 @@ if (fs.existsSync(lockPath)) {
   }
   writeJson(lockPath, lock);
 }
-console.log(`Branding synced: appId=${appId}, productName=${productName}`);
+console.log(`Branding synced: appId=${appId}, productName=${productName}, defaultLocale=${defaultLocale}`);

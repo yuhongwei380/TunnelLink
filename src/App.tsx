@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
-import { ChevronRight, Globe2, Info, LayoutDashboard, Terminal, X } from 'lucide-react';
+import { ChevronRight, Info, LayoutDashboard, Terminal, X } from 'lucide-react';
 import { AboutDialog, AGREEMENT_REVISION } from './components/AboutDialog';
 import { AppLogo } from './components/AppLogo';
 import { AuthDialog } from './components/AuthDialog';
+import { ConnectionErrorDialog } from './components/ConnectionErrorDialog';
 import { ConnectionOverview } from './components/ConnectionOverview';
 import { ExitDialog } from './components/ExitDialog';
 import { InstallDialog } from './components/InstallDialog';
@@ -13,17 +14,34 @@ import { getMessages } from './messages';
 import { mergeUiCopy, type Locale, type UiCopy } from './ui-copy';
 import release from '../config/openvpn3-release.json';
 import defaultUiCopy from '../config/ui-copy.json';
+import branding from '../config/app-branding.json';
+
+const privateBrandingModules = import.meta.glob('../private/app-branding.json', {
+  eager: true,
+  import: 'default',
+});
+const privateBranding = Object.values(privateBrandingModules)[0] as
+  | Record<string, unknown>
+  | undefined;
+const effectiveBranding = { ...branding, ...privateBranding };
+
+const configuredLocale: Locale =
+  String(effectiveBranding.defaultLocale || 'CN').trim().toUpperCase() === 'EN' ? 'en' : 'zh';
+
+// Private quick configuration (git-ignored), baked into the build when present.
+const privateUiCopyModules = import.meta.glob('../private/ui-copy.json', {
+  eager: true,
+  import: 'default',
+});
+const privateUiCopy = Object.values(privateUiCopyModules)[0];
+const bakedUiCopy = mergeUiCopy(defaultUiCopy, privateUiCopy);
 
 export default function App() {
   const [locale, setLocale] = useState<Locale>(() => {
     const saved = localStorage.getItem('vpn-ui-locale');
-    return saved === 'zh' || saved === 'en'
-      ? saved
-      : navigator.language.toLowerCase().startsWith('zh')
-        ? 'zh'
-        : 'en';
+    return saved === 'zh' || saved === 'en' ? saved : configuredLocale;
   });
-  const [uiCopy, setUiCopy] = useState<UiCopy>(() => defaultUiCopy);
+  const [uiCopy, setUiCopy] = useState<UiCopy>(() => bakedUiCopy);
 
   const t = getMessages(locale, uiCopy);
   const [logsOpen, setLogsOpen] = useState(false);
@@ -39,6 +57,8 @@ export default function App() {
     status,
     stats,
     statusError,
+    connectionErrorOpen,
+    dismissConnectionError,
     busy,
     authOpen,
     setAuthOpen,
@@ -66,7 +86,7 @@ export default function App() {
   useEffect(() => {
     window.vpn
       ?.getUiCopy()
-      .then((copy) => setUiCopy(mergeUiCopy(defaultUiCopy, copy)))
+      .then((copy) => setUiCopy(mergeUiCopy(bakedUiCopy, copy)))
       .catch(() => {});
   }, []);
   useEffect(() => {
@@ -174,10 +194,23 @@ export default function App() {
           className="language-button"
           onClick={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
           aria-label={locale === 'zh' ? 'Switch to English' : '切换为中文'}
-          title={locale === 'zh' ? '切换至 English' : 'Switch to Chinese'}
+          title={locale === 'zh' ? 'Switch to English' : '切换为中文'}
         >
-          <Globe2 size={19} />
-          {locale === 'zh' ? 'EN' : '中文'}
+          <span className="language-glyph" aria-hidden="true">
+            <span className="glyph-chars">
+              <span className="glyph-wen">文</span>
+              <span className="glyph-a">A</span>
+            </span>
+            <svg className="glyph-swap" width="20" height="7" viewBox="0 0 20 7" fill="none">
+              <path
+                d="M2 3.5h16M4.8 0.9 2 3.5l2.8 2.6M15.2 0.9 18 3.5l-2.8 2.6"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
         </button>
       </header>
 
@@ -248,6 +281,16 @@ export default function App() {
       )}
 
       <LogsDialog open={logsOpen} t={t} onClose={() => setLogsOpen(false)} onNotify={setToast} />
+      <ConnectionErrorDialog
+        open={connectionErrorOpen}
+        statusError={statusError}
+        t={t}
+        onClose={dismissConnectionError}
+        onOpenLogs={() => {
+          dismissConnectionError();
+          setLogsOpen(true);
+        }}
+      />
       <ExitDialog
         open={exitPromptOpen}
         appTitle={appTitle}

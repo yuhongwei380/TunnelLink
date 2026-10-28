@@ -156,7 +156,10 @@ fn app_install_to_applications(
 
 #[tauri::command]
 fn app_get_ui_copy(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
-    const DEFAULT_UI_COPY: &[u8] = include_bytes!("../../config/ui-copy.json");
+    // Baked at compile time: config/ui-copy.json with the git-ignored
+    // private/ui-copy.json quick-configuration overlay already merged in.
+    const EFFECTIVE_UI_COPY: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/ui-copy-effective.json"));
+    const BUNDLED_UI_COPY: &[u8] = include_bytes!("../../config/ui-copy.json");
     let directory = app
         .path()
         .app_config_dir()
@@ -164,10 +167,22 @@ fn app_get_ui_copy(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
     std::fs::create_dir_all(&directory).map_err(|error| error.to_string())?;
     let path = directory.join("ui-copy.json");
     if !path.exists() {
-        std::fs::write(&path, DEFAULT_UI_COPY).map_err(|error| error.to_string())?;
+        std::fs::write(&path, EFFECTIVE_UI_COPY).map_err(|error| error.to_string())?;
+        return serde_json::from_slice(EFFECTIVE_UI_COPY).map_err(|error| error.to_string());
     }
-    let contents = std::fs::read_to_string(path).map_err(|error| error.to_string())?;
-    serde_json::from_str(&contents).map_err(|error| error.to_string())
+    let contents = std::fs::read_to_string(&path).map_err(|error| error.to_string())?;
+    let parsed: serde_json::Value =
+        serde_json::from_str(&contents).map_err(|error| error.to_string())?;
+    // A file that still equals the un-branded bundled default is a stale seed
+    // from an earlier build; refresh it so the private overlay shows up after
+    // upgrades. Any user-edited file is left untouched and wins.
+    let bundled: serde_json::Value = serde_json::from_slice(BUNDLED_UI_COPY)
+        .map_err(|error| error.to_string())?;
+    if parsed == bundled {
+        std::fs::write(&path, EFFECTIVE_UI_COPY).map_err(|error| error.to_string())?;
+        return serde_json::from_slice(EFFECTIVE_UI_COPY).map_err(|error| error.to_string());
+    }
+    Ok(parsed)
 }
 
 #[tauri::command]

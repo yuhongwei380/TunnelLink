@@ -18,6 +18,7 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
     gatewayAddress: null,
   });
   const [statusError, setStatusError] = useState('');
+  const [connectionErrorOpen, setConnectionErrorOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authError, setAuthError] = useState('');
@@ -29,6 +30,7 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
   const { username, password, remember } = credentials;
   const actionPending = useRef(false);
   const connectionErrorOverride = useRef('');
+  const dismissedConnectionError = useRef('');
 
   useEffect(() => {
     // Development-only previews: #close-prompt, #close-prompt-connected, #close-prompt-connecting.
@@ -79,6 +81,19 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
     const timer = window.setInterval(() => void refreshStatus(), 1000);
     return () => window.clearInterval(timer);
   }, [refreshStatus]);
+
+  useEffect(() => {
+    if (!statusError) {
+      dismissedConnectionError.current = '';
+      return;
+    }
+    if (statusError !== dismissedConnectionError.current) setConnectionErrorOpen(true);
+  }, [statusError]);
+
+  const dismissConnectionError = useCallback(() => {
+    dismissedConnectionError.current = statusError;
+    setConnectionErrorOpen(false);
+  }, [statusError]);
 
   const toggle = async () => {
     if (actionPending.current) return;
@@ -140,6 +155,8 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
     status,
     stats,
     statusError,
+    connectionErrorOpen,
+    dismissConnectionError,
     busy,
     authOpen,
     setAuthOpen,
