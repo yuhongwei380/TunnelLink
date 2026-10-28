@@ -13,11 +13,11 @@
 
 需要生成带私有 VPN 配置的安装包时，使用仓库根目录的统一入口：
 
-1. 安装 Node.js 22 或更新版本，并将完整、内嵌证书的配置保存为 `private/client.ovpn`。
+1. 安装 Node.js 22 或更新版本，并将完整、内嵌证书的配置保存为 `vpn-config/client.ovpn`。如果此前使用 `private/client.ovpn`，请将其移动到新位置。
 2. 在 Windows x64 或 macOS（Apple Silicon / Intel）本机执行 `node install.mjs`。
 3. 入口会检查平台、准备依赖、把当前源码复制到隔离缓存、替换配置、编译引擎并校验安装包，产物保存到 `dist/<平台>/<构建编号>/`。
 
-只准备源码和配置、不安装依赖或编译时执行 `node install.mjs --prepare-only`。已有工具链希望完全手动管理时，加上 `--no-auto-install-deps`；强制或跳过引擎编译分别使用 `--force-engine` 和 `--skip-engine`。私有配置会编译进客户端，请不要把 `private/client.ovpn` 或生成的 `dist/` 内容提交到 Git。
+只准备源码和配置、不安装依赖或编译时执行 `node install.mjs --prepare-only`。已有工具链希望完全手动管理时，加上 `--no-auto-install-deps`；强制或跳过引擎编译分别使用 `--force-engine` 和 `--skip-engine`。私有配置会编译进客户端，请不要把 `vpn-config/client.ovpn` 或生成的 `dist/` 内容提交到 Git。
 
 ## 连接和断开
 

@@ -18,7 +18,7 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const help = `Usage: node install.mjs [options]
 
   --platform windows|macos|auto  Build platform (default: detect current OS)
-  --profile PATH               Private profile (default: private/client.ovpn)
+  --profile PATH               Private profile (default: vpn-config/client.ovpn)
   --prepare-only               Copy current source and replace profile, without compiling
   --force-engine               Rebuild the native OpenVPN engine
   --skip-engine                Reuse an engine verified by the upstream scripts
@@ -51,7 +51,7 @@ export async function runBuild(
     ? { repository: 'local-working-tree', commit: 'working-tree' }
     : await loadUpstream(root);
   const profile = await readProfile(
-    path.resolve(options.profile ?? path.join(root, 'private/client.ovpn')),
+    path.resolve(options.profile ?? path.join(root, 'vpn-config/client.ovpn')),
   );
   await withBuildLock(root, platform, async () => {
     // Validate the private input before installing tools or downloading source.

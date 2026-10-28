@@ -130,7 +130,7 @@ export async function readProfile(file) {
   } catch (error) {
     if (error.code === 'ENOENT') {
       throw new Error(
-        `Private profile not found: ${file}. Create private/client.ovpn or pass --profile PATH.`,
+        `Private profile not found: ${file}. Create vpn-config/client.ovpn or pass --profile PATH.`,
       );
     }
     throw error;
@@ -293,7 +293,15 @@ export async function prepareLocalSource({ root, platform, upstream, profile }) 
   }
   const stagingDir = path.join(tmpdir(), `.openvpn3-local-source-${randomUUID()}`);
   await fs.mkdir(path.dirname(sourceDir), { recursive: true, mode: 0o700 });
-  const excludedRoots = new Set(['.git', '.work', '.cache', 'node_modules', 'private', 'dist']);
+  const excludedRoots = new Set([
+    '.git',
+    '.work',
+    '.cache',
+    'node_modules',
+    'vpn-config',
+    'private',
+    'dist',
+  ]);
   try {
     await fs.cp(root, stagingDir, {
       recursive: true,

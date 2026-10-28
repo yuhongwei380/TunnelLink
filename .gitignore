@@ -50,9 +50,10 @@ CMakeCache.txt
 # Build-generated installer agreement; the TXT is the editable source
 /resources/legal/USER-AGREEMENT.rtf
 
-# Private unified-build input
+# VPN build input and legacy private directory
+/vpn-config/*
+!/vpn-config/README.md
 /private/*
-!/private/README.md
 
 # Downloaded/compiled runtime payloads; keep only directory placeholders
 /native/drivers/

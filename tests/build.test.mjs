@@ -206,6 +206,10 @@ test('source fetches the pinned commit and replaces only the managed profile', a
 test('the merged installer snapshots the current working tree without copying private inputs', async (t) => {
   const f = await fixture(t);
   await fs.writeFile(path.join(f.root, 'config/client.ovpn'), 'client\n');
+  await fs.mkdir(path.join(f.root, 'vpn-config'));
+  await fs.copyFile(f.profileFile, path.join(f.root, 'vpn-config/client.ovpn'));
+  await fs.mkdir(path.join(f.root, 'private'));
+  await fs.copyFile(f.profileFile, path.join(f.root, 'private/client.ovpn'));
   const prepared = await prepareLocalSource({
     root: f.root,
     platform: 'windows',
@@ -218,6 +222,7 @@ test('the merged installer snapshots the current working tree without copying pr
     f.profile.contents,
   );
   await assert.rejects(fs.stat(path.join(prepared.sourceDir, 'private')));
+  await assert.rejects(fs.stat(path.join(prepared.sourceDir, 'vpn-config')));
 });
 
 test('repeat preparation uses cached source without a reachable remote or needless rewrites', async (t) => {
@@ -427,8 +432,8 @@ test(
   { skip: !nativePlatform },
   async (t) => {
     const f = await fixture(t);
-    await fs.mkdir(path.join(f.root, 'private'));
-    await fs.copyFile(f.profileFile, path.join(f.root, 'private/client.ovpn'));
+    await fs.mkdir(path.join(f.root, 'vpn-config'));
+    await fs.copyFile(f.profileFile, path.join(f.root, 'vpn-config/client.ovpn'));
     let setups = 0;
     const prepareEnvironment = async ({ root, platform }) => {
       assert.equal(root, f.root);
