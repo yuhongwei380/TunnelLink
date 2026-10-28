@@ -1,6 +1,7 @@
 import type { LogEntry } from './logs';
 
 export type VpnState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED';
+export type VpnAction = 'connecting' | 'cancelling' | 'disconnecting' | null;
 
 export type ConnectOptions = {
   username: string;

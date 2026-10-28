@@ -47,6 +47,7 @@ export default function App() {
     connectionErrorOpen,
     dismissConnectionError,
     busy,
+    action,
     authOpen,
     setAuthOpen,
     authError,
@@ -243,6 +244,7 @@ export default function App() {
               stats={stats}
               statusError={statusError}
               busy={busy}
+              action={action}
               t={t}
               onToggle={handleToggle}
               onOpenLogs={() => setLogsOpen(true)}

@@ -90,9 +90,11 @@ export function AuthDialog({
           <X size={20} />
         </button>
       </div>
-      <span className="eyebrow">{t.account}</span>
-      <h2 id="auth-title">{t.login}</h2>
-      <p id="auth-description">{t.loginDesc}</p>
+      <div className="auth-introduction">
+        <span className="eyebrow">{t.account}</span>
+        <h2 id="auth-title">{t.login}</h2>
+        <p id="auth-description">{t.loginDesc}</p>
+      </div>
       <form onSubmit={handleSubmit}>
         <label htmlFor="vpn-username">{t.username}</label>
         <div className="input-with-icon">
@@ -180,9 +182,11 @@ export function AuthDialog({
           </div>
         )}
         <button type="submit" className="submit-button" disabled={busy}>
-          {busy ? <LoaderCircle className="spin" size={18} /> : <LockKeyhole size={17} />}
-          {t.secureConnect}
-          {!busy && <ArrowRight size={17} />}
+          <span className="submit-button-content">
+            {busy ? <LoaderCircle className="spin" size={18} /> : <LockKeyhole size={17} />}
+            <span>{busy ? t.connecting : t.secureConnect}</span>
+            {!busy && <ArrowRight size={17} />}
+          </span>
         </button>
       </form>
     </dialog>

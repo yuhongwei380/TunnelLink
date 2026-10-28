@@ -2,6 +2,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Clock3,
+  Check,
   FileText,
   LoaderCircle,
   LockKeyhole,
@@ -10,7 +11,7 @@ import {
 } from 'lucide-react';
 import { formatBytes, formatTime } from '../format';
 import type { Messages } from '../messages';
-import type { VpnState, VpnStats } from '../types';
+import type { VpnAction, VpnState, VpnStats } from '../types';
 import release from '../../../resources/settings/openvpn3-release.json';
 
 type Props = {
@@ -18,6 +19,7 @@ type Props = {
   stats: VpnStats;
   statusError: string;
   busy: boolean;
+  action: VpnAction;
   t: Messages;
   onToggle: () => void;
   onOpenLogs: () => void;
@@ -28,53 +30,87 @@ export function ConnectionOverview({
   stats,
   statusError,
   busy,
+  action,
   t,
   onToggle,
   onOpenLogs,
 }: Props) {
   const connected = status === 'CONNECTED';
   const connecting = status === 'CONNECTING';
+  const stopping = action === 'cancelling' || action === 'disconnecting';
   const connectionFailed = Boolean(statusError) && !connected && !connecting;
-  const statusLabel = connected
-    ? t.connected
-    : connecting
-      ? t.connecting
-      : connectionFailed
-        ? t.connectionFailed
-        : t.offline;
+  const statusLabel = stopping
+    ? action === 'cancelling'
+      ? t.cancelling
+      : t.disconnecting
+    : connected
+      ? t.connected
+      : connecting
+        ? t.connecting
+        : connectionFailed
+          ? t.connectionFailed
+          : t.offline;
 
   return (
     <div className="page-content connection-page">
       <section
         className={`connection-card ${connected ? 'is-connected' : connecting ? 'is-connecting' : connectionFailed ? 'has-error' : ''}`}
+        data-phase={
+          stopping
+            ? action
+            : connecting
+              ? 'connecting'
+              : connected
+                ? 'connected'
+                : connectionFailed
+                  ? 'failed'
+                  : 'idle'
+        }
         aria-label={t.status}
       >
         <div className="connection-copy">
-          <h3>{t.overview}</h3>
-          <p className="connection-state-copy">
-            {connected ? t.connectedDesc : connecting ? t.connectingDesc : t.offlineDesc}
-          </p>
-          <div className="connection-action-row">
+          <div className="connection-heading">
+            <h3>{t.overview}</h3>
             <span
               className={`status-badge ${connectionFailed ? 'status-error' : ''}`}
               role="status"
             >
-              <i />
-              {statusLabel}
+              <i aria-hidden="true" />
+              <span key={statusLabel} className="connection-label">
+                {statusLabel}
+              </span>
             </span>
+          </div>
+          <p className="connection-state-copy">
+            {connected ? t.connectedDesc : connecting ? t.connectingDesc : t.offlineDesc}
+          </p>
+          <div className="connection-action-row">
             <button
               className={`connection-action ${connected || connecting ? 'secondary-action' : ''}`}
               onClick={onToggle}
               disabled={busy}
               aria-busy={busy || connecting}
             >
-              {busy || connecting ? (
-                <LoaderCircle size={18} className="spin" />
-              ) : (
-                <Power size={18} />
-              )}
-              {connected ? t.disconnect : connecting ? t.cancel : busy ? t.connecting : t.connect}
+              <span key={`${status}-${action}`} className="connection-button-content">
+                {busy || connecting || stopping ? (
+                  <LoaderCircle size={18} className="spin" />
+                ) : connected ? (
+                  <Check size={18} />
+                ) : (
+                  <Power size={18} />
+                )}
+                {stopping
+                  ? statusLabel
+                  : connected
+                    ? t.disconnect
+                    : connecting
+                      ? t.cancel
+                      : t.connect}
+              </span>
             </button>
+          </div>
+          <div className="connection-progress" aria-hidden="true">
+            <span />
           </div>
         </div>
       </section>

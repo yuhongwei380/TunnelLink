@@ -4729,3 +4729,237 @@ dialog::backdrop {
     padding: 8px 18px;
   }
 }
+
+/* State styling follows the compact layout so its neutral dot cannot override it. */
+.connection-page .connection-card.is-connected .status-badge {
+  color: #a7f3d0;
+}
+.connection-page .connection-card.is-connected .status-badge > i {
+  background: #34d399;
+  box-shadow: 0 0 0 4px #34d39924;
+}
+.connection-page .connection-card.is-connecting .status-badge {
+  color: #fde68a;
+}
+.connection-page .connection-card.is-connecting .status-badge > i {
+  background: #fbbf24;
+  animation: connection-pulse 1.8s ease-in-out infinite;
+}
+.connection-page .connection-card.has-error .status-badge.status-error > i {
+  background: #f87171;
+}
+
+/* Keep status beside the title at every supported window size. */
+.connection-page .connection-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.connection-page .connection-heading h3 {
+  margin: 0;
+  flex-shrink: 0;
+}
+.connection-page .connection-heading .status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #b1bfd4;
+  font-size: clamp(12px, 1.6vw, 17px);
+  line-height: 1.4;
+}
+.connection-page .connection-heading .status-badge > i {
+  width: 9px;
+  height: 9px;
+  margin: 0;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #a5b5cc;
+  box-shadow: none;
+  transition:
+    background 280ms ease,
+    box-shadow 280ms ease;
+}
+.connection-page .connection-card[data-phase='connected'] .status-badge {
+  color: #a7f3d0;
+}
+.connection-page .connection-card[data-phase='connected'] .status-badge > i {
+  background: #34d399;
+  box-shadow: 0 0 0 4px #34d39924;
+}
+.connection-page .connection-card[data-phase='connecting'] .status-badge,
+.connection-page .connection-card[data-phase='cancelling'] .status-badge,
+.connection-page .connection-card[data-phase='disconnecting'] .status-badge {
+  color: #fde68a;
+}
+.connection-page .connection-card[data-phase='connecting'] .status-badge > i,
+.connection-page .connection-card[data-phase='cancelling'] .status-badge > i,
+.connection-page .connection-card[data-phase='disconnecting'] .status-badge > i {
+  background: #fbbf24;
+  animation: connection-pulse 1.8s ease-in-out infinite;
+}
+.connection-page .connection-card[data-phase='failed'] .status-badge {
+  color: #fca5a5;
+}
+.connection-page .connection-card[data-phase='failed'] .status-badge > i {
+  background: #f87171;
+}
+.connection-page .connection-card {
+  transition:
+    border-color 280ms ease,
+    box-shadow 280ms ease;
+}
+.connection-page .connection-action-row .connection-action {
+  position: relative;
+  overflow: hidden;
+  transition:
+    background 240ms ease,
+    box-shadow 240ms ease,
+    transform 160ms ease;
+}
+.connection-page .connection-action-row .connection-action:active:not(:disabled) {
+  transform: scale(0.985);
+}
+.connection-page .connection-action-row .connection-action:disabled {
+  cursor: progress;
+  opacity: 1;
+  background: #244f9d;
+}
+.connection-button-content,
+.submit-button-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.connection-button-content,
+.connection-label {
+  animation: connection-content-enter 280ms ease-out both;
+}
+.connection-progress {
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+.connection-progress > span {
+  display: block;
+  height: 100%;
+  width: 36%;
+  background: linear-gradient(90deg, transparent, #93c5fd, transparent);
+}
+.connection-card:is(
+    [data-phase='connecting'],
+    [data-phase='cancelling'],
+    [data-phase='disconnecting']
+  )
+  .connection-progress {
+  opacity: 1;
+}
+.connection-card:is(
+    [data-phase='connecting'],
+    [data-phase='cancelling'],
+    [data-phase='disconnecting']
+  )
+  .connection-progress
+  > span {
+  animation: connection-progress-travel 1.5s ease-in-out infinite;
+}
+.auth-introduction {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.auth-introduction > .eyebrow {
+  color: var(--primary);
+  font-size: 11px;
+  letter-spacing: 1.4px;
+}
+.auth-introduction > p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.auth-dialog .submit-button {
+  justify-content: center;
+}
+.auth-dialog .submit-button-content svg {
+  flex-shrink: 0;
+  margin: 0;
+}
+dialog[open][data-closing='true'] {
+  animation: dialog-exit 180ms var(--ease) both;
+  pointer-events: none;
+}
+dialog[data-closing='true']::backdrop {
+  animation: fade-out 180ms ease-out both;
+}
+@keyframes connection-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes connection-progress-travel {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(380%);
+  }
+}
+@keyframes dialog-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+dialog[open][data-closing='true'] {
+  animation: dialog-exit 180ms var(--ease) both;
+  pointer-events: none;
+}
+dialog[data-closing='true']::backdrop {
+  animation: fade-out 180ms ease-out both;
+}
+@keyframes dialog-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

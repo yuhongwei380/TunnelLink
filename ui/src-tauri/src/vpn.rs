@@ -94,35 +94,48 @@ fn is_ipv4(token: &str) -> bool {
             .all(|part| !part.is_empty() && part.len() <= 3 && part.parse::<u8>().is_ok())
 }
 
-// The assigned virtual IPv4 appears in ovpn3 core signalling events; the
-// ifconfig form covers OpenVPN-style PUSH_REPLY lines as a fallback.
-fn extract_assigned_ip(line: &str) -> Option<String> {
-    if let Some(pos) = line.find("CONNECTED_VPN_IPV4_ADDRESS") {
-        if let Some(token) = line[pos + "CONNECTED_VPN_IPV4_ADDRESS".len()..]
-            .split_whitespace()
-            .find(|token| is_ipv4(token))
-        {
-            return Some(token.trim_matches(|c: char| c == '"' || c == '\'').to_string());
-        }
-    }
-    let token = line
-        .find("ifconfig ")
-        .and_then(|pos| line[pos + "ifconfig ".len()..].split_whitespace().next())?
-        .trim_matches(|c: char| c == '"' || c == '\'');
-    (is_ipv4(token) && token != "0.0.0.0").then(|| token.to_string())
+// OpenVPN 3 Core Connected::render() in the pinned clievent.hpp emits:
+// user@host:port (server_ip) via client_ip/proto on tun/ip4/ip6 gw=[gw4/gw6] mtu=...
+fn connected_payload(line: &str) -> Option<&str> {
+    let event = line.split_once("EVENT:")?.1.trim_start();
+    let payload = event.strip_prefix("CONNECTED ")?.trim();
+    (!payload.is_empty()).then_some(payload)
 }
 
-// "EVENT: CONNECTED <user>@<host>:<port>" carries the gateway endpoint.
-fn extract_gateway(line: &str) -> Option<String> {
-    let payload = line.split_once("CONNECTED ")?.1.trim();
-    if payload.is_empty() || payload.starts_with('_') {
-        return None;
+fn valid_address(value: &str) -> Option<String> {
+    let address = value.parse::<std::net::IpAddr>().ok()?;
+    (!address.is_unspecified()).then(|| address.to_string())
+}
+
+fn extract_assigned_ip(line: &str) -> Option<String> {
+    if let Some(payload) = connected_payload(line) {
+        let interface = payload.rsplit_once(" on ")?.1.split_whitespace().next()?;
+        return interface.split('/').skip(1).find_map(valid_address);
     }
-    let endpoint = payload.rsplit_once('@')?.1.trim();
-    (!endpoint.is_empty()
-        && endpoint.len() <= 253
-        && endpoint.chars().all(|c| !c.is_whitespace() && c != '\0'))
-        .then(|| endpoint.to_string())
+    if let Some((_, addresses)) = line.split_once("CONNECTED_VPN_IPV4_ADDRESS") {
+        return addresses.split_whitespace().find_map(valid_address);
+    }
+    // PUSH_REPLY options are comma-delimited, including the final ifconfig argument.
+    let token = line
+        .split_once("ifconfig ")?
+        .1
+        .split(|c: char| c.is_whitespace() || c == ',')
+        .next()?
+        .trim_matches(|c: char| c == '"' || c == '\'');
+    (is_ipv4(token)).then(|| valid_address(token)).flatten()
+}
+
+fn extract_gateway(line: &str) -> Option<String> {
+    if let Some(payload) = connected_payload(line) {
+        let gateways = payload.split_once(" gw=[")?.1.split_once(']')?.0;
+        return gateways.split('/').find_map(valid_address);
+    }
+    let token = line
+        .split_once("route-gateway ")?
+        .1
+        .split(|c: char| c.is_whitespace() || c == ',')
+        .next()?;
+    valid_address(token)
 }
 
 fn fatal_error(line: &str) -> Option<String> {
@@ -478,18 +491,21 @@ mod tests {
             .as_deref(),
             Some("10.8.0.2")
         );
-        assert_eq!(extract_assigned_ip("WARNING: ifconfig parsing failed"), None);
+        assert_eq!(
+            extract_assigned_ip("WARNING: ifconfig parsing failed"),
+            None
+        );
         assert_eq!(
             extract_assigned_ip("EVENT: CONNECTED_VPN_IPV4_ADDRESS [unavailable]"),
             None
         );
         assert_eq!(
-            extract_gateway("EVENT: CONNECTED demo@vpn.example.com:1194").as_deref(),
-            Some("vpn.example.com:1194")
+            extract_gateway("EVENT: CONNECTED demo@vpn.example.com:1194"),
+            None
         );
         assert_eq!(
-            extract_gateway("EVENT: CONNECTED a@b@example.org:443").as_deref(),
-            Some("example.org:443")
+            extract_gateway("EVENT: CONNECTED a@b@example.org:443"),
+            None
         );
         assert_eq!(extract_gateway("EVENT: CONNECTED_TUNNEL"), None);
         assert_eq!(extract_gateway("EVENT: DISCONNECTED"), None);
@@ -533,5 +549,31 @@ mod tests {
             false
         );
         assert!(controller.session.lock().unwrap().is_none());
+    }
+    #[test]
+    fn connected_render_provides_tunnel_addresses_not_remote_or_client_addresses() {
+        // Matches Connected::render() from the pinned OpenVPN 3 Core release.
+        let line = "2026-10-28 EVENT: CONNECTED a@b@vpn.example.com:1194 (203.0.113.1) via 192.0.2.2/UDPv4 on TAP-Windows6/10.20.0.2/ gw=[10.20.0.1/] mtu=1500 vpn_interface_index=17";
+        assert!(connected(line));
+        assert_eq!(extract_assigned_ip(line).as_deref(), Some("10.20.0.2"));
+        assert_eq!(extract_gateway(line).as_deref(), Some("10.20.0.1"));
+        let ipv6 = "EVENT: CONNECTED [2001:db8::1]:443 (2001:db8::1) via ::/TCPv6 on utun3//fd00::2 gw=[/fd00::1] mtu=1500";
+        assert_eq!(extract_assigned_ip(ipv6).as_deref(), Some("fd00::2"));
+        assert_eq!(extract_gateway(ipv6).as_deref(), Some("fd00::1"));
+        let empty = "EVENT: CONNECTED vpn.example.com:443 (203.0.113.1) via /UDPv4 on tun0// gw=[/] mtu=1500";
+        assert_eq!(extract_assigned_ip(empty), None);
+        assert_eq!(extract_gateway(empty), None);
+        assert_eq!(
+            extract_assigned_ip("PUSH_REPLY,ifconfig 10.20.0.2,route-gateway 10.20.0.1").as_deref(),
+            Some("10.20.0.2")
+        );
+        assert_eq!(
+            extract_gateway("PUSH_REPLY,route-gateway 10.20.0.1,topology subnet").as_deref(),
+            Some("10.20.0.1")
+        );
+        assert_eq!(
+            extract_gateway("EVENT: CONNECTED_FAILED bad gw=[10.20.0.1/]"),
+            None
+        );
     }
 }
