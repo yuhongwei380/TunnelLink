@@ -19,6 +19,29 @@ function Get-CimInstance {
 $found = @(Get-HealthyTapAdapters)
 Assert-Test ($found.Count -eq 1 -and $found[0].PNPDeviceID -eq 'ready') 'Adapter filtering accepted an incompatible or unhealthy adapter.'
 
+# Regression: the bundled manifest.json is BOM-less UTF-8 with a Chinese comment; on an
+# ANSI (GBK) host Windows PowerShell 5.1 default decoding corrupts the JSON (installer bug 2026-10).
+$manifestRoot = Join-Path ([IO.Path]::GetTempPath()) ('tap-driver-' + [guid]::NewGuid())
+New-Item -ItemType Directory -Path $manifestRoot | Out-Null
+try {
+  $manifestText = Get-Content -LiteralPath (Join-Path $PSScriptRoot '..\..\config\windows-tap-driver.json') -Raw -Encoding UTF8
+  $manifestLock = $manifestText | ConvertFrom-Json
+  foreach ($name in @('devcon.exe', 'OemVista.inf', 'tap0901.cat', 'tap0901.sys')) {
+    $payloadFile = Join-Path $manifestRoot $name
+    Set-Content -LiteralPath $payloadFile -Value "test payload: $name" -Encoding ASCII
+    $actual = (Get-FileHash -LiteralPath $payloadFile -Algorithm SHA256).Hash.ToLowerInvariant()
+    $manifestText = $manifestText.Replace($manifestLock.files.$name, $actual)
+  }
+  [IO.File]::WriteAllText((Join-Path $manifestRoot 'manifest.json'), $manifestText, (New-Object Text.UTF8Encoding($false)))
+  $DriverDirectory = $manifestRoot
+  $failure = $null
+  try { Test-TapDriverPayload } catch { $failure = $_.Exception.Message }
+  Assert-Test ($failure -match 'signature is invalid') "Bundled manifest.json was not parsed as UTF-8 JSON: $failure"
+} finally {
+  Remove-Item -LiteralPath $manifestRoot -Recurse -Force
+}
+Write-Output 'PASS: bundled manifest.json parses as UTF-8 and reaches the signature check.'
+
 function Assert-TapInstallEnvironment {}
 function Test-TapDriverPayload {}
 function Write-DriverLog {}

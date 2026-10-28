@@ -23,7 +23,9 @@ function Assert-TapInstallEnvironment {
 }
 
 function Test-TapDriverPayload {
-  $manifest = Get-Content -LiteralPath (Join-Path $DriverDirectory 'manifest.json') -Raw | ConvertFrom-Json
+  # The bundled manifest is BOM-less UTF-8 with a Chinese comment; on ANSI (GBK) hosts
+  # Windows PowerShell 5.1 would corrupt the JSON without an explicit encoding.
+  $manifest = Get-Content -LiteralPath (Join-Path $DriverDirectory 'manifest.json') -Raw -Encoding UTF8 | ConvertFrom-Json
   if ($manifest.componentId -ne 'tap0901') { throw 'Unexpected bundled TAP ComponentId.' }
   foreach ($name in @('devcon.exe', 'OemVista.inf', 'tap0901.cat', 'tap0901.sys')) {
     $file = Join-Path $DriverDirectory $name
