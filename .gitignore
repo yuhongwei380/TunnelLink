@@ -53,6 +53,7 @@ CMakeCache.txt
 # VPN build input and legacy private directory
 /vpn-config/*
 !/vpn-config/README.md
+!/vpn-config/app-branding.json
 /private/*
 
 # Downloaded/compiled runtime payloads; keep only directory placeholders

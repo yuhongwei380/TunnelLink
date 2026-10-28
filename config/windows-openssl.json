@@ -1,4 +1,5 @@
 {
+  "_comment": "Windows 构建使用的 OpenSSL SDK 锁：version 为版本号，url 为 SDK 压缩包下载地址，sha256 用于校验下载内容，source 为供应商的来源说明。更新时需同时核实版本、地址和哈希。",
   "version": "3.5.9",
   "url": "https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.5.9.zip",
   "sha256": "76da391395be029b44794857b9ff380255e02a0960a98314cd3f6a6816d82696",

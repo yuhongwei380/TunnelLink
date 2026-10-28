@@ -225,6 +225,39 @@ test('the merged installer snapshots the current working tree without copying pr
   await assert.rejects(fs.stat(path.join(prepared.sourceDir, 'vpn-config')));
 });
 
+test('local preparation uses validated VPN branding and falls back to the source default', async (t) => {
+  const f = await fixture(t);
+  await fs.writeFile(path.join(f.root, 'config/client.ovpn'), 'client\n');
+  const defaultBranding = { appId: 'example.client', productName: 'Client', defaultLocale: 'CN' };
+  const customBranding = { ...defaultBranding, defaultLocale: 'EN' };
+  await fs.writeFile(
+    path.join(f.root, 'config/app-branding.json'),
+    JSON.stringify(defaultBranding),
+  );
+  await fs.mkdir(path.join(f.root, 'vpn-config'));
+  await fs.copyFile(f.profileFile, path.join(f.root, 'vpn-config/client.ovpn'));
+  const customPath = path.join(f.root, 'vpn-config/app-branding.json');
+  await fs.writeFile(customPath, JSON.stringify(customBranding));
+  const options = { root: f.root, localSource: true };
+  const target = path.join(f.root, '.work/windows/source/config/app-branding.json');
+  await runBuild(['--platform', 'windows', '--prepare-only'], options);
+  assert.deepEqual(JSON.parse(await fs.readFile(target, 'utf8')), customBranding);
+  assert.deepEqual(
+    JSON.parse(await fs.readFile(path.join(f.root, 'config/app-branding.json'), 'utf8')),
+    defaultBranding,
+  );
+  await fs.writeFile(customPath, '{invalid');
+  await assert.rejects(
+    runBuild(['--platform', 'windows', '--prepare-only'], options),
+    /Invalid JSON/,
+  );
+  await fs.writeFile(customPath, JSON.stringify({ ...customBranding, defaultLocale: 'FR' }));
+  await assert.rejects(runBuild(['--platform', 'windows', '--prepare-only'], options), /CN or EN/);
+  await fs.unlink(customPath);
+  await runBuild(['--platform', 'windows', '--prepare-only'], options);
+  assert.deepEqual(JSON.parse(await fs.readFile(target, 'utf8')), defaultBranding);
+});
+
 test('repeat preparation uses cached source without a reachable remote or needless rewrites', async (t) => {
   const f = await fixture(t);
   const options = { ...f, platform: 'windows' };

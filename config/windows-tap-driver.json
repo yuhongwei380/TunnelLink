@@ -1,4 +1,5 @@
 {
+  "_comment": "Windows TAP 驱动锁：version 为版本，componentId 为适配器组件标识；archive 和 source 分别记录驱动包与源码包的名称、地址和 SHA-256；files 为安装所需文件及其 SHA-256。升级驱动时需一并核实所有值。",
   "version": "9.27.0",
   "componentId": "tap0901",
   "archive": {

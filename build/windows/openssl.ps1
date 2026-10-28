@@ -74,7 +74,7 @@ function Find-OpenSslSdk {
 }
 
 function Read-OpenSslRelease {
-    $release = Get-Content -LiteralPath (Join-Path $PSScriptRoot '../../config/windows-openssl.json') -Raw | ConvertFrom-Json
+    $release = Get-Content -LiteralPath (Join-Path $PSScriptRoot '../../config/windows-openssl.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($release.version -notmatch '^3\.\d+\.\d+$' -or $release.sha256 -notmatch '^[a-fA-F0-9]{64}$' -or
         $release.url -notmatch '^https://download\.firedaemon\.com/FireDaemon-OpenSSL/openssl-3\.[0-9]+\.[0-9]+\.zip$' -or
         $release.url -notlike ('*/openssl-' + $release.version + '.zip')) {

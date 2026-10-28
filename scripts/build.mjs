@@ -10,6 +10,7 @@ import {
   parseOptions,
   prepareLocalSource,
   prepareSource,
+  readBranding,
   readProfile,
   withBuildLock,
 } from './lib/build.mjs';
@@ -53,6 +54,9 @@ export async function runBuild(
   const profile = await readProfile(
     path.resolve(options.profile ?? path.join(root, 'vpn-config/client.ovpn')),
   );
+  const branding = localSource
+    ? await readBranding(path.join(root, 'vpn-config/app-branding.json'))
+    : null;
   await withBuildLock(root, platform, async () => {
     // Validate the private input before installing tools or downloading source.
     if (prepareEnvironment && !options.prepareOnly && !options.noAutoInstallDeps) {
@@ -61,7 +65,7 @@ export async function runBuild(
     }
     console.log('[2/3] Preparing source and private profile...');
     const prepared = localSource
-      ? await prepareLocalSource({ root, platform, upstream, profile })
+      ? await prepareLocalSource({ root, platform, upstream, profile, branding })
       : await prepareSource({ root, platform, upstream, profile });
     console.log(
       `Source ready: ${prepared.sourceDir}\nSource revision: ${upstream.commit}\nPrivate profile replaced: config/client.ovpn`,

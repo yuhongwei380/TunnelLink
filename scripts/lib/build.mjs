@@ -184,6 +184,38 @@ export async function readProfile(file) {
   return { contents, sha256: sha256(contents) };
 }
 
+export async function readBranding(file) {
+  let contents;
+  try {
+    contents = await fs.readFile(file);
+  } catch (error) {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  }
+  let branding;
+  try {
+    branding = JSON.parse(contents.toString('utf8'));
+  } catch {
+    throw new Error(`Invalid JSON in ${file}.`);
+  }
+  if (
+    !branding ||
+    typeof branding !== 'object' ||
+    typeof branding.appId !== 'string' ||
+    !branding.appId.trim() ||
+    typeof branding.productName !== 'string' ||
+    !branding.productName.trim() ||
+    !['CN', 'EN'].includes(
+      String(branding.defaultLocale ?? 'CN')
+        .trim()
+        .toUpperCase(),
+    )
+  ) {
+    throw new Error(`${file} must specify appId, productName and a CN or EN defaultLocale.`);
+  }
+  return contents;
+}
+
 export async function withBuildLock(root, platform, action) {
   const directory = path.join(root, '.work', platform);
   await fs.mkdir(directory, { recursive: true, mode: 0o700 });
@@ -285,7 +317,7 @@ export async function prepareSource({ root, platform, upstream, profile }) {
   return { sourceDir, platform, upstream, profileSha256: profile.sha256 };
 }
 
-export async function prepareLocalSource({ root, platform, upstream, profile }) {
+export async function prepareLocalSource({ root, platform, upstream, profile, branding }) {
   const sourceDir = path.join(root, '.work', platform, 'source');
   const relativeSource = path.relative(root, sourceDir);
   if (!relativeSource || relativeSource.startsWith('..') || path.isAbsolute(relativeSource)) {
@@ -328,6 +360,9 @@ export async function prepareLocalSource({ root, platform, upstream, profile }) 
     await fs.writeFile(destination, profile.contents, { mode: 0o600 });
   }
   await fs.chmod(destination, 0o600);
+  if (branding) {
+    await fs.writeFile(path.join(sourceDir, 'config/app-branding.json'), branding);
+  }
   return { sourceDir, platform, upstream, profileSha256: profile.sha256 };
 }
 

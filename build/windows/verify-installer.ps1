@@ -14,7 +14,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Unable to extract the NSIS installer.' }
 $engineRoot = Join-Path $inspectionRoot 'bin\windows-x64'
 $metadata = Get-Content -LiteralPath (Join-Path $engineRoot 'ovpncli-build.json') -Raw | ConvertFrom-Json
 $engine = Join-Path $engineRoot 'ovpncli.exe'
-$releaseLock = Get-Content -LiteralPath (Join-Path $projectRoot 'config/openvpn3-release.json') -Raw | ConvertFrom-Json
+$releaseLock = Get-Content -LiteralPath (Join-Path $projectRoot 'config/openvpn3-release.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 if ($metadata.version -ne $releaseLock.version -or $metadata.sourceRef -ne $releaseLock.ref -or $metadata.sourceCommit -ne $releaseLock.commit) { throw 'Packaged OpenVPN release differs from the release lock.' }
 foreach ($file in Get-ChildItem -LiteralPath (Join-Path $projectRoot 'resources/legal') -File -Recurse) {
   $relative = $file.FullName.Substring((Join-Path $projectRoot 'resources/legal').Length).TrimStart('\', '/')
@@ -35,7 +35,7 @@ foreach ($file in Get-ChildItem -LiteralPath (Join-Path $projectRoot 'native\bin
     throw ('Native resource differs from its verified input: ' + $file.Name)
   }
 }
-$manifest = Get-Content -LiteralPath (Join-Path $projectRoot 'config\windows-tap-driver.json') -Raw | ConvertFrom-Json
+$manifest = Get-Content -LiteralPath (Join-Path $projectRoot 'config\windows-tap-driver.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $driverRoot = Join-Path $inspectionRoot 'drivers\windows-x64\tap-windows6'
 if (Test-Path -LiteralPath (Join-Path $driverRoot $manifest.source.name)) { throw 'Driver source archive must not be bundled.' }
 foreach ($entry in $manifest.files.PSObject.Properties) {
