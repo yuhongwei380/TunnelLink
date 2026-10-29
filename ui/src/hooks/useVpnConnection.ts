@@ -27,6 +27,7 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
   const [busy, setBusy] = useState(false);
   const [action, setAction] = useState<VpnAction>(null);
   const [authOpen, setAuthOpen] = useState(false);
+  const [switchingUser, setSwitchingUser] = useState(false);
   const [authError, setAuthError] = useState('');
   const [credentials, setCredentials] = useState<ConnectOptions>({
     username: '',
@@ -158,6 +159,7 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
     }
     actionPending.current = true;
     operationVersion.current += 1;
+    if (!automatic) sessionCredentials.current = null;
     attemptedCredentials.current = { ...options, username: options.username.trim() };
     setBusy(true);
     setAction('connecting');
@@ -193,26 +195,14 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
     await refreshStatus();
   };
 
-  const toggle = async () => {
-    if (actionPending.current) return;
-    if (status === 'DISCONNECTED') {
-      await credentialsLoaded.current;
-      if (actionPending.current) return;
-      interacted.current = true;
-      if (sessionCredentials.current) {
-        await startConnection(sessionCredentials.current, true);
-      } else {
-        setAuthError('');
-        setAuthOpen(true);
-      }
-      return;
-    }
-    if (!window.vpn) return;
+  const stopConnection = async () => {
+    if (actionPending.current || !window.vpn) return false;
     actionPending.current = true;
     operationVersion.current += 1;
     attemptedCredentials.current = null;
     setAction(status === 'CONNECTING' ? 'cancelling' : 'disconnecting');
     setBusy(true);
+    let stopped = false;
     try {
       // Keep fast operations visible long enough for the progress indicator to register.
       const [result] = await Promise.all([
@@ -223,17 +213,67 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
       connectionErrorOverride.current = '';
       setStatusError('');
       setStatus('DISCONNECTED');
+      stopped = true;
     } catch (error) {
-      notify(error instanceof Error ? error.message : t.disconnectFailed);
+      const message = error instanceof Error ? error.message : t.disconnectFailed;
+      if (authOpen) setAuthError(message);
+      else notify(message);
     } finally {
       setBusy(false);
       actionPending.current = false;
       setAction(null);
     }
     await refreshStatus();
+    return stopped;
   };
 
-  const connect = () => startConnection(credentials);
+  const toggle = async () => {
+    if (actionPending.current) return;
+    if (status === 'DISCONNECTED') {
+      await credentialsLoaded.current;
+      if (actionPending.current) return;
+      interacted.current = true;
+      if (sessionCredentials.current) {
+        await startConnection(sessionCredentials.current, true);
+      } else {
+        setSwitchingUser(false);
+        setAuthError('');
+        setAuthOpen(true);
+      }
+      return;
+    }
+    await stopConnection();
+  };
+
+  const switchUser = () => {
+    if (actionPending.current || status === 'CONNECTING') return;
+    interacted.current = true;
+    setSwitchingUser(true);
+    setCredentials({ username: '', password: '', remember: false });
+    setAuthError('');
+    setConnectionErrorOpen(false);
+    setAuthOpen(true);
+  };
+
+  const closeAuth = () => {
+    if (actionPending.current) return;
+    setAuthOpen(false);
+    setSwitchingUser(false);
+  };
+
+  const connect = async () => {
+    if (actionPending.current) return;
+    if (switchingUser && status !== 'DISCONNECTED') {
+      // Validate before disrupting the existing user's connection.
+      if (!credentials.username.trim() || !credentials.password) {
+        setAuthError(t.invalidCredentials);
+        return;
+      }
+      if (!(await stopConnection())) return;
+    }
+    setSwitchingUser(false);
+    await startConnection(credentials);
+  };
 
   return {
     status,
@@ -244,7 +284,9 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
     busy,
     action,
     authOpen,
-    setAuthOpen,
+    closeAuth,
+    switchingUser,
+    switchUser,
     authError,
     credentials,
     setCredentials,

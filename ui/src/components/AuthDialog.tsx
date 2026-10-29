@@ -18,7 +18,10 @@ type Props = {
   open: boolean;
   credentials: ConnectOptions;
   busy: boolean;
+  busyLabel: string;
   authError: string;
+  switchingUser: boolean;
+  willDisconnect: boolean;
   t: Messages;
   onChange: (credentials: ConnectOptions) => void;
   onConnect: () => Promise<void>;
@@ -29,7 +32,10 @@ export function AuthDialog({
   open,
   credentials,
   busy,
+  busyLabel,
   authError,
+  switchingUser,
+  willDisconnect,
   t,
   onChange,
   onConnect,
@@ -79,7 +85,10 @@ export function AuthDialog({
       className="auth-dialog"
       aria-labelledby="auth-title"
       aria-describedby="auth-description"
-      onCancel={onClose}
+      onCancel={(event) => {
+        event.preventDefault();
+        if (!busy) onClose();
+      }}
       onClose={() => {
         // Native close events are queued; a reopened dialog must ignore an old event.
         if (!dialogRef.current?.open) onClose();
@@ -89,14 +98,20 @@ export function AuthDialog({
         <span className="auth-icon">
           <LockKeyhole size={24} strokeWidth={1.7} />
         </span>
-        <button className="dialog-close" onClick={onClose} aria-label={t.close}>
+        <button className="dialog-close" onClick={onClose} aria-label={t.close} disabled={busy}>
           <X size={20} />
         </button>
       </div>
       <div className="auth-introduction">
         <span className="eyebrow">{t.account}</span>
-        <h2 id="auth-title">{t.login}</h2>
-        <p id="auth-description">{t.loginDesc}</p>
+        <h2 id="auth-title">{switchingUser ? t.switchUser : t.login}</h2>
+        <p id="auth-description">
+          {switchingUser
+            ? willDisconnect
+              ? t.switchUserConnectedDesc
+              : t.switchUserDesc
+            : t.loginDesc}
+        </p>
       </div>
       <form onSubmit={handleSubmit}>
         <label htmlFor="vpn-username">{t.username}</label>
@@ -187,7 +202,7 @@ export function AuthDialog({
         <button type="submit" className="submit-button" disabled={busy}>
           <span className="submit-button-content">
             {busy ? <LoaderCircle className="spin" size={18} /> : <LockKeyhole size={17} />}
-            <span>{busy ? t.connecting : t.secureConnect}</span>
+            <span>{busy ? busyLabel : t.secureConnect}</span>
             {!busy && <ArrowRight size={17} />}
           </span>
         </button>

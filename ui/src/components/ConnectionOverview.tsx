@@ -1,6 +1,7 @@
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  ArrowRightLeft,
   Clock3,
   Check,
   LoaderCircle,
@@ -21,6 +22,7 @@ type Props = {
   action: VpnAction;
   t: Messages;
   onToggle: () => void;
+  onSwitchUser: () => void;
 };
 
 export function ConnectionOverview({
@@ -31,6 +33,7 @@ export function ConnectionOverview({
   action,
   t,
   onToggle,
+  onSwitchUser,
 }: Props) {
   const connected = status === 'CONNECTED';
   const connecting = status === 'CONNECTING';
@@ -81,6 +84,18 @@ export function ConnectionOverview({
           <p className="connection-state-copy">
             {connected ? t.connectedDesc : connecting ? t.connectingDesc : t.offlineDesc}
           </p>
+          <div className="connection-account-row">
+            <button
+              type="button"
+              className="switch-user-button"
+              onClick={onSwitchUser}
+              disabled={busy || connecting || stopping}
+              aria-haspopup="dialog"
+            >
+              <ArrowRightLeft size={15} strokeWidth={1.7} aria-hidden="true" />
+              <span>{t.switchUser}</span>
+            </button>
+          </div>
           <div className="connection-action-row">
             <button
               className={`connection-action ${connected || connecting ? 'secondary-action' : ''}`}

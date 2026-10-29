@@ -49,7 +49,9 @@ export default function App() {
     busy,
     action,
     authOpen,
-    setAuthOpen,
+    closeAuth,
+    switchingUser,
+    switchUser,
     authError,
     credentials,
     setCredentials,
@@ -86,7 +88,7 @@ export default function App() {
     let unlisten: (() => void) | undefined;
     void listen('app-close-requested', () => {
       setLogsOpen(false);
-      setAuthOpen(false);
+      closeAuth();
       setAboutOpen(false);
       setInstallPromptOpen(false);
       setExitPromptOpen(true);
@@ -247,6 +249,11 @@ export default function App() {
               action={action}
               t={t}
               onToggle={handleToggle}
+              onSwitchUser={() => {
+                if (installRequired) setInstallPromptOpen(true);
+                else if (agreementRequired) setAboutOpen(true);
+                else switchUser();
+              }}
             />
           </main>
           {!isDesktop && (
@@ -291,11 +298,14 @@ export default function App() {
         open={authOpen}
         credentials={credentials}
         busy={busy}
+        busyLabel={action === 'disconnecting' ? t.disconnecting : t.connecting}
         authError={authError}
+        switchingUser={switchingUser}
+        willDisconnect={switchingUser && status === 'CONNECTED'}
         t={t}
         onChange={setCredentials}
         onConnect={connect}
-        onClose={() => setAuthOpen(false)}
+        onClose={closeAuth}
       />
       <InstallDialog
         open={installPromptOpen}

@@ -4970,6 +4970,10 @@ dialog[data-closing='true']::backdrop {
 
 /* Give the desktop overview breathing room without crowding short windows. */
 @media (min-width: 561px) and (min-height: 580px) {
+  .connection-page .connection-heading {
+    position: relative;
+    top: -20px;
+  }
   .connection-page {
     padding-top: 24px;
   }
@@ -5148,6 +5152,54 @@ dialog[data-closing='true']::backdrop {
     margin-top: 6px;
     padding-top: 4px;
   }
+}
+
+.connection-page .connection-account-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.connection-page .switch-user-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid #ffffff4d;
+  border-radius: 999px;
+  background: #ffffff24;
+  color: #f1f6ff;
+  box-shadow: 0 1px 3px #061a3426;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+}
+.connection-page .switch-user-button:hover:not(:disabled) {
+  background: #ffffff38;
+  border-color: #ffffff80;
+  color: #fff;
+}
+.connection-page .switch-user-button:active:not(:disabled) {
+  background: #ffffff14;
+  box-shadow: inset 0 1px 3px #061a3440;
+}
+.connection-page .switch-user-button:focus-visible {
+  outline: 2px solid #a7c7ff;
+  outline-offset: 3px;
+}
+.connection-page .switch-user-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* Keep diagnostics controls compact and give the event stream the available height. */
