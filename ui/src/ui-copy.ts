@@ -55,6 +55,7 @@ export function mergeUiCopy(defaults: UiCopy, value: unknown): UiCopy {
     // Refresh those exact labels while preserving independently chosen branding.
     if (
       [
+        'TunnelLink',
         'OpenVPN 企业客户端',
         'OpenVPN 客户端',
         'OpenVPN Enterprise Client',

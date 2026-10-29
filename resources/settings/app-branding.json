@@ -1,6 +1,6 @@
 {
   "_comment": "品牌与安装包配置（修改后运行 npm run sync:branding 并重新构建；下划线开头的键仅为说明，程序会忽略）。appId：应用标识，改动后系统会视为另一个应用（配置、卸载互相独立）。productName：应用与安装包名，影响安装文件名（<productName>-Tauri-Setup-<版本>-x64.exe）、可执行文件与快捷方式名、安装目录、卸载条目和窗口标题；改名后升级不会自动替换旧名称的安装，需先卸载旧版本。defaultLocale：首次启动的界面语言，CN=中文、EN=英文；仅影响首次启动，用户手动切换后会记住选择。",
   "appId": "com.example.openvpn-client-phoenix",
-  "productName": "TunnelLink",
+  "productName": "Tunnel Link",
   "defaultLocale": "CN"
 }

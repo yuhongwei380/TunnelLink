@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "TunnelLink",
+  "productName": "Tunnel Link",
   "version": "3.11.8",
   "identifier": "com.example.openvpn-client-phoenix",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "TunnelLink",
+        "title": "Tunnel Link",
         "width": 840,
         "height": 640,
         "minWidth": 840,

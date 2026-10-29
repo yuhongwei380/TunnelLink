@@ -59,7 +59,11 @@ test('former default branding follows the new defaults on existing installs', ()
     en: { appTitle: 'OpenVPN Client', copyright: '© 2026 OpenVPN Client' },
   });
   for (const locale of ['zh', 'en'] as const) {
-    assert.equal(copy[locale].appTitle, 'TunnelLink');
+    assert.equal(copy[locale].appTitle, 'Tunnel Link');
     assert.equal(copy[locale].copyright, defaultUiCopy[locale].copyright);
   }
+  assert.equal(
+    mergeUiCopy(defaultUiCopy, { zh: { appTitle: 'TunnelLink' } }).zh.appTitle,
+    'Tunnel Link',
+  );
 });

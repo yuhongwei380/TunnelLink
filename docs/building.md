@@ -103,7 +103,7 @@ npm run build:openvpn3:win
 npm run dist:win
 ```
 
-原生引擎与 OpenSSL/MSVC DLL 放在 `.cache/native/bin/windows-x64/`。安装包命名为 `build_dist/windows/TunnelLink-Tauri-Setup-<version>-x64.exe`，原始 NSIS 产物位于 `.cache/cargo-target/x86_64-pc-windows-msvc/release/bundle/nsis/`。
+原生引擎与 OpenSSL/MSVC DLL 放在 `.cache/native/bin/windows-x64/`。安装包命名为 `build_dist/windows/Tunnel Link-Tauri-Setup-<version>-x64.exe`，原始 NSIS 产物位于 `.cache/cargo-target/x86_64-pc-windows-msvc/release/bundle/nsis/`。
 
 ### 驱动与 WebView2
 
@@ -181,7 +181,7 @@ npm run test:packaging:integration
 Windows 安装包检查入口为 `make/windows/verify-installer.ps1`，需要 7-Zip，默认路径为 `C:\Program Files\7-Zip\7z.exe`：
 
 ```powershell
-npm run verify:installer:win -- -Installer "build_dist/windows/TunnelLink-Tauri-Setup-<version>-x64.exe"
+npm run verify:installer:win -- -Installer "build_dist/windows/Tunnel Link-Tauri-Setup-<version>-x64.exe"
 ```
 
 该检查解包并验证版本、引擎和资源哈希、驱动签名、协议及许可，确认未携带旧桌面运行时，生成 `package-verification.json`。归集脚本另生成 `build-verification.json`，记录当前安装包的时间、大小和 SHA-256。
