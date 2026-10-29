@@ -300,6 +300,11 @@ pub fn parse(
             continue;
         }
         match name {
+            "client-cert-not-required" => {
+                if fields.len() != 1 {
+                    return Err("client-cert-not-required does not accept arguments".into());
+                }
+            }
             "ca" | "cert" | "key" | "extra-certs" | "tls-auth" | "tls-crypt" => {
                 if fields.len() != 2
                     || references
@@ -454,6 +459,25 @@ mod tests {
         assert_eq!(p.endpoints[0].port, 1195);
         assert_eq!(p.endpoints[1].host, "2001:db8::1");
         assert!(p.requires_auth);
+    }
+    #[test]
+    fn password_profile_without_client_certificate_preserves_server_verification() {
+        let ca = rcgen::generate_simple_self_signed(vec!["ca.test".into()]).unwrap();
+        let input = format!("client\nremote vpn.example.com\nauth-user-pass\nclient-cert-not-required\nremote-cert-tls server\n<ca>\n{}</ca>\n", ca.cert.pem());
+        let parsed = parse(&input, &BTreeMap::new(), false).unwrap();
+        assert!(parsed.requires_auth);
+        assert!(!parsed.has_client_certificate);
+        assert!(parsed.content.contains("client-cert-not-required\n"));
+        assert!(parsed.content.contains("remote-cert-tls server\n"));
+        assert!(parsed
+            .content
+            .contains(&ca.cert.pem().replace("\r\n", "\n")));
+        assert!(parse(
+            "remote test\nauth-user-pass\nclient-cert-not-required extra\n",
+            &BTreeMap::new(),
+            false
+        )
+        .is_err());
     }
     #[test]
     fn reject_privileged_and_unresolved_inputs() {

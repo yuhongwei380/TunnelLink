@@ -20,6 +20,7 @@ type Props = {
   stats: VpnStats;
   statusError: string;
   busy: boolean;
+  disabled: boolean;
   action: VpnAction;
   t: Messages;
   onToggle: () => void;
@@ -32,6 +33,7 @@ export function ConnectionOverview({
   stats,
   statusError,
   busy,
+  disabled,
   action,
   t,
   onToggle,
@@ -91,7 +93,7 @@ export function ConnectionOverview({
               type="button"
               className="switch-user-button"
               onClick={onSwitchUser}
-              disabled={busy || connecting || stopping || !profile?.requiresAuth}
+              disabled={disabled || busy || connecting || stopping || !profile?.requiresAuth}
               aria-haspopup="dialog"
             >
               <ArrowRightLeft size={15} strokeWidth={1.7} aria-hidden="true" />
@@ -102,7 +104,7 @@ export function ConnectionOverview({
             <button
               className={`connection-action ${connected || connecting ? 'secondary-action' : ''}`}
               onClick={onToggle}
-              disabled={busy}
+              disabled={disabled || busy}
               aria-busy={busy || connecting}
             >
               <span key={`${status}-${action}`} className="connection-button-content">

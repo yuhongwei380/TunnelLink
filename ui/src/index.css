@@ -5554,6 +5554,17 @@ dialog[data-closing='true']::backdrop {
   border-radius: 14px;
   background: #fff;
 }
+
+/* The profile panel adds variable height above the overview. Keep every card
+   reachable when the native window or display scaling leaves less space. */
+.app-body .main-scroll {
+  overflow-y: auto;
+}
+.connection-page {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
 .profile-picker-row {
   display: flex;
   align-items: center;

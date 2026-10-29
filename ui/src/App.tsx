@@ -311,7 +311,8 @@ export default function App() {
               status={status}
               stats={stats}
               statusError={statusError}
-              busy={busy || profileBusy || !selectedProfile || Boolean(selectedProfile.error)}
+              busy={busy || profileBusy}
+              disabled={!selectedProfile || Boolean(selectedProfile.error)}
               profile={selectedProfile}
               action={action}
               t={selectedProfile ? { ...t, connect: locale === 'zh' ? '连接' : 'Connect' } : t}
