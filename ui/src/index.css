@@ -5312,6 +5312,8 @@ dialog[data-closing='true']::backdrop {
 }
 .logs-dialog .logs-controls {
   flex: 0 0 auto;
+  position: relative;
+  z-index: 3;
   gap: 10px;
   padding: 8px 12px;
 }
@@ -5359,33 +5361,97 @@ dialog[data-closing='true']::backdrop {
   background: #fff7e9;
   color: #94611b;
 }
-.logs-dialog .logs-export-group {
+.logs-dialog .logs-export-control {
+  position: relative;
   display: flex;
   align-items: stretch;
   height: 40px;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid #dce7f5;
   border-radius: 8px;
-  background: #f8faff;
+  background: #f2f6fc;
 }
-.logs-dialog .logs-export-group select {
-  min-width: 78px;
-  padding: 0 7px;
-  border: 0;
-  border-right: 1px solid #dce7f5;
-  outline: 0;
+.logs-dialog .logs-toolbar .logs-range-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  width: auto;
+  min-width: 82px;
+  height: 40px;
+  margin: -1px 0 -1px -1px;
+  padding: 0 9px 0 10px;
+  border: 1px solid transparent;
+  border-radius: 8px 0 0 8px;
   color: #4c6688;
   background: transparent;
-  font: inherit;
   font-size: 12px;
-  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
 }
-.logs-dialog .logs-export-group select:focus-visible {
-  box-shadow: inset 0 0 0 2px #6e9dff;
+.logs-dialog .logs-toolbar .logs-range-button:hover:not(:disabled) {
+  border-color: #bcd0ee;
+  background: #eaf2ff;
+  color: #254f86;
 }
-.logs-dialog .logs-export-group select:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
+.logs-dialog .logs-toolbar .logs-range-button:focus-visible,
+.logs-dialog .logs-toolbar .logs-export-button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid #6e9dff;
+  outline-offset: -2px;
+}
+.logs-dialog .logs-range-button svg {
+  transition: transform 160ms ease;
+}
+.logs-dialog .logs-range-button svg.is-open {
+  transform: rotate(180deg);
+}
+.logs-dialog .logs-range-menu {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  z-index: 8;
+  display: grid;
+  gap: 3px;
+  min-width: 142px;
+  padding: 6px;
+  border: 1px solid #dce5f1;
+  border-radius: 10px;
+  background: #fbfdff;
+  box-shadow:
+    0 12px 28px #1d355726,
+    0 2px 5px #1d35570d;
+  animation: log-range-menu-in 150ms ease-out;
+}
+.logs-dialog .logs-range-menu-label {
+  padding: 5px 8px 4px;
+  color: #7b8da5;
+  font-size: 11px;
+  font-weight: 650;
+}
+.logs-dialog .logs-toolbar .logs-range-menu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  height: 34px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 7px;
+  color: #425b7a;
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 550;
+}
+.logs-dialog .logs-toolbar .logs-range-menu button:hover,
+.logs-dialog .logs-toolbar .logs-range-menu button[aria-checked='true'] {
+  color: #155eef;
+  background: #edf4ff;
+}
+.logs-dialog .logs-range-menu button svg {
+  flex-shrink: 0;
 }
 .logs-dialog .logs-toolbar .logs-export-button {
   display: inline-flex;
@@ -5393,18 +5459,28 @@ dialog[data-closing='true']::backdrop {
   justify-content: center;
   gap: 5px;
   width: auto;
-  min-width: 70px;
-  height: 38px;
-  padding: 0 9px;
-  border: 0;
-  border-radius: 0;
+  min-width: 72px;
+  height: 40px;
+  margin: -1px -1px -1px 0;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-left: 1px solid #dce7f5;
+  border-radius: 0 8px 8px 0;
   color: #335d92;
+  background: transparent;
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
 }
 .logs-dialog .logs-toolbar .logs-export-button:hover:not(:disabled) {
-  border-color: transparent;
+  border-color: #bcd0ee;
+  background: #eaf2ff;
+}
+.logs-dialog .logs-toolbar .logs-range-button:disabled,
+.logs-dialog .logs-toolbar .logs-export-button:disabled {
+  color: #9aaac0;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 .logs-dialog .logs-toolbar .logs-export-button .export-pulse {
   animation: export-pulse 800ms ease-in-out infinite alternate;
@@ -5413,6 +5489,12 @@ dialog[data-closing='true']::backdrop {
   to {
     opacity: 0.35;
     transform: translateY(2px);
+  }
+}
+@keyframes log-range-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
   }
 }
 .logs-dialog .log-column-labels,

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import {
   AlertCircle,
   ArrowRight,
+  Check,
+  ChevronDown,
   Copy,
   Download,
   LockKeyhole,
@@ -33,11 +35,14 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
   const [logFilter, setLogFilter] = useState<LogFilter>('all');
   const [exportRange, setExportRange] = useState<5 | 30 | 60>(5);
   const [exporting, setExporting] = useState(false);
+  const [rangeMenuOpen, setRangeMenuOpen] = useState(false);
   const logsPending = useRef(false);
   const pausedRef = useRef(false);
   const requestVersion = useRef(0);
   const logsDialogRef = useDialog(open);
   const consoleRef = useRef<HTMLElement>(null);
+  const exportControlRef = useRef<HTMLDivElement>(null);
+  const rangeButtonRef = useRef<HTMLButtonElement>(null);
   const followLatest = useRef(true);
   const isDesktop = Boolean(window.vpn);
   const errorCount = logs.filter(isErrorLog).length;
@@ -73,8 +78,28 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
       requestVersion.current += 1;
       pausedRef.current = false;
       setPaused(false);
+      setRangeMenuOpen(false);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!rangeMenuOpen) return;
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!exportControlRef.current?.contains(event.target as Node)) setRangeMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      setRangeMenuOpen(false);
+      rangeButtonRef.current?.focus();
+    };
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape, true);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape, true);
+    };
+  }, [rangeMenuOpen]);
 
   useEffect(() => {
     if (!open || paused) return;
@@ -124,6 +149,12 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
       setExporting(false);
     }
   };
+  const exportRanges = [
+    { value: 5 as const, label: t.last5Minutes },
+    { value: 30 as const, label: t.last30Minutes },
+    { value: 60 as const, label: t.last1Hour },
+  ];
+  const selectedRangeLabel = exportRanges.find(({ value }) => value === exportRange)?.label;
 
   return (
     <dialog
@@ -194,18 +225,40 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
               {paused ? <Play size={16} /> : <Pause size={16} />}
               <span>{paused ? t.resumeRefresh : t.pauseRefresh}</span>
             </button>
-            <div className="logs-export-group">
-              <select
-                value={exportRange}
-                onChange={(event) => setExportRange(Number(event.target.value) as 5 | 30 | 60)}
-                aria-label={t.exportRange}
+            <div className="logs-export-control" ref={exportControlRef}>
+              <button
+                ref={rangeButtonRef}
+                className="logs-range-button"
+                onClick={() => setRangeMenuOpen((value) => !value)}
+                aria-haspopup="menu"
+                aria-expanded={rangeMenuOpen}
+                aria-label={`${t.exportRange}: ${selectedRangeLabel}`}
                 title={t.exportRange}
                 disabled={!isDesktop || exporting}
               >
-                <option value={5}>{t.last5Minutes}</option>
-                <option value={30}>{t.last30Minutes}</option>
-                <option value={60}>{t.last1Hour}</option>
-              </select>
+                <span>{selectedRangeLabel}</span>
+                <ChevronDown size={14} className={rangeMenuOpen ? 'is-open' : ''} />
+              </button>
+              {rangeMenuOpen && (
+                <div className="logs-range-menu" role="menu" aria-label={t.exportRange}>
+                  <span className="logs-range-menu-label">{t.exportRange}</span>
+                  {exportRanges.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      role="menuitemradio"
+                      aria-checked={exportRange === value}
+                      onClick={() => {
+                        setExportRange(value);
+                        setRangeMenuOpen(false);
+                        rangeButtonRef.current?.focus();
+                      }}
+                    >
+                      <span>{label}</span>
+                      {exportRange === value && <Check size={15} />}
+                    </button>
+                  ))}
+                </div>
+              )}
               <button
                 className="logs-export-button"
                 onClick={() => void exportLogs()}
