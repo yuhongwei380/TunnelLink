@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import path from 'node:path';
+import fs from 'node:fs/promises';
+import { readFeatures } from './lib/client-features.mjs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   assertBuildHost,
@@ -21,6 +23,8 @@ const help = `Usage: node build.mjs [options]
 
   --platform windows|macos|auto  Build platform (default: detect current OS)
   --profile PATH               Private profile (default: custom-config/client.ovpn)
+  --builtin-profile enabled|disabled  Include the built-in profile
+  --profile-import enabled|disabled   Allow imported profiles
   --prepare-only               Copy current source and replace profile, without compiling
   --force-engine               Force a clean native engine rebuild using cached source
   --skip-engine                Reuse an engine verified by the upstream scripts
@@ -54,15 +58,25 @@ export async function runBuild(
   const upstream = localSource
     ? { repository: 'local-working-tree', commit: 'working-tree' }
     : await loadUpstream(root);
-  const profile = await readProfile(
-    path.resolve(options.profile ?? path.join(root, 'custom-config/client.ovpn')),
-  );
+  const features = await readFeatures(root, options);
+  if (!features.builtinProfile.enabled && options.profile)
+    throw new Error('--profile conflicts with --builtin-profile=disabled.');
+  const profile = features.builtinProfile.enabled
+    ? await readProfile(
+        path.resolve(options.profile ?? path.join(root, 'custom-config/client.ovpn')),
+      )
+    : { contents: Buffer.alloc(0), sha256: null };
   const branding = localSource
     ? await readBranding(path.join(root, 'custom-config/app-branding.json'))
     : null;
   const logPrivacy = localSource
     ? await readLogPrivacy(path.join(root, 'custom-config/log-privacy.json'))
     : null;
+  if (logPrivacy && JSON.parse(logPrivacy).endpointAlias) {
+    throw new Error(
+      'Remove endpointAlias from custom-config/log-privacy.json: profiles display real domain names and IP addresses.',
+    );
+  }
   await withBuildLock(root, platform, async () => {
     // Validate the private input before installing tools or downloading source.
     if (prepareEnvironment && !options.prepareOnly && !options.noAutoInstallDeps) {
@@ -71,8 +85,22 @@ export async function runBuild(
     }
     console.log('[2/3] Preparing source and private profile...');
     const prepared = localSource
-      ? await prepareLocalSource({ root, platform, upstream, profile, branding, logPrivacy })
+      ? await prepareLocalSource({
+          root,
+          platform,
+          upstream,
+          profile,
+          branding,
+          logPrivacy,
+          features,
+        })
       : await prepareSource({ root, platform, upstream, profile });
+    if (!localSource)
+      await fs.writeFile(
+        path.join(prepared.sourceDir, 'resources/settings/client-features.json'),
+        JSON.stringify(features, null, 2),
+      );
+    prepared.clientFeatures = features;
     console.log(
       `Source ready: ${prepared.sourceDir}\nSource revision: ${upstream.commit}\nPrivate profile replaced: resources/settings/client.ovpn`,
     );

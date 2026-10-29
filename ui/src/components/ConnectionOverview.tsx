@@ -11,10 +11,11 @@ import {
 } from 'lucide-react';
 import { formatBytes, formatTime } from '../format';
 import type { Messages } from '../messages';
-import type { VpnAction, VpnState, VpnStats } from '../types';
+import type { VpnAction, VpnState, VpnStats, VpnProfile } from '../types';
 import release from '../../../resources/settings/openvpn3-release.json';
 
 type Props = {
+  profile?: VpnProfile;
   status: VpnState;
   stats: VpnStats;
   statusError: string;
@@ -26,6 +27,7 @@ type Props = {
 };
 
 export function ConnectionOverview({
+  profile,
   status,
   stats,
   statusError,
@@ -70,7 +72,7 @@ export function ConnectionOverview({
       >
         <div className="connection-copy">
           <div className="connection-heading">
-            <h3>{t.overview}</h3>
+            <h3>{profile?.displayName || t.overview}</h3>
             <span
               className={`status-badge ${connectionFailed ? 'status-error' : ''}`}
               role="status"
@@ -89,7 +91,7 @@ export function ConnectionOverview({
               type="button"
               className="switch-user-button"
               onClick={onSwitchUser}
-              disabled={busy || connecting || stopping}
+              disabled={busy || connecting || stopping || !profile?.requiresAuth}
               aria-haspopup="dialog"
             >
               <ArrowRightLeft size={15} strokeWidth={1.7} aria-hidden="true" />
@@ -141,8 +143,8 @@ export function ConnectionOverview({
               <Server size={23} strokeWidth={1.6} />
             </span>
             <div>
-              <h3>{t.gatewayName}</h3>
-              <p>{t.gatewayDesc}</p>
+              <h3>{profile?.displayName || t.gatewayName}</h3>
+              <p>{profile ? profile.description : t.gatewayDesc}</p>
             </div>
           </div>
           <div className="gateway-net">

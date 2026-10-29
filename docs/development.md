@@ -80,9 +80,9 @@ npm run tauri:dev
 
 使用 `node build.mjs` 构建安装包时，连接配置默认读取 `custom-config/client.ovpn`，也可通过 `--profile PATH` 指定。入口仅在隔离源码中替换 `resources/settings/client.ovpn`，不改写当前工作树的默认配置。`custom-config/` 中说明文件、品牌配置与日志脱敏配置被 Git 跟踪，其余本地文件被忽略。
 
-`custom-config/log-privacy.json` 的可选 `endpointAlias` 控制内置日志地址脱敏，统一构建覆盖 `resources/settings/log-privacy.json`；缺省或 `null` 保持原文。详见[配置说明](../custom-config/README.md#内置日志地址脱敏)。
+`client-features.json` 控制内置配置与导入功能；私有构建覆盖和发行示例见[客户端配置功能](building.md#客户端配置功能)。真实域名与 IP 始终展示，旧 endpointAlias 必须清空。
 
-- `resources/settings/client.ovpn`：编译进原生客户端的固定配置；修改后需要重新构建客户端。
+- `resources/settings/client.ovpn`：可选内置配置；仅启用 builtinProfile 时编译进程序，修改后需要重新构建客户端。
 - `resources/settings/app-branding.json`：应用名称、标识与默认界面语言（`defaultLocale`：`CN` 默认中文 / `EN` 默认英文，仅影响首次启动，用户手动切换后记住用户选择）；直接构建时修改后运行 `npm run sync:branding`。统一构建优先使用 `custom-config/app-branding.json`，复制到隔离源码后参与构建；该文件不存在时使用 `resources/settings/` 下的默认值。
 - `resources/settings/openvpn3-release.json`：OpenVPN 版本、标签和提交的唯一来源；升级流程见[构建与发布](building.md#版本与许可)。
 - `resources/settings/ui-copy.json`：新用户默认文案。已生成的用户文案文件不会被覆盖，修改方式见[使用说明中的文案配置](../README.md#修改连接页文案)。
@@ -105,7 +105,7 @@ npm run tauri:dev
 
 凭据通过 Windows Credential Manager 或 macOS Keychain 保存，且仅在认证成功后写入；取消记住凭据会在成功连接后删除已保存内容。旧客户端凭据不自动迁移。
 
-`TunnelLink --clear-saved-credentials` 在 GUI 和单实例检查前执行，按编译时应用标识删除当前账户的 `vpn-account` 条目，条目不存在也视为成功；错误返回非零退出码，不读取或输出密码。Windows 安装版也在“关于软件”中提供带二次确认的“卸载并清除数据”入口；确认后禁止新连接、断开会话、启动同目录正式 `uninstall.exe /S /FROMAPP=1` 并退出 GUI。NSIS 卸载钩子在应用关闭后运行 `--clear-uninstall-data`，删除当前 Windows 账户的凭据以及 `%APPDATA%`、`%LOCALAPPDATA%` 下编译时应用标识对应的目录，任一清理失败即中止卸载；`/UPDATE` 更新除外。共享 TAP 驱动和适配器不会随卸载删除。
+`TunnelLink --clear-saved-credentials` 在 GUI 和单实例检查前执行，按编译时应用标识删除当前账户的旧 `vpn-account` 条目和所有配置独立凭据及索引，条目不存在也视为成功；错误返回非零退出码，不读取或输出密码。Windows 安装版也在“关于软件”中提供带二次确认的“卸载并清除数据”入口；确认后禁止新连接、断开会话、启动同目录正式 `uninstall.exe /S /FROMAPP=1` 并退出 GUI。NSIS 卸载钩子在应用关闭后运行 `--clear-uninstall-data`，删除当前 Windows 账户的凭据以及 `%APPDATA%`、`%LOCALAPPDATA%` 下编译时应用标识对应的目录，任一清理失败即中止卸载；`/UPDATE` 更新除外。共享 TAP 驱动和适配器不会随卸载删除。
 
 macOS 使用同一应用内入口，确认后使旧凭据写入失效并删除钥匙串条目，再通过原生 `NSFileManager` 将当前应用移入废纸篓。一次性清理子进程在 GUI 退出后删除当前应用标识对应的 Application Support、Caches、WebKit、HTTPStorages、Logs、Preferences 和 Saved Application State 数据，避免关闭中的 WebView 重建缓存；失败时通过系统对话框提示。不分发独立卸载脚本。直接删除 `.app` 不会触发清理；两个平台的卸载都须以保存凭据的操作系统账户执行。
 
@@ -141,3 +141,11 @@ npm run build
 | `npm run clean:dist`     | 清理 `build_dist/` 中的最终安装包              |
 
 测试按职责保存：`make/tests/ui/` 为前端逻辑，`make/tests/unified/` 为统一构建流程，`make/tests/helpers/` 为共享夹具，`make/tests/integration/` 为依赖真实下载资源的集成测试。驱动安装逻辑的 PowerShell 测试和集成测试步骤见[构建与发布](building.md#验证安装包)。
+
+## 多配置实现
+
+构建设置由 build.rs 验证并生成只读常量。profiles.rs 管理应用数据目录 profiles 下的 UUID JSON 记录（包含规范化配置）及 selection.json；记录采用临时文件原子替换。profile_import.rs 执行受限指令解析、证书格式与私钥匹配校验，原生导入再用引擎 --eval 验证认证方式。Windows 客户端当前整体提权，因此所有外部证书均需用户明确选择，不自动读取配置引用路径。
+
+Controller 使用同一会话锁串行化连接和配置变更。worker 仅接收私有会话目录的固定 profile.ovpn，重新校验后使用已读取字节生成自己的临时配置。凭据按 profileId 和内容指纹绑定，通过系统凭据库保存；分块索引保证删除与卸载可枚举所有条目。旧全局凭据不会迁移到任意新配置。
+
+UI 通过 listProfiles、importProfile、selectProfile、renameProfile、deleteProfile 操作，导入为一次原生交互，不向前端暴露证书正文或任意路径读取接口。浏览器预览不连接 VPN；真实文件选择、引擎校验与连接须在桌面客户端验证。

@@ -16,6 +16,7 @@ bench = false
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
+serde_json = "1"
 
 [dependencies]
 tauri = { version = "2", features = [] }
@@ -24,6 +25,11 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 tempfile = "3"
+sha2 = "0.10"
+uuid = { version = "1", features = ["v4"] }
+rfd = "0.15"
+base64 = "0.22"
+rustls = { version = "0.23", default-features = false, features = ["std", "ring"] }
 keyring = { version = "3.6", features = ["apple-native", "windows-native"] }
 
 [target.'cfg(unix)'.dependencies]
@@ -33,7 +39,7 @@ libc = "0.2"
 objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSError", "NSFileManager", "NSPathUtilities", "NSString", "NSURL", "NSUserDefaults"] }
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.60", features = ["Win32_Foundation", "Win32_Security", "Win32_System_JobObjects", "Win32_System_Threading", "Win32_System_Console", "Win32_UI_WindowsAndMessaging"] }
+windows-sys = { version = "0.60", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_System_JobObjects", "Win32_System_Threading", "Win32_System_Console", "Win32_UI_WindowsAndMessaging"] }
 
 [profile.release]
 codegen-units = 1
@@ -41,3 +47,6 @@ lto = true
 opt-level = "s"
 strip = true
 panic = "abort"
+
+[dev-dependencies]
+rcgen = { version = "0.13", default-features = false, features = ["crypto", "ring", "pem"] }

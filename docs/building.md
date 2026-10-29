@@ -203,3 +203,37 @@ npm run sync:branding
 用户协议源文件是 `resources/legal/USER-AGREEMENT.txt`；构建时在 `.cache/legal/` 生成 Unicode RTF，生成文件不提交。协议修订时同时更新正文日期与 `ui/src/components/AboutDialog.tsx` 中的 `AGREEMENT_REVISION`。Windows 安装向导展示协议；macOS 在首次启动时要求接受协议。
 
 `resources/legal/` 保存客户端用户协议；顶层 `LICENSES/` 保存各开源组件许可证原文（AGPL、MPL、OpenSSL 特别许可、TAP 驱动、字体等）与第三方来源说明；组合作品整体按 AGPL-3.0-only 分发（含上游 OpenSSL 链接附加许可；对应源码按 AGPL §6(d) 在指定发布地点提供，见顶层 NOTICE）。安装包附带许可和来源记录（安装目录 `legal/` 与 `legal/licenses/`），不附带 OpenVPN 3 或 TAP 驱动源码压缩包。
+
+## 客户端配置功能
+
+统一构建的功能开关放在 `custom-config/client-features.json`。`resources/settings/client-features.json` 仅作为直接 Cargo/Tauri 构建的默认值。命令行参数优先于 `custom-config` 配置，`custom-config` 配置优先于仓库默认值。JSON 中的 `_comment` 字段用于给构建者说明选项，程序会忽略这些字段。
+
+```json
+{
+  "builtinProfile": {
+    "enabled": true,
+    "displayName": "Internal Tunnel",
+    "description": ""
+  },
+  "profileImport": { "enabled": true }
+}
+```
+
+名称和说明均在编译时确定，名称为空时使用 Internal Tunnel。Demo 版本可以填写 Demo 测试环境及隔离说明；实际网络隔离由服务端提供。
+
+```bash
+# 外部体验版，仅内置配置
+node build.mjs --builtin-profile=enabled --profile-import=disabled --profile custom-config/client.ovpn
+
+# 内部通用版，内置配置和导入配置共存
+node build.mjs --builtin-profile=enabled --profile-import=enabled --profile custom-config/client.ovpn
+
+# 纯导入版，无需私有配置文件
+node build.mjs --builtin-profile=disabled --profile-import=enabled
+```
+
+两项同时关闭会失败；关闭内置配置时传入 --profile 也会失败。纯导入版清空隔离源码中的内置配置，Rust 构建不读取或嵌入该配置。关闭导入会同时禁止历史导入项的连接，不删除用户磁盘数据。构建记录包含最终能力设置。
+
+直接 Cargo/Tauri 构建使用 resources/settings/client-features.json，Rust 构建脚本同样验证能力组合。用于代码检查且本地尚无引擎/驱动资源时，可临时设置 TAURI_CONFIG 为 {"bundle":{"resources":[]}}；该方式仅用于检查和测试，不可用于发布安装包。
+
+导入支持内嵌材料以及通过原生选择器提供的外部 CA、客户端证书和未加密私钥。支持账号密码、仅证书和组合认证；不支持加密私钥、PKCS#12、MFA、脚本、配置包含和外部 TLS 静态密钥文件。导入会检查 PEM、证书与私钥匹配，并调用随包引擎 --eval；没有随包引擎时不能完成导入。引擎拒绝的配置不会保存。

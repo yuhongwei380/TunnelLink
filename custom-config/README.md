@@ -10,16 +10,14 @@
 
 直接执行平台打包命令或 Tauri 构建命令时，使用 `resources/settings/`，不会读取本目录。默认界面文案请修改 [`resources/settings/ui-copy.json`](../resources/settings/ui-copy.json)，详见[开发指南](../docs/development.md#配置修改)。
 
-### 内置日志地址脱敏
+### 客户端功能与地址展示
 
-`custom-config/log-privacy.json` 可配置日志中的地址显示别名：
+[`client-features.json`](client-features.json) 是统一构建的客户端功能开关。文件中的 `_comment` 字段是合法 JSON 说明字段，程序会忽略它们。`builtinProfile.enabled` 控制内置配置，`profileImport.enabled` 控制导入入口；两个字段都只能填写 `true` 或 `false`，且不能同时为 `false`。`builtinProfile.displayName` 控制内置配置名称，缺省为 `Internal Tunnel`；`description` 控制内置配置说明。完整示例见[客户端配置功能](../docs/building.md#客户端配置功能)。
 
-```json
-{ "endpointAlias": "demo.vpn" }
-```
+常用组合如下：外部体验版使用 `builtinProfile.enabled=true`、`profileImport.enabled=false`；内部通用版两个都设为 `true`；内部纯导入版使用 `builtinProfile.enabled=false`、`profileImport.enabled=true`。关闭内置配置时不需要 `client.ovpn`；启用内置配置时，`node build.mjs` 会读取 `--profile` 指定的文件，未指定时读取 `custom-config/client.ovpn`。
 
-执行 `node build.mjs` 后，配置覆盖隔离源码中的 `resources/settings/log-privacy.json`，重新安装构建产物后生效。启用时，仅将配置中 `remote` 指定的服务器域名或地址、远程端口，以及引擎远端连接日志中识别到的公网 IPv4/IPv6 地址替换为别名；复制日志和连接错误提示使用相同规则。登录用户名、分配的虚拟 IP、隧道网关、本机地址、其他域名/IP 及流量计数保留原文，不再按“看起来像网络地址”统一隐藏。实际连接、连接页 IP/网关及磁盘上的引擎临时原始日志不受影响。
+关闭内置配置的构建不要求提供 client.ovpn。内置配置须使用内嵌证书；运行时导入允许通过文件选择器补选外部 CA、客户端证书和未加密私钥。
 
-删除该文件、移除 `endpointAlias` 或设置为 `null`，使用默认正常展示；直接执行平台打包命令时读取 `resources/settings/log-privacy.json`，其默认值为 `null`。
+域名和 IP 现在始终正常显示。旧 log-privacy.json 的 endpointAlias 必须为 null 或删除该字段；非空旧设置会让统一构建给出迁移提示。密码仍会脱敏。
 
-此目录仅本说明、`app-branding.json` 和 `log-privacy.json` 被 Git 跟踪，其余文件被忽略。VPN 配置会编译进客户端，不会被加密；请将源码缓存、安装包和配置都作为私有文件保存。
+本目录的私有 VPN 配置及证书不要提交到 Git。启用内置配置时，配置会编译进客户端，不会被加密；源码缓存、安装包与导入副本都应作为私有文件保存。

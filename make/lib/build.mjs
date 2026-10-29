@@ -24,6 +24,8 @@ export function parseOptions(args) {
     options: {
       platform: { type: 'string' },
       profile: { type: 'string' },
+      'builtin-profile': { type: 'string' },
+      'profile-import': { type: 'string' },
       'prepare-only': { type: 'boolean' },
       'force-engine': { type: 'boolean' },
       'skip-engine': { type: 'boolean' },
@@ -42,6 +44,14 @@ export function parseOptions(args) {
     throw new Error('--force-engine and --skip-engine cannot be combined.');
   }
   return {
+    ...Object.fromEntries(
+      ['builtin-profile', 'profile-import'].map((key) => {
+        const value = values[key];
+        if (value !== undefined && !['enabled', 'disabled'].includes(value))
+          throw new Error(`--${key} must be enabled or disabled.`);
+        return [key === 'builtin-profile' ? 'builtinProfile' : 'profileImport', value];
+      }),
+    ),
     platform: values.platform,
     profile: values.profile,
     prepareOnly: Boolean(values['prepare-only']),
@@ -302,7 +312,11 @@ export async function prepareSource({ root, platform, upstream, profile }) {
       : git(sourceDir, ['ls-files', '--cached', '-z']).stdout;
   const untracked = git(sourceDir, ['ls-files', '--others', '--exclude-standard', '-z']).stdout;
   const changes = (tracked + untracked).split('\0').filter(Boolean);
-  if (changes.some((file) => file !== profileTarget)) {
+  if (
+    changes.some(
+      (file) => file !== profileTarget && file !== 'resources/settings/client-features.json',
+    )
+  ) {
     throw new Error(
       `Source cache has local changes outside ${profileTarget}. Preserve them and move ${sourceDir} aside before rebuilding.`,
     );
@@ -352,6 +366,7 @@ export async function prepareLocalSource({
   profile,
   branding,
   logPrivacy,
+  features,
 }) {
   const sourceDir = path.join(root, '.cache/work', platform, 'source');
   const relativeSource = path.relative(root, sourceDir);
@@ -386,6 +401,12 @@ export async function prepareLocalSource({
       throw new Error(`The local source is missing ${profileTarget}.`);
     }
     await fs.writeFile(stagedProfile, profile.contents, { mode: 0o600 });
+    if (features) {
+      await fs.writeFile(
+        path.join(stagingDir, 'resources/settings/client-features.json'),
+        JSON.stringify(features, null, 2),
+      );
+    }
     if (branding) {
       await fs.writeFile(path.join(stagingDir, 'resources/settings/app-branding.json'), branding);
     }
@@ -545,6 +566,7 @@ export async function collectArtifacts({ root, prepared }) {
     architecture: process.arch,
     upstream: prepared.upstream,
     profileSha256: prepared.profileSha256,
+    clientFeatures: prepared.clientFeatures,
     artifacts,
   };
   await fs.writeFile(

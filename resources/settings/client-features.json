@@ -1,0 +1,10 @@
+{
+  "builtinProfile": {
+    "enabled": true,
+    "displayName": "Internal Tunnel",
+    "description": ""
+  },
+  "profileImport": {
+    "enabled": true
+  }
+}

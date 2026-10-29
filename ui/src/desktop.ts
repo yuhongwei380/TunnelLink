@@ -4,6 +4,11 @@ import type { DesktopApi } from './types';
 // Keep the view independent of the desktop transport and keep browser preview inert.
 if (isTauri()) {
   const api: DesktopApi = {
+    listProfiles: () => invoke('vpn_list_profiles'),
+    importProfile: () => invoke('vpn_import_profile'),
+    selectProfile: (id) => invoke('vpn_select_profile', { id }),
+    renameProfile: (id, name) => invoke('vpn_rename_profile', { id, name }),
+    deleteProfile: (id) => invoke('vpn_delete_profile', { id }),
     connect: (options) => invoke('vpn_connect', { options }),
     disconnect: () => invoke('vpn_disconnect'),
     status: () => invoke('vpn_status'),

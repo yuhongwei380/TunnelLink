@@ -44,6 +44,7 @@ CMakeCache.txt
 !/custom-config/README.md
 !/custom-config/app-branding.json
 !/custom-config/log-privacy.json
+!/custom-config/client-features.json
 /private/*
 
 # Local environment and private connection profiles

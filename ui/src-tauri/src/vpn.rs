@@ -18,6 +18,8 @@ const DISPLAY_LOG_ENTRIES: usize = 300;
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct ConnectOptions {
+    #[serde(default, rename = "profileId")]
+    pub profile_id: String,
     pub username: String,
     pub password: String,
     pub remember: bool,
@@ -31,6 +33,8 @@ struct Log {
 struct Data {
     log_privacy: crate::log_privacy::LogPrivacy,
     state: &'static str,
+    active_profile: Option<String>,
+    active_revision: Option<String>,
     started: Option<Instant>,
     last_error: String,
     logs: VecDeque<Log>,
@@ -43,14 +47,9 @@ struct Data {
 impl Default for Data {
     fn default() -> Self {
         Self {
-            log_privacy: crate::log_privacy::LogPrivacy::new(
-                serde_json::from_slice::<Value>(include_bytes!(
-                    "../../../resources/settings/log-privacy.json"
-                ))
-                .ok()
-                .and_then(|v| v["endpointAlias"].as_str().map(str::to_owned)),
-                include_str!("../../../resources/settings/client.ovpn"),
-            ),
+            log_privacy: crate::log_privacy::LogPrivacy::new(None, ""),
+            active_profile: None,
+            active_revision: None,
             state: "DISCONNECTED",
             started: None,
             last_error: String::new(),
@@ -91,6 +90,7 @@ pub struct Controller {
     generation: Arc<AtomicU64>,
     uninstalling: Arc<AtomicBool>,
     service: String,
+    profiles: Arc<Mutex<Option<crate::profiles::Store>>>,
 }
 
 fn connected(line: &str) -> bool {
@@ -195,6 +195,83 @@ fn fatal_error(line: &str) -> Option<String> {
 }
 
 impl Controller {
+    pub fn initialize_profiles(&self, path: std::path::PathBuf) -> Result<(), String> {
+        *self.profiles.lock().unwrap() = Some(crate::profiles::Store::new(path)?);
+        // Never reuse the legacy global account for an arbitrary profile.
+        match crate::credentials::entry(&self.service)?.delete_credential() {
+            Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
+            Err(e) => Err(format!("Cannot retire legacy VPN credentials: {e}")),
+        }
+    }
+    pub fn list_profiles(&self) -> Result<Value, String> {
+        Ok(self
+            .profiles
+            .lock()
+            .unwrap()
+            .as_ref()
+            .ok_or("Profile store is unavailable")?
+            .list())
+    }
+    pub fn import_profile(
+        &self,
+        name: &str,
+        parsed: crate::profile_import::Parsed,
+    ) -> Result<Value, String> {
+        let session = self.session.lock().unwrap();
+        if self.uninstalling.load(Ordering::SeqCst) {
+            return Err("Uninstallation is in progress".into());
+        }
+        let mut profiles = self.profiles.lock().unwrap();
+        let store = profiles.as_mut().ok_or("Profile store is unavailable")?;
+        let profile = store.add(name, parsed)?;
+        if !session.as_ref().is_some_and(|s| !s.thread.is_finished()) {
+            store.select(Some(&profile.id))?;
+        }
+        Ok(store.list())
+    }
+    pub fn change_profile(&self, action: &str, id: &str, name: &str) -> Result<Value, String> {
+        let session = self.session.lock().unwrap();
+        if self.uninstalling.load(Ordering::SeqCst) {
+            return Err("Uninstallation is in progress".into());
+        }
+        let running = session.as_ref().is_some_and(|s| !s.thread.is_finished());
+        if running
+            && (action == "select"
+                || self.data.lock().unwrap().active_profile.as_deref() == Some(id))
+        {
+            return Err("Disconnect before changing the active profile".into());
+        }
+        let mut profiles = self.profiles.lock().unwrap();
+        let store = profiles.as_mut().ok_or("Profile store is unavailable")?;
+        match action {
+            "select" => {
+                store.select(Some(id))?;
+                self.generation.fetch_add(1, Ordering::SeqCst);
+            }
+            "rename" => store.rename(id, name)?,
+            "delete" => {
+                if id == "builtin" || !crate::profiles::import_enabled() {
+                    return Err("This profile cannot be deleted".into());
+                }
+                if !running {
+                    self.generation.fetch_add(1, Ordering::SeqCst);
+                }
+                let _guard = self.credential_io.lock().unwrap();
+                let mut values = crate::credentials::load_profiles(&self.service)?;
+                values.retain(|key, _| !key.starts_with(&format!("{id}:")));
+                crate::credentials::save_profiles(&self.service, &values)?;
+                store.delete(id)?;
+            }
+            _ => return Err("Invalid profile action".into()),
+        }
+        if !running {
+            let mut data = self.data.lock().unwrap();
+            data.last_error.clear();
+            data.active_profile = None;
+            data.active_revision = None;
+        }
+        Ok(store.list())
+    }
     pub fn new(service: String) -> Self {
         Self {
             data: Arc::new(Mutex::new(Data::default())),
@@ -203,15 +280,12 @@ impl Controller {
             generation: Arc::new(AtomicU64::new(0)),
             uninstalling: Arc::new(AtomicBool::new(false)),
             service,
+            profiles: Arc::new(Mutex::new(None)),
         }
     }
     pub fn connect(&self, mut options: ConnectOptions) -> Result<Value, String> {
         options.username = options.username.trim().into();
-        if options.username.is_empty()
-            || options.password.is_empty()
-            || options.username.contains('\0')
-            || options.password.contains('\0')
-        {
+        if options.username.contains('\0') || options.password.contains('\0') {
             return Ok(
                 json!({ "ok": false, "error": "Username and password are required and must not contain NUL." }),
             );
@@ -229,8 +303,27 @@ impl Controller {
         if let Some(old) = session.take() {
             let _ = old.thread.join();
         }
+        let snapshot = self
+            .profiles
+            .lock()
+            .unwrap()
+            .as_ref()
+            .ok_or("Profile store is unavailable")?
+            .snapshot(&options.profile_id)?;
+        if snapshot.profile.requires_auth
+            && (options.username.is_empty() || options.password.is_empty())
+        {
+            return Ok(json!({ "ok": false, "error": "Username and password are required." }));
+        }
+        if !snapshot.profile.requires_auth {
+            options.username.clear();
+            options.password.clear();
+            options.remember = false;
+        }
         {
             let mut data = self.data.lock().unwrap();
+            data.active_profile = Some(snapshot.profile.id.clone());
+            data.active_revision = Some(snapshot.profile.revision.clone());
             data.state = "CONNECTING";
             data.started = None;
             data.last_error.clear();
@@ -246,7 +339,8 @@ impl Controller {
         let stop = cancel.clone();
         let generation = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
         let thread = thread::spawn(move || {
-            if let Err(error) = controller.run_session(options, &stop, generation) {
+            if let Err(error) = controller.run_session(options, snapshot.content, &stop, generation)
+            {
                 if !stop.load(Ordering::SeqCst) {
                     controller.data.lock().unwrap().error(error);
                 }
@@ -291,6 +385,7 @@ impl Controller {
             "bytesIn": data.bytes_in, "bytesOut": data.bytes_out,
             "metricsAvailable": data.metrics_available,
             "assignedIp": data.assigned_ip, "gatewayAddress": data.gateway_addr,
+            "activeProfileId": data.active_profile, "activeProfileRevision": data.active_revision,
             "lastError": data.last_error, "engine": "openvpn3" })
     }
     pub fn logs(&self) -> Value {
@@ -333,9 +428,6 @@ impl Controller {
         self.data.lock().unwrap().logs.clear();
         json!({ "ok": true })
     }
-    fn keyring(&self) -> Result<keyring::Entry, String> {
-        crate::credentials::entry(&self.service)
-    }
     #[cfg(any(target_os = "macos", windows, test))]
     pub fn prepare_uninstall(&self) -> Result<(), String> {
         if self.uninstalling.swap(true, Ordering::SeqCst) {
@@ -355,37 +447,50 @@ impl Controller {
         self.uninstalling.store(false, Ordering::SeqCst);
     }
     pub fn credentials(&self) -> Result<Value, String> {
+        let profiles = self.profiles.lock().unwrap();
+        let Some(store) = profiles.as_ref() else {
+            return Ok(json!({ "ok": true, "credentials": null }));
+        };
+        let Some(id) = store.selected() else {
+            return Ok(json!({ "ok": true, "credentials": null }));
+        };
+        let snapshot = store.snapshot(id)?;
         let _guard = self.credential_io.lock().unwrap();
-        match self.keyring()?.get_password() {
-            Ok(value) => {
-                let credentials: ConnectOptions =
-                    serde_json::from_str(&value).map_err(|e| e.to_string())?;
-                Ok(json!({ "ok": true, "credentials": credentials }))
-            }
-            Err(keyring::Error::NoEntry) => Ok(json!({ "ok": true, "credentials": null })),
-            Err(error) => Err(format!("Unable to read system credential store: {error}")),
-        }
+        let values = crate::credentials::load_profiles(&self.service)?;
+        let key = format!("{}:{}", id, snapshot.profile.revision);
+        let value = values
+            .get(&key)
+            .map(|v| serde_json::from_str::<ConnectOptions>(v))
+            .transpose()
+            .map_err(|e| e.to_string())?;
+        Ok(json!({ "ok": true, "credentials": value }))
     }
-    fn persist(&self, options: &ConnectOptions, generation: u64) -> Result<(), String> {
+    fn persist(
+        &self,
+        options: &ConnectOptions,
+        generation: u64,
+        revision: &str,
+    ) -> Result<(), String> {
         let _guard = self.credential_io.lock().unwrap();
-        if generation != self.generation.load(Ordering::SeqCst) {
+        if generation != self.generation.load(Ordering::SeqCst)
+            || self.uninstalling.load(Ordering::SeqCst)
+        {
             return Ok(());
         }
-        let entry = self.keyring()?;
+        let mut values = crate::credentials::load_profiles(&self.service)?;
+        values.retain(|key, _| !key.starts_with(&format!("{}:", options.profile_id)));
         if options.remember {
-            entry
-                .set_password(&serde_json::to_string(options).map_err(|e| e.to_string())?)
-                .map_err(|e| e.to_string())
-        } else {
-            match entry.delete_credential() {
-                Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-                Err(error) => Err(error.to_string()),
-            }
+            values.insert(
+                format!("{}:{}", options.profile_id, revision),
+                serde_json::to_string(options).map_err(|e| e.to_string())?,
+            );
         }
+        crate::credentials::save_profiles(&self.service, &values)
     }
     fn run_session(
         &self,
         options: ConnectOptions,
+        profile: String,
         cancel: &AtomicBool,
         generation: u64,
     ) -> Result<(), String> {
@@ -399,7 +504,14 @@ impl Controller {
             fs::set_permissions(directory.path(), fs::Permissions::from_mode(0o700))
                 .map_err(|e| e.to_string())?;
         }
-        for name in ["request.json", "engine.log", "exit.json", "heartbeat"] {
+        crate::profiles::private_directory(directory.path())?;
+        for name in [
+            "request.json",
+            "profile.ovpn",
+            "engine.log",
+            "exit.json",
+            "heartbeat",
+        ] {
             let mut opts = OpenOptions::new();
             opts.write(true).create_new(true);
             #[cfg(unix)]
@@ -410,6 +522,11 @@ impl Controller {
             let mut file = opts
                 .open(directory.path().join(name))
                 .map_err(|e| e.to_string())?;
+            if name == "profile.ovpn" {
+                use std::io::Write;
+                file.write_all(profile.as_bytes())
+                    .map_err(|e| e.to_string())?;
+            }
             if name == "request.json" {
                 serde_json::to_writer(
                     &mut file,
@@ -417,6 +534,8 @@ impl Controller {
                         username: options.username.clone(),
                         password: options.password.clone(),
                         parent_pid: std::process::id(),
+                        profile_hash: crate::profiles::fingerprint(&profile),
+                        imported: options.profile_id != "builtin",
                     },
                 )
                 .map_err(|e| e.to_string())?;
@@ -451,7 +570,14 @@ impl Controller {
                     let _ = fs::remove_file(directory.path().join("request.json"));
                 }
                 let mut data = self.data.lock().unwrap();
-                data.log("engine", line.replace(&options.password, "[redacted]"));
+                data.log(
+                    "engine",
+                    if options.password.is_empty() {
+                        line.to_string()
+                    } else {
+                        line.replace(&options.password, "[redacted]")
+                    },
+                );
                 if let Some(ip) = extract_assigned_ip(&line) {
                     data.assigned_ip = Some(ip);
                 }
@@ -467,7 +593,11 @@ impl Controller {
                     data.metrics_available = true;
                 }
                 if let Some(error) = fatal_error(&line) {
-                    data.error(error.replace(&options.password, "[redacted]"));
+                    data.error(if options.password.is_empty() {
+                        error
+                    } else {
+                        error.replace(&options.password, "[redacted]")
+                    });
                     cancel.store(true, Ordering::SeqCst);
                 } else if connected(&line) && !cancel.load(Ordering::SeqCst) {
                     data.state = "CONNECTED";
@@ -485,8 +615,11 @@ impl Controller {
                         // Keychain may prompt the user; never block heartbeats or cancellation.
                         let controller = self.clone();
                         let credentials = options.clone();
+                        let revision = crate::profiles::fingerprint(&profile);
                         thread::spawn(move || {
-                            if let Err(error) = controller.persist(&credentials, generation) {
+                            if let Err(error) =
+                                controller.persist(&credentials, generation, &revision)
+                            {
                                 controller.data.lock().unwrap().log(
                                     "system",
                                     format!(
@@ -694,7 +827,8 @@ mod tests {
         assert_eq!(
             controller
                 .connect(ConnectOptions {
-                    username: " ".into(),
+                    profile_id: "builtin".into(),
+                    username: "\0".into(),
                     password: "p".into(),
                     remember: false
                 })
@@ -708,15 +842,16 @@ mod tests {
         let service = format!("com.tunnellink.uninstall-race-test.{}", std::process::id());
         let controller = Controller::new(service);
         let options = ConnectOptions {
+            profile_id: "builtin".into(),
             username: "test-account".into(),
             password: "test-only-secret".into(),
             remember: true,
         };
         controller.generation.store(1, Ordering::SeqCst);
-        controller.persist(&options, 1).unwrap();
+        controller.persist(&options, 1, "test-revision").unwrap();
         controller.prepare_uninstall().unwrap();
         // A save queued by an earlier successful connection must not recreate it.
-        controller.persist(&options, 1).unwrap();
+        controller.persist(&options, 1, "test-revision").unwrap();
         assert!(controller.credentials().unwrap()["credentials"].is_null());
         assert!(controller.connect(options).is_err());
         assert!(controller.session.lock().unwrap().is_none());

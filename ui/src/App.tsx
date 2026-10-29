@@ -1,3 +1,5 @@
+import { ProfileManager } from './components/ProfileManager';
+import type { ProfileList } from './types';
 import { useEffect, useRef, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { ChevronRight, Info, LayoutDashboard, Terminal, X } from 'lucide-react';
@@ -46,6 +48,38 @@ export default function App() {
   const [uninstallError, setUninstallError] = useState('');
   const uninstallPending = useRef(false);
   const [meta, setMeta] = useState({ name: '', version: '' });
+  const [profiles, setProfiles] = useState<ProfileList | null>(null);
+  const [profileBusy, setProfileBusy] = useState(false);
+  const selectedProfile = profiles?.profiles.find((p) => p.id === profiles.selectedProfileId);
+  useEffect(() => {
+    window.vpn
+      ?.listProfiles()
+      .then(setProfiles)
+      .catch((e) => setToast(String(e)));
+  }, []);
+  const profileAction = async (
+    action: 'import' | 'select' | 'rename' | 'delete',
+    id = '',
+    name = '',
+  ) => {
+    if (!window.vpn || profileBusy) return;
+    setProfileBusy(true);
+    try {
+      const result =
+        action === 'import'
+          ? await window.vpn.importProfile()
+          : action === 'select'
+            ? await window.vpn.selectProfile(id)
+            : action === 'rename'
+              ? await window.vpn.renameProfile(id, name)
+              : await window.vpn.deleteProfile(id);
+      setProfiles(result);
+    } catch (error) {
+      setToast(String(error));
+    } finally {
+      setProfileBusy(false);
+    }
+  };
   const {
     status,
     stats,
@@ -63,7 +97,7 @@ export default function App() {
     setCredentials,
     toggle,
     connect,
-  } = useVpnConnection(t, setToast);
+  } = useVpnConnection(t, setToast, selectedProfile);
   const clientVersion = meta.version || release.version;
   const isDesktop = Boolean(window.vpn);
   const appTitle = t.appTitle;
@@ -266,13 +300,21 @@ export default function App() {
 
         <div className="workspace">
           <main className="main-scroll" id="main-content">
+            <ProfileManager
+              data={profiles}
+              locale={locale}
+              locked={status !== 'DISCONNECTED' || busy || authOpen || uninstallBusy}
+              pending={profileBusy}
+              onAction={profileAction}
+            />
             <ConnectionOverview
               status={status}
               stats={stats}
               statusError={statusError}
-              busy={busy}
+              busy={busy || profileBusy || !selectedProfile || Boolean(selectedProfile.error)}
+              profile={selectedProfile}
               action={action}
-              t={t}
+              t={selectedProfile ? { ...t, connect: locale === 'zh' ? '连接' : 'Connect' } : t}
               onToggle={handleToggle}
               onSwitchUser={() => {
                 if (installRequired) setInstallPromptOpen(true);

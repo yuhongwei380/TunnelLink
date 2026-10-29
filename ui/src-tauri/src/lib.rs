@@ -1,5 +1,7 @@
 mod credentials;
 mod log_privacy;
+mod profile_import;
+mod profiles;
 #[cfg(any(target_os = "macos", windows, test))]
 mod uninstall;
 mod vpn;
@@ -16,6 +18,56 @@ use tauri::{Emitter, Manager};
 use vpn::Controller;
 
 struct ExitApproval(AtomicBool);
+
+#[tauri::command]
+fn vpn_list_profiles(state: tauri::State<'_, Controller>) -> Result<serde_json::Value, String> {
+    state.list_profiles()
+}
+
+#[tauri::command]
+async fn vpn_import_profile(
+    state: tauri::State<'_, Controller>,
+) -> Result<serde_json::Value, String> {
+    let controller = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || match profiles::import_dialog()? {
+        Some((name, parsed)) => controller.import_profile(&name, parsed),
+        None => controller.list_profiles(),
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn vpn_select_profile(
+    id: String,
+    state: tauri::State<'_, Controller>,
+) -> Result<serde_json::Value, String> {
+    let controller = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || controller.change_profile("select", &id, ""))
+        .await
+        .map_err(|e| e.to_string())?
+}
+#[tauri::command]
+async fn vpn_rename_profile(
+    id: String,
+    name: String,
+    state: tauri::State<'_, Controller>,
+) -> Result<serde_json::Value, String> {
+    let controller = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || controller.change_profile("rename", &id, &name))
+        .await
+        .map_err(|e| e.to_string())?
+}
+#[tauri::command]
+async fn vpn_delete_profile(
+    id: String,
+    state: tauri::State<'_, Controller>,
+) -> Result<serde_json::Value, String> {
+    let controller = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || controller.change_profile("delete", &id, ""))
+        .await
+        .map_err(|e| e.to_string())?
+}
 
 /// Runs before GUI/single-instance initialization, including from an uninstaller.
 pub fn clear_saved_credentials() -> Result<(), String> {
@@ -397,12 +449,19 @@ pub fn run() {
             }
         }))
         .setup(|app| {
-            app.manage(Controller::new(app.config().identifier.clone()));
+            let controller = Controller::new(app.config().identifier.clone());
+            controller.initialize_profiles(app.path().app_data_dir()?.join("profiles"))?;
+            app.manage(controller);
             app.manage(ExitApproval(AtomicBool::new(false)));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             vpn_connect,
+            vpn_list_profiles,
+            vpn_import_profile,
+            vpn_select_profile,
+            vpn_rename_profile,
+            vpn_delete_profile,
             vpn_disconnect,
             vpn_status,
             vpn_get_logs,

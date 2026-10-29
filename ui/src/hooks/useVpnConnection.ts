@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Messages } from '../messages';
-import type { ConnectOptions, VpnAction, VpnState, VpnStats } from '../types';
+import type { ConnectOptions, VpnAction, VpnState, VpnStats, VpnProfile } from '../types';
 
 type ConnectionMessages = Pick<
   Messages,
@@ -12,7 +12,11 @@ const isAuthenticationError = (message: string) =>
     message,
   );
 
-export function useVpnConnection(t: ConnectionMessages, notify: (message: string) => void) {
+export function useVpnConnection(
+  t: ConnectionMessages,
+  notify: (message: string) => void,
+  profile?: VpnProfile,
+) {
   const [status, setStatus] = useState<VpnState>('DISCONNECTED');
   const [stats, setStats] = useState<VpnStats>({
     uptime: 0,
@@ -52,11 +56,27 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
 
   useEffect(() => {
     let active = true;
+    operationVersion.current += 1;
+    sessionCredentials.current = null;
+    attemptedCredentials.current = null;
+    interacted.current = false;
+    setCredentials({ username: '', password: '', remember: false });
+    setAuthOpen(false);
+    setAuthError('');
+    setStatusError('');
+    connectionErrorOverride.current = '';
+    setConnectionErrorOpen(false);
     credentialsLoaded.current =
       window.vpn
         ?.getSavedCredentials()
         .then((result) => {
-          if (active && !interacted.current && result.ok && result.credentials) {
+          if (
+            active &&
+            !interacted.current &&
+            result.ok &&
+            result.credentials &&
+            result.credentials.profileId === profile?.id
+          ) {
             setCredentials(result.credentials);
             // The native store only saves credentials after a successful connection.
             sessionCredentials.current = result.credentials;
@@ -69,7 +89,7 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
     return () => {
       active = false;
     };
-  }, []);
+  }, [profile?.id, profile?.revision]);
 
   const refreshStatus = useCallback(async () => {
     if (!window.vpn || actionPending.current) return;
@@ -94,7 +114,7 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
         setAction(null);
         if (attemptedCredentials.current || sessionCredentials.current) {
           attemptedCredentials.current = null;
-          if (isAuthenticationError(data.lastError || '')) {
+          if (profile?.requiresAuth && isAuthenticationError(data.lastError || '')) {
             sessionCredentials.current = null;
             dismissedConnectionError.current = data.lastError || '';
             setAuthError(data.lastError || t.connectFailed);
@@ -115,7 +135,7 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
       if (version === operationVersion.current && !actionPending.current)
         setStatusError(t.statusFailed);
     }
-  }, [t.statusFailed, t.connectFailed]);
+  }, [t.statusFailed, t.connectFailed, profile?.id, profile?.requiresAuth]);
 
   useEffect(() => {
     void refreshStatus();
@@ -147,7 +167,8 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
 
   const startConnection = async (options: ConnectOptions, automatic = false) => {
     if (actionPending.current) return;
-    if (!options.username.trim() || !options.password) {
+    if (!profile || profile.error) return;
+    if (profile.requiresAuth && (!options.username.trim() || !options.password)) {
       setAuthError(t.invalidCredentials);
       setAuthOpen(true);
       return;
@@ -160,7 +181,11 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
     actionPending.current = true;
     operationVersion.current += 1;
     if (!automatic) sessionCredentials.current = null;
-    attemptedCredentials.current = { ...options, username: options.username.trim() };
+    attemptedCredentials.current = {
+      ...options,
+      profileId: profile.id,
+      username: options.username.trim(),
+    };
     setBusy(true);
     setAction('connecting');
     setStatus('CONNECTING');
@@ -175,7 +200,9 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
       if (!result.ok) throw new Error(result.error || t.connectFailed);
     } catch (error) {
       const message = error instanceof Error ? error.message : t.connectFailed;
-      const needsLogin = !automatic || isAuthenticationError(message);
+      const needsLogin = Boolean(
+        profile.requiresAuth && (!automatic || isAuthenticationError(message)),
+      );
       attemptedCredentials.current = null;
       if (isAuthenticationError(message)) sessionCredentials.current = null;
       connectionErrorOverride.current = message;
@@ -230,7 +257,14 @@ export function useVpnConnection(t: ConnectionMessages, notify: (message: string
   const toggle = async () => {
     if (actionPending.current) return;
     if (status === 'DISCONNECTED') {
+      if (!profile || profile.error) return;
+      if (!profile.requiresAuth) {
+        await startConnection({ username: '', password: '', remember: false }, true);
+        return;
+      }
+      const version = operationVersion.current;
       await credentialsLoaded.current;
+      if (version !== operationVersion.current) return;
       if (actionPending.current) return;
       interacted.current = true;
       if (sessionCredentials.current) {

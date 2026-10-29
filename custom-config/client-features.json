@@ -1,0 +1,13 @@
+{
+  "_comment": "统一构建的客户端功能开关。enabled 启用，disabled 禁用；两个功能不能同时禁用。",
+  "builtinProfile": {
+    "_comment": "内置配置开关。启用时 node build.mjs 会读取 --profile 或 custom-config/client.ovpn，并将其编译进客户端。displayName 是配置列表名称；description 是配置说明。",
+    "enabled": true,
+    "displayName": "Internal Tunnel",
+    "description": ""
+  },
+  "profileImport": {
+    "_comment": "导入配置开关。启用时允许在客户端添加多个 .ovpn；禁用时隐藏导入入口，并拒绝历史导入配置连接。",
+    "enabled": true
+  }
+}

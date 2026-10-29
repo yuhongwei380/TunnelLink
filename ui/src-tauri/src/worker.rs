@@ -17,6 +17,8 @@ pub struct Request {
     pub username: String,
     pub password: String,
     pub parent_pid: u32,
+    pub profile_hash: String,
+    pub imported: bool,
 }
 
 pub fn command(program: impl AsRef<std::ffi::OsStr>) -> Command {
@@ -133,10 +135,31 @@ fn session_file(directory: &Path, name: &str, writable: bool) -> std::io::Result
         Ok(file)
     }
     #[cfg(not(unix))]
-    OpenOptions::new()
-        .read(true)
-        .append(writable)
-        .open(directory.join(name))
+    {
+        crate::profiles::regular(directory).map_err(std::io::Error::other)?;
+        let path = directory.join(name);
+        crate::profiles::regular(&path).map_err(std::io::Error::other)?;
+        let mut options = OpenOptions::new();
+        options.read(true).append(writable);
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::OpenOptionsExt;
+            options.custom_flags(0x00200000);
+        }
+        let file = options.open(path)?;
+        let meta = file.metadata()?;
+        if !meta.is_file() {
+            return Err(std::io::Error::other("Invalid session file"));
+        }
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::MetadataExt;
+            if meta.file_attributes() & 0x400 != 0 {
+                return Err(std::io::Error::other("Redirected session file"));
+            }
+        }
+        Ok(file)
+    }
 }
 
 fn stop_child(child: &mut Child) {
@@ -182,19 +205,48 @@ fn supervise(directory: &Path, log: &File) -> Result<i32, String> {
         .read_to_string(&mut raw)
         .map_err(|e| e.to_string())?;
     let request: Request = serde_json::from_str(&raw).map_err(|e| e.to_string())?;
-    if request.username.is_empty() || request.password.is_empty() || request.parent_pid == 0 {
+    if request.parent_pid == 0 || request.username.contains('\0') || request.password.contains('\0')
+    {
         return Err("Invalid connection request".into());
     }
     let engine = engine_path()?;
-    // Profile is compiled into the supervisor; callers cannot provide root-run directives.
+    if request.imported && !crate::profiles::import_enabled() {
+        return Err("Imported profiles are disabled".into());
+    }
+    if !request.imported && !crate::profiles::builtin_enabled() {
+        return Err("Built-in profile is disabled".into());
+    }
+    let mut content = String::new();
+    session_file(directory, "profile.ovpn", false)
+        .map_err(|e| e.to_string())?
+        .take(crate::profile_import::MAX_PROFILE as u64 + 1)
+        .read_to_string(&mut content)
+        .map_err(|e| e.to_string())?;
+    let parsed = crate::profile_import::parse(&content, &Default::default(), false)?;
+    if crate::profiles::fingerprint(&content) != request.profile_hash {
+        return Err("Profile changed during connection".into());
+    }
+    if !request.imported {
+        let builtin =
+            crate::profile_import::parse(crate::profiles::BUILTIN, &Default::default(), false)?;
+        if parsed.content != builtin.content {
+            return Err("Built-in profile mismatch".into());
+        }
+    }
+    if parsed.requires_auth && (request.username.is_empty() || request.password.is_empty()) {
+        return Err("Username and password are required".into());
+    }
+    // Execute only the already validated bytes, never reopen an imported path.
+    let profile_directory = tempfile::tempdir().map_err(|e| e.to_string())?;
+    crate::profiles::private_directory(profile_directory.path())?;
     let profile = tempfile::Builder::new()
         .prefix("openvpn-profile-")
         .suffix(".ovpn")
-        .tempfile()
+        .tempfile_in(profile_directory.path())
         .map_err(|e| e.to_string())?;
     profile
         .as_file()
-        .write_all(include_bytes!("../../../resources/settings/client.ovpn"))
+        .write_all(parsed.content.as_bytes())
         .map_err(|e| e.to_string())?;
     let mut cmd = command(engine);
     #[cfg(windows)]
@@ -205,8 +257,13 @@ fn supervise(directory: &Path, log: &File) -> Result<i32, String> {
     }
     #[cfg(not(windows))]
     cmd.stdin(Stdio::null());
+    if parsed.requires_auth {
+        cmd.args(["-u", &request.username, "-p", &request.password]);
+    }
+    if !parsed.has_client_certificate {
+        cmd.arg("--no-cert");
+    }
     let mut child = cmd
-        .args(["-u", &request.username, "-p", &request.password])
         .arg(profile.path())
         .stdout(log.try_clone().map_err(|e| e.to_string())?)
         .stderr(log.try_clone().map_err(|e| e.to_string())?)
