@@ -58,7 +58,7 @@ if ((Get-FileHash -LiteralPath $driverScript).Hash -ne (Get-FileHash -LiteralPat
 $versionOutput = & $engine --version 2>&1 | Out-String
 if ($LASTEXITCODE -ne 0) { throw ('Packaged engine cannot start: ' + $versionOutput) }
 if ($versionOutput -notmatch ('OpenVPN core ' + [regex]::Escape($releaseLock.version) + '\b')) { throw 'Engine runtime version differs from the pinned release.' }
-$app = Join-Path $inspectionRoot 'OpenVPNClient.exe'
+$app = Join-Path $inspectionRoot 'TunnelLink.exe'
 if (-not (Test-Path -LiteralPath $app)) { throw 'Tauri executable is missing.' }
 if ((Get-Item -LiteralPath $app).VersionInfo.ProductVersion -ne $releaseLock.version) { throw 'Client executable version differs from the pinned release.' }
 $forbiddenRuntimeFiles = @(Get-ChildItem -LiteralPath $inspectionRoot -File -Recurse | Where-Object {

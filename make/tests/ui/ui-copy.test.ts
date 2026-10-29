@@ -52,3 +52,14 @@ test('branding and primary action labels are configurable', () => {
   assert.equal(copy.zh.connection.connectButton, '开始连接');
   assert.equal(copy.zh.connection.disconnectButton, defaultUiCopy.zh.connection.disconnectButton);
 });
+
+test('former default branding follows the new defaults on existing installs', () => {
+  const copy = mergeUiCopy(defaultUiCopy, {
+    zh: { appTitle: 'OpenVPN 企业客户端', copyright: '© 2026 OpenVPN 企业客户端' },
+    en: { appTitle: 'OpenVPN Client', copyright: '© 2026 OpenVPN Client' },
+  });
+  for (const locale of ['zh', 'en'] as const) {
+    assert.equal(copy[locale].appTitle, 'TunnelLink');
+    assert.equal(copy[locale].copyright, defaultUiCopy[locale].copyright);
+  }
+});

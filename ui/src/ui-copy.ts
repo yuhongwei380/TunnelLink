@@ -51,6 +51,28 @@ export function mergeUiCopy(defaults: UiCopy, value: unknown): UiCopy {
     const input = record(root[locale]);
     const copy = defaults[locale];
     const labels = mergeStrings({ appTitle: copy.appTitle, copyright: copy.copyright }, input);
+    // Older installs keep a copy of the former defaults in their user config.
+    // Refresh those exact labels while preserving independently chosen branding.
+    if (
+      [
+        'OpenVPN 企业客户端',
+        'OpenVPN 客户端',
+        'OpenVPN Enterprise Client',
+        'OpenVPN Client',
+      ].includes(labels.appTitle)
+    ) {
+      labels.appTitle = copy.appTitle;
+    }
+    if (
+      [
+        '© 2026 OpenVPN 企业客户端',
+        '© 2026 OpenVPN 客户端',
+        '© 2026 OpenVPN Enterprise Client',
+        '© 2026 OpenVPN Client',
+      ].includes(labels.copyright)
+    ) {
+      labels.copyright = copy.copyright;
+    }
     return {
       ...labels,
       overview: mergeStrings(copy.overview, input.overview),

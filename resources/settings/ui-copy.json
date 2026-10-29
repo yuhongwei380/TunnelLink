@@ -1,8 +1,8 @@
 {
   "_comment": "界面文案配置（编译时读取本文件；下划线开头的键仅为说明，程序会忽略）。zh/en 分别为中文、英文文案，修改后重新构建即生效。键说明：appTitle=顶栏与窗口标题；copyright=底部版权行；overview.eyebrow=连接卡片顶部小标题；overview.title=连接卡片大标题（默认“VPN 连接”）；overview.description=卡片描述；connection.label=连接状态区标签；connectButton/disconnectButton/cancelButton=连接/断开/取消按钮；disconnected/connecting/connected 的 Title/Description=三种连接状态的标题与描述；authenticationTitle=登录弹窗标题（默认“连接企业网络”）；authenticationHint=登录弹窗提示。首次启动时本文件会被复制到系统的应用配置目录（Windows 为 %APPDATA%\\<appId>，macOS 为 ~/Library/Application Support/<appId>）中的 ui-copy.json，之后运行时优先读取该用户文件（已存在则不再覆盖），运行时改文案无需重新构建。只识别上述字符串键，其余键忽略；请保持 zh、en 两套键一致。",
   "zh": {
-    "appTitle": "OpenVPN 企业客户端",
-    "copyright": "© 2026 OpenVPN 企业客户端",
+    "appTitle": "TunnelLink",
+    "copyright": "©2026 Power by Openvpn3 Core",
     "overview": {
       "eyebrow": "连接概览",
       "title": "VPN 连接",
@@ -24,8 +24,8 @@
     }
   },
   "en": {
-    "appTitle": "OpenVPN Enterprise Client",
-    "copyright": "© 2026 OpenVPN Enterprise Client",
+    "appTitle": "TunnelLink",
+    "copyright": "©2026 Power by Openvpn3 Core",
     "overview": {
       "eyebrow": "CONNECTION OVERVIEW",
       "title": "VPN connection",

@@ -2,8 +2,8 @@ import type { Locale, UiCopy } from './ui-copy';
 
 export const MESSAGES = {
   zh: {
-    appTitle: 'OpenVPN 客户端',
-    copyright: '© 2026 OpenVPN 企业客户端',
+    appTitle: 'TunnelLink',
+    copyright: '©2026 Power by Openvpn3 Core',
     workspace: '企业网络访问',
     connection: '连接概览',
     diagnostics: '日志',
@@ -133,8 +133,8 @@ export const MESSAGES = {
     installNote: '复制完成后，客户端会自动重新打开。',
   },
   en: {
-    appTitle: 'OpenVPN Client',
-    copyright: '© 2026 OpenVPN Enterprise Client',
+    appTitle: 'TunnelLink',
+    copyright: '©2026 Power by Openvpn3 Core',
     workspace: 'ENTERPRISE ACCESS',
     connection: 'Connection',
     diagnostics: 'Logs',
