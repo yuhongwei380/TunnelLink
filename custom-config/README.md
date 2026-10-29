@@ -10,4 +10,16 @@
 
 直接执行平台打包命令或 Tauri 构建命令时，使用 `resources/settings/`，不会读取本目录。默认界面文案请修改 [`resources/settings/ui-copy.json`](../resources/settings/ui-copy.json)，详见[开发指南](../docs/development.md#配置修改)。
 
-此目录仅本说明和 `app-branding.json` 被 Git 跟踪，其余文件被忽略。VPN 配置会编译进客户端，不会被加密；请将源码缓存、安装包和配置都作为私有文件保存。
+### 内置日志地址脱敏
+
+`custom-config/log-privacy.json` 可配置日志中的地址显示别名：
+
+```json
+{ "endpointAlias": "demo.vpn" }
+```
+
+执行 `node build.mjs` 后，配置覆盖隔离源码中的 `resources/settings/log-privacy.json`，重新安装构建产物后生效。启用时，内置日志和连接错误提示中的域名、IPv4/IPv6 地址（包括 DNS 解析结果）及 VPN 配置中的远程端口统一替换为别名；复制日志也使用脱敏内容。为防止解析结果或重定向泄露，日志中其他识别到的网络地址也会被隐藏。实际连接、连接页 IP/网关及磁盘上的引擎临时原始日志不受影响。
+
+删除该文件、移除 `endpointAlias` 或设置为 `null`，使用默认正常展示；直接执行平台打包命令时读取 `resources/settings/log-privacy.json`，其默认值为 `null`。
+
+此目录仅本说明、`app-branding.json` 和 `log-privacy.json` 被 Git 跟踪，其余文件被忽略。VPN 配置会编译进客户端，不会被加密；请将源码缓存、安装包和配置都作为私有文件保存。

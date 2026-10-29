@@ -328,6 +328,33 @@ test('local snapshots preserve compiler and dependency caches while updating and
   assert.equal(await fs.readFile(profile, 'utf8'), 'client\nremote changed.invalid\n');
 });
 
+test('log privacy override is validated, isolated and reset when removed', async (t) => {
+  const f = await fixture(t);
+  await fs.writeFile(path.join(f.root, 'resources/settings/client.ovpn'), 'client\n');
+  const defaultPath = path.join(f.root, 'resources/settings/log-privacy.json');
+  await fs.writeFile(defaultPath, '{"endpointAlias":null}');
+  await fs.mkdir(path.join(f.root, 'custom-config'));
+  await fs.copyFile(f.profileFile, path.join(f.root, 'custom-config/client.ovpn'));
+  const customPath = path.join(f.root, 'custom-config/log-privacy.json');
+  await fs.writeFile(customPath, '{"endpointAlias":"demo.vpn"}');
+  const options = { root: f.root, localSource: true };
+  const target = path.join(
+    f.root,
+    '.cache/work/windows/source/resources/settings/log-privacy.json',
+  );
+  await runBuild(['--platform', 'windows', '--prepare-only'], options);
+  assert.deepEqual(JSON.parse(await fs.readFile(target, 'utf8')), { endpointAlias: 'demo.vpn' });
+  assert.deepEqual(JSON.parse(await fs.readFile(defaultPath, 'utf8')), { endpointAlias: null });
+  await fs.writeFile(customPath, '{"endpointAlias":true}');
+  await assert.rejects(
+    runBuild(['--platform', 'windows', '--prepare-only'], options),
+    /endpointAlias/,
+  );
+  await fs.unlink(customPath);
+  await runBuild(['--platform', 'windows', '--prepare-only'], options);
+  assert.deepEqual(JSON.parse(await fs.readFile(target, 'utf8')), { endpointAlias: null });
+});
+
 test('repeat preparation uses cached source without a reachable remote or needless rewrites', async (t) => {
   const f = await fixture(t);
   const options = { ...f, platform: 'windows' };

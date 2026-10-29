@@ -1,3 +1,4 @@
+mod log_privacy;
 mod vpn;
 #[cfg(windows)]
 mod windows_process;

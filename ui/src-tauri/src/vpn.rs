@@ -26,6 +26,7 @@ struct Log {
     line: String,
 }
 struct Data {
+    log_privacy: crate::log_privacy::LogPrivacy,
     state: &'static str,
     started: Option<Instant>,
     last_error: String,
@@ -39,6 +40,14 @@ struct Data {
 impl Default for Data {
     fn default() -> Self {
         Self {
+            log_privacy: crate::log_privacy::LogPrivacy::new(
+                serde_json::from_slice::<Value>(include_bytes!(
+                    "../../../resources/settings/log-privacy.json"
+                ))
+                .ok()
+                .and_then(|v| v["endpointAlias"].as_str().map(str::to_owned)),
+                include_str!("../../../resources/settings/client.ovpn"),
+            ),
             state: "DISCONNECTED",
             started: None,
             last_error: String::new(),
@@ -56,14 +65,14 @@ impl Data {
         self.logs.push_back(Log {
             ts: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
             source: source.into(),
-            line: line.into(),
+            line: self.log_privacy.redact(&line.into()),
         });
         while self.logs.len() > 600 {
             self.logs.pop_front();
         }
     }
     fn error(&mut self, message: impl Into<String>) {
-        self.last_error = message.into();
+        self.last_error = self.log_privacy.redact(&message.into());
         self.log("system", self.last_error.clone());
     }
 }

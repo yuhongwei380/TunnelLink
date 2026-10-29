@@ -218,6 +218,32 @@ export async function readBranding(file) {
   return contents;
 }
 
+export async function readLogPrivacy(file) {
+  let contents;
+  try {
+    contents = await fs.readFile(file);
+  } catch (error) {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  }
+  let config;
+  try {
+    config = JSON.parse(contents.toString('utf8'));
+  } catch {
+    throw new Error(`Invalid JSON in ${file}.`);
+  }
+  if (
+    !config ||
+    typeof config !== 'object' ||
+    Array.isArray(config) ||
+    (config.endpointAlias != null &&
+      (typeof config.endpointAlias !== 'string' || !/^[a-z0-9.-]+$/i.test(config.endpointAlias)))
+  ) {
+    throw new Error(`${file}: endpointAlias must be null or a non-empty hostname alias.`);
+  }
+  return contents;
+}
+
 export async function withBuildLock(root, platform, action) {
   const directory = path.join(root, '.cache/work', platform);
   await fs.mkdir(directory, { recursive: true, mode: 0o700 });
@@ -319,7 +345,14 @@ export async function prepareSource({ root, platform, upstream, profile }) {
   return { sourceDir, platform, upstream, profileSha256: profile.sha256 };
 }
 
-export async function prepareLocalSource({ root, platform, upstream, profile, branding }) {
+export async function prepareLocalSource({
+  root,
+  platform,
+  upstream,
+  profile,
+  branding,
+  logPrivacy,
+}) {
   const sourceDir = path.join(root, '.cache/work', platform, 'source');
   const relativeSource = path.relative(root, sourceDir);
   if (!relativeSource || relativeSource.startsWith('..') || path.isAbsolute(relativeSource)) {
@@ -355,6 +388,9 @@ export async function prepareLocalSource({ root, platform, upstream, profile, br
     await fs.writeFile(stagedProfile, profile.contents, { mode: 0o600 });
     if (branding) {
       await fs.writeFile(path.join(stagingDir, 'resources/settings/app-branding.json'), branding);
+    }
+    if (logPrivacy) {
+      await fs.writeFile(path.join(stagingDir, 'resources/settings/log-privacy.json'), logPrivacy);
     }
     // Update source files in place: Cargo/CMake caches and node_modules belong
     // to this build tree and must survive subsequent snapshots.

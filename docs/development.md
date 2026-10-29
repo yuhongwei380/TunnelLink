@@ -74,7 +74,9 @@ npm run tauri:dev
 
 ## 配置修改
 
-使用 `node build.mjs` 构建安装包时，连接配置默认读取 `custom-config/client.ovpn`，也可通过 `--profile PATH` 指定。入口仅在隔离源码中替换 `resources/settings/client.ovpn`，不改写当前工作树的默认配置。`custom-config/` 中仅说明文件与品牌配置被 Git 跟踪，其余本地文件被忽略。
+使用 `node build.mjs` 构建安装包时，连接配置默认读取 `custom-config/client.ovpn`，也可通过 `--profile PATH` 指定。入口仅在隔离源码中替换 `resources/settings/client.ovpn`，不改写当前工作树的默认配置。`custom-config/` 中说明文件、品牌配置与日志脱敏配置被 Git 跟踪，其余本地文件被忽略。
+
+`custom-config/log-privacy.json` 的可选 `endpointAlias` 控制内置日志地址脱敏，统一构建覆盖 `resources/settings/log-privacy.json`；缺省或 `null` 保持原文。详见[配置说明](../custom-config/README.md#内置日志地址脱敏)。
 
 - `resources/settings/client.ovpn`：编译进原生客户端的固定配置；修改后需要重新构建客户端。
 - `resources/settings/app-branding.json`：应用名称、标识与默认界面语言（`defaultLocale`：`CN` 默认中文 / `EN` 默认英文，仅影响首次启动，用户手动切换后记住用户选择）；直接构建时修改后运行 `npm run sync:branding`。统一构建优先使用 `custom-config/app-branding.json`，复制到隔离源码后参与构建；该文件不存在时使用 `resources/settings/` 下的默认值。

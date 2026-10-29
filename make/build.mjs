@@ -11,6 +11,7 @@ import {
   prepareLocalSource,
   prepareSource,
   readBranding,
+  readLogPrivacy,
   readProfile,
   withBuildLock,
 } from './lib/build.mjs';
@@ -59,6 +60,9 @@ export async function runBuild(
   const branding = localSource
     ? await readBranding(path.join(root, 'custom-config/app-branding.json'))
     : null;
+  const logPrivacy = localSource
+    ? await readLogPrivacy(path.join(root, 'custom-config/log-privacy.json'))
+    : null;
   await withBuildLock(root, platform, async () => {
     // Validate the private input before installing tools or downloading source.
     if (prepareEnvironment && !options.prepareOnly && !options.noAutoInstallDeps) {
@@ -67,7 +71,7 @@ export async function runBuild(
     }
     console.log('[2/3] Preparing source and private profile...');
     const prepared = localSource
-      ? await prepareLocalSource({ root, platform, upstream, profile, branding })
+      ? await prepareLocalSource({ root, platform, upstream, profile, branding, logPrivacy })
       : await prepareSource({ root, platform, upstream, profile });
     console.log(
       `Source ready: ${prepared.sourceDir}\nSource revision: ${upstream.commit}\nPrivate profile replaced: resources/settings/client.ovpn`,

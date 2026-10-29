@@ -23,6 +23,8 @@
 
 `custom-config/` 保存本地构建输入，`resources/settings/` 保存仓库默认配置与依赖版本锁；前端和 Tauri 原生后端统一位于 `ui/`。`node build.mjs` 构建安装包，`npm run build` 只构建前端静态文件。目录职责与分步构建命令见[开发指南](docs/development.md#代码目录)和[构建与发布](docs/building.md)。
 
+内置日志地址脱敏通过 `custom-config/log-privacy.json` 的 `endpointAlias` 配置，例如 `"demo.vpn"`；未配置时正常展示。配置及生效范围见[日志脱敏说明](custom-config/README.md#内置日志地址脱敏)。
+
 ## 连接和断开
 
 1. 打开客户端，点击“连接 VPN”。
