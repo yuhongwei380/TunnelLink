@@ -13,7 +13,15 @@ export function useDialog(open: boolean, initialFocus?: RefObject<HTMLElement | 
     let timer: number | undefined;
     const finishClose = () => {
       window.clearTimeout(timer);
-      dialog.close();
+      // Older WKWebView builds can expose <dialog> but reject close() after a
+      // failed showModal() call. Keep the state transition best-effort so an
+      // installation prompt cannot take down the React tree.
+      try {
+        if (typeof dialog.close === 'function') dialog.close();
+        else dialog.removeAttribute('open');
+      } catch {
+        dialog.removeAttribute('open');
+      }
       delete dialog.dataset.closing;
     };
     const onAnimationEnd = (event: AnimationEvent) => {
@@ -21,7 +29,17 @@ export function useDialog(open: boolean, initialFocus?: RefObject<HTMLElement | 
     };
     delete dialog.dataset.closing;
     if (open && dialog && !dialog.open) {
-      dialog.showModal();
+      // WKWebView has had versions where showModal() throws while the page is
+      // still becoming active (notably when the first-run install prompt is
+      // opened during startup). Fall back to a non-modal open dialog instead
+      // of allowing an effect exception to leave a blank WebView.
+      try {
+        if (typeof dialog.showModal === 'function') dialog.showModal();
+        else if (typeof dialog.show === 'function') dialog.show();
+        else dialog.setAttribute('open', '');
+      } catch {
+        dialog.setAttribute('open', '');
+      }
       initialFocus?.current?.focus();
     }
     if (!open && dialog.open) {
