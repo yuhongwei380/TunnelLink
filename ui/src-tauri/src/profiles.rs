@@ -1,4 +1,5 @@
 use crate::profile_import::{self, Parsed};
+use base64::Engine;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -74,7 +75,7 @@ pub fn regular(path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-pub fn read_text(path: &Path, limit: usize) -> Result<String, String> {
+pub fn read_bytes(path: &Path, limit: usize) -> Result<Vec<u8>, String> {
     regular(path)?;
     let mut options = fs::OpenOptions::new();
     options.read(true);
@@ -100,14 +101,18 @@ pub fn read_text(path: &Path, limit: usize) -> Result<String, String> {
             return Err("Redirected file is not allowed".into());
         }
     }
-    let mut value = String::new();
+    let mut value = Vec::new();
     file.take(limit as u64 + 1)
-        .read_to_string(&mut value)
-        .map_err(|_| "File must be UTF-8 text")?;
+        .read_to_end(&mut value)
+        .map_err(|e| e.to_string())?;
     if value.len() > limit {
         return Err("File is too large".into());
     }
     Ok(value)
+}
+
+pub fn read_text(path: &Path, limit: usize) -> Result<String, String> {
+    String::from_utf8(read_bytes(path, limit)?).map_err(|_| "File must be UTF-8 text".into())
 }
 
 /// Restrict a new directory before storing certificate material inside it.
@@ -438,16 +443,33 @@ pub fn import_dialog() -> Result<Option<(String, Parsed)>, String> {
     let initial = profile_import::parse(&input, &BTreeMap::new(), true)?;
     let mut materials = BTreeMap::new();
     for (kind, reference) in initial.dependencies {
-        let title = format!("Select {kind} certificate/key / 选择证书或私钥: {reference}");
-        let Some(material) = rfd::FileDialog::new()
+        let title = format!("Select {kind} material / 选择 {kind} 文件: {reference}");
+        let dialog = rfd::FileDialog::new()
             .set_title(&title)
-            .set_directory(path.parent().unwrap_or(Path::new(".")))
-            .add_filter("PEM certificate or key", &["crt", "pem", "cer", "key"])
-            .pick_file()
-        else {
+            .set_directory(path.parent().unwrap_or(Path::new(".")));
+        let dialog = match kind.as_str() {
+            "pkcs12" => dialog.add_filter("PKCS#12 certificate", &["p12", "pfx"]),
+            "auth-user-pass" | "http-proxy-user-pass" => {
+                dialog.add_filter("Credentials text", &["txt", "cred", "conf"])
+            }
+            "auth-gen-token-secret" => {
+                dialog.add_filter("OpenVPN text material", &["txt", "pem", "conf"])
+            }
+            _ => dialog.add_filter(
+                "PEM certificate, key or CRL",
+                &["crt", "pem", "cer", "key", "crl", "dh"],
+            ),
+        };
+        let Some(material) = dialog.pick_file() else {
             return Ok(None);
         };
-        materials.insert(kind, read_text(&material, profile_import::MAX_MATERIAL)?);
+        let value = if kind == "pkcs12" {
+            base64::engine::general_purpose::STANDARD
+                .encode(read_bytes(&material, profile_import::MAX_MATERIAL)?)
+        } else {
+            read_text(&material, profile_import::MAX_MATERIAL)?
+        };
+        materials.insert(kind, value);
     }
     let parsed = profile_import::parse(&input, &materials, false)?;
     evaluate(&parsed)?;
