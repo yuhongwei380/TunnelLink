@@ -4594,6 +4594,7 @@ dialog::backdrop {
   .app-body .primary-nav button {
     min-height: 46px;
     padding: 0 12px;
+    gap: 12px;
     border-radius: 12px;
     font-size: 15px;
     color: #4a4a4a;
@@ -4605,11 +4606,14 @@ dialog::backdrop {
   }
   .app-body .primary-nav button > span:not(.error-dot) {
     display: inline;
-    width: 60px;
+    width: auto;
+    min-width: 72px;
+    flex-shrink: 0;
+    white-space: nowrap;
     text-align: left;
   }
   html[lang='en'] .app-body .primary-nav button > span:not(.error-dot) {
-    width: 78px;
+    min-width: 78px;
   }
   .app-body .primary-nav .error-dot {
     position: absolute;

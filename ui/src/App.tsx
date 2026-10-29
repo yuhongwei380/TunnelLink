@@ -247,7 +247,6 @@ export default function App() {
               action={action}
               t={t}
               onToggle={handleToggle}
-              onOpenLogs={() => setLogsOpen(true)}
             />
           </main>
           {!isDesktop && (

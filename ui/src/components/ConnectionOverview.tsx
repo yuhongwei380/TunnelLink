@@ -3,7 +3,6 @@ import {
   ArrowUpRight,
   Clock3,
   Check,
-  FileText,
   LoaderCircle,
   LockKeyhole,
   Power,
@@ -22,7 +21,6 @@ type Props = {
   action: VpnAction;
   t: Messages;
   onToggle: () => void;
-  onOpenLogs: () => void;
 };
 
 export function ConnectionOverview({
@@ -33,7 +31,6 @@ export function ConnectionOverview({
   action,
   t,
   onToggle,
-  onOpenLogs,
 }: Props) {
   const connected = status === 'CONNECTED';
   const connecting = status === 'CONNECTING';
@@ -219,19 +216,6 @@ export function ConnectionOverview({
               </small>
             </div>
           </div>
-        </div>
-        <div className="details-card-footer">
-          <div className="details-card-log-copy">
-            <FileText size={17} strokeWidth={1.7} />
-            <span>
-              <strong>{t.supportTitle}</strong>
-              <small>{t.supportDesc}</small>
-            </span>
-          </div>
-          <button className="support-log-button" onClick={onOpenLogs}>
-            {t.viewLogs}
-            <ArrowUpRight size={16} />
-          </button>
         </div>
       </section>
       <footer className="workspace-footer">

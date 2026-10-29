@@ -22,6 +22,26 @@ pub struct Request {
 pub fn command(program: impl AsRef<std::ffi::OsStr>) -> Command {
     #[allow(unused_mut)]
     let mut cmd = Command::new(program);
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        // GUI/runtime threads can block signals. exec preserves that mask,
+        // including across macOS administrator authorization. ovpncli installs
+        // handlers but does not unblock inherited signals, so stats and graceful
+        // stop requests would remain pending. Only use async-signal-safe calls
+        // here: this closure runs in the child between fork and exec.
+        unsafe {
+            cmd.pre_exec(|| {
+                let mut mask: libc::sigset_t = std::mem::zeroed();
+                if libc::sigemptyset(&mut mask) != 0
+                    || libc::sigprocmask(libc::SIG_SETMASK, &mask, std::ptr::null_mut()) != 0
+                {
+                    return Err(std::io::Error::last_os_error());
+                }
+                Ok(())
+            });
+        }
+    }
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
@@ -299,6 +319,70 @@ pub fn launch(directory: &Path) -> Result<Child, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(unix)]
+    #[test]
+    fn unix_engine_commands_clear_inherited_signal_masks() {
+        const CHILD: &str = "TUNNELLINK_TEST_SIGNAL_CHILD";
+        if std::env::var_os(CHILD).is_some() {
+            let mut mask: libc::sigset_t = unsafe { std::mem::zeroed() };
+            assert_eq!(
+                unsafe { libc::pthread_sigmask(0, std::ptr::null(), &mut mask) },
+                0
+            );
+            for signal in [
+                libc::SIGUSR1,
+                libc::SIGUSR2,
+                libc::SIGTERM,
+                libc::SIGINT,
+                libc::SIGHUP,
+            ] {
+                assert_eq!(
+                    unsafe { libc::sigismember(&mask, signal) },
+                    0,
+                    "signal {signal} remained blocked"
+                );
+            }
+            return;
+        }
+        let mut blocked: libc::sigset_t = unsafe { std::mem::zeroed() };
+        let mut original: libc::sigset_t = unsafe { std::mem::zeroed() };
+        unsafe {
+            libc::sigemptyset(&mut blocked);
+            for signal in [
+                libc::SIGUSR1,
+                libc::SIGUSR2,
+                libc::SIGTERM,
+                libc::SIGINT,
+                libc::SIGHUP,
+            ] {
+                libc::sigaddset(&mut blocked, signal);
+            }
+        }
+        assert_eq!(
+            unsafe { libc::pthread_sigmask(libc::SIG_BLOCK, &blocked, &mut original) },
+            0
+        );
+        let child = command(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "worker::tests::unix_engine_commands_clear_inherited_signal_masks",
+                "--nocapture",
+            ])
+            .env(CHILD, "1")
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn();
+        let restored =
+            unsafe { libc::pthread_sigmask(libc::SIG_SETMASK, &original, std::ptr::null_mut()) };
+        assert_eq!(restored, 0);
+        let output = child.unwrap().wait_with_output().unwrap();
+        assert!(
+            output.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
     #[cfg(unix)]
     #[test]
     fn unix_stats_request_signals_the_engine() {
