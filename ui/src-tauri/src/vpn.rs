@@ -420,6 +420,14 @@ impl Controller {
                     data.state = "CONNECTED";
                     data.started = Some(Instant::now());
                     drop(data);
+                    if let Err(error) =
+                        fs::write(directory.path().join("stats-enabled"), b"enabled")
+                    {
+                        self.data.lock().unwrap().log(
+                            "system",
+                            format!("Unable to enable traffic statistics: {error}"),
+                        );
+                    }
                     if !connected_once {
                         // Keychain may prompt the user; never block heartbeats or cancellation.
                         let controller = self.clone();
@@ -437,6 +445,7 @@ impl Controller {
                     }
                     connected_once = true;
                 } else if line.contains("EVENT: RECONNECTING") {
+                    let _ = fs::remove_file(directory.path().join("stats-enabled"));
                     data.state = "CONNECTING";
                     data.started = None;
                     data.assigned_ip = None;
@@ -446,6 +455,7 @@ impl Controller {
                     data.metrics_available = false;
                     deadline = Instant::now() + Duration::from_secs(45);
                 } else if line.contains("EVENT: DISCONNECTED") {
+                    let _ = fs::remove_file(directory.path().join("stats-enabled"));
                     data.state = "DISCONNECTED";
                     data.started = None;
                     data.assigned_ip = None;
@@ -468,6 +478,7 @@ impl Controller {
                 cancel.store(true, Ordering::SeqCst);
             }
             if cancel.load(Ordering::SeqCst) && stop_requested.is_none() {
+                let _ = fs::remove_file(directory.path().join("stats-enabled"));
                 let _ = fs::write(directory.path().join("stop"), b"stop");
                 stop_requested = Some(Instant::now());
             }

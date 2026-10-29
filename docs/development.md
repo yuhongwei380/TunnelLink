@@ -4,6 +4,8 @@
 
 客户端使用 Tauri 2、Rust、React、TypeScript 和 Vite。React 负责界面，Rust 负责系统凭据、VPN 状态、原生进程监督和窗口生命周期，OpenVPN 3 Core 以原生引擎随安装包分发。
 
+流量统计需要主动采集：上游 `ovpncli` 默认只在退出或收到请求时输出 `STATS`。确认连接后，GUI 通过会话目录中的 `stats-enabled` 标记通知 supervisor，每秒向其子进程发送一次统计请求（macOS 使用 `SIGUSR1`，Windows 使用隐藏控制台的 F2）。Rust 解析 `BYTES_IN`、`BYTES_OUT` 后交给界面展示；重连、断开时删除标记。统计请求由 supervisor 发送，以适配 macOS 引擎的管理员权限。修改这条采集链路只需重新构建客户端，可复用已验证的引擎缓存。
+
 Node.js 仅用于前端开发、构建、资源准备和测试，不作为桌面运行时分发。`make/` 中的 JavaScript 脚本是当前 Tauri 构建链的一部分；桌面配置统一位于 `ui/src-tauri/tauri*.conf.json`。
 
 ## 环境与启动

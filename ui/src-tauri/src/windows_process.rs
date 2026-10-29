@@ -67,6 +67,14 @@ pub fn console_input() -> io::Result<File> {
 pub fn request_graceful_stop() {
     // Upstream ovpncli's Windows loop maps scan code 0x3e (F4) to client.stop().
     // The supervisor and engine share a private, hidden console, not the UI's console.
+    send_console_key(0x73, 0x3e);
+}
+
+pub fn request_stats() {
+    send_console_key(0x71, 0x3c); // F2 -> client.print_stats()
+}
+
+fn send_console_key(virtual_key: u16, scan_code: u16) {
     if let Ok(input) = OpenOptions::new().read(true).write(true).open("CONIN$") {
         unsafe {
             let mut record: INPUT_RECORD = std::mem::zeroed();
@@ -74,8 +82,8 @@ pub fn request_graceful_stop() {
             record.Event.KeyEvent = KEY_EVENT_RECORD {
                 bKeyDown: 1,
                 wRepeatCount: 1,
-                wVirtualKeyCode: 0x73,
-                wVirtualScanCode: 0x3e,
+                wVirtualKeyCode: virtual_key,
+                wVirtualScanCode: scan_code,
                 uChar: std::mem::zeroed(),
                 dwControlKeyState: 0,
             };
@@ -113,6 +121,13 @@ mod tests {
     #[test]
     fn console_stop_and_crash_cleanup_reach_the_child() {
         let input = console_input().unwrap();
+        let mut stats_child = Command::new("powershell.exe")
+            .args(["-NoProfile", "-NonInteractive", "-Command", "if ([Console]::ReadKey($true).Key -eq [ConsoleKey]::F2) { exit 0 } else { exit 1 }"])
+            .stdin(input.try_clone().unwrap()).stdout(Stdio::null()).stderr(Stdio::null()).spawn().unwrap();
+        let stats_job = EngineJob::attach(&stats_child).unwrap();
+        request_stats();
+        assert!(wait(&mut stats_child).success());
+        drop(stats_job);
         let mut child = Command::new("powershell.exe")
             .args(["-NoProfile", "-NonInteractive", "-Command", "if ([Console]::ReadKey($true).Key -eq [ConsoleKey]::F4) { exit 0 } else { exit 1 }"])
             .stdin(input).stdout(Stdio::null()).stderr(Stdio::null()).spawn().unwrap();

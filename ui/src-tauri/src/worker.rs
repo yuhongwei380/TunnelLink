@@ -137,6 +137,20 @@ fn stop_child(child: &mut Child) {
     let _ = child.wait();
 }
 
+fn request_stats(child: &Child) {
+    // Upstream ovpncli prints statistics on SIGUSR1 (Unix) or F2 (Windows).
+    // Run this in the supervisor, which owns the privileged engine process.
+    #[cfg(unix)]
+    unsafe {
+        libc::kill(child.id() as i32, libc::SIGUSR1);
+    }
+    #[cfg(windows)]
+    {
+        let _ = child;
+        crate::windows_process::request_stats();
+    }
+}
+
 fn supervise(directory: &Path, log: &File) -> Result<i32, String> {
     if directory.join("stop").exists() {
         return Ok(0);
@@ -192,6 +206,7 @@ fn supervise(directory: &Path, log: &File) -> Result<i32, String> {
         return Err(error.to_string());
     }
     let started = Instant::now();
+    let mut last_stats: Option<Instant> = None;
     loop {
         match child.try_wait() {
             Ok(Some(status)) => return Ok(status.code().unwrap_or(-1)),
@@ -217,6 +232,18 @@ fn supervise(directory: &Path, log: &File) -> Result<i32, String> {
         {
             stop_child(&mut child);
             return Ok(0);
+        }
+        // The GUI creates this marker only after a confirmed CONNECTED event.
+        // Never send SIGUSR1 during startup: before handlers are installed it
+        // would terminate the engine. Reconnection/teardown remove the marker.
+        if directory.join("stats-enabled").exists() {
+            let previous = last_stats.get_or_insert_with(Instant::now);
+            if previous.elapsed() >= Duration::from_secs(1) {
+                request_stats(&child);
+                last_stats = Some(Instant::now());
+            }
+        } else {
+            last_stats = None;
         }
         thread::sleep(Duration::from_millis(100));
     }
@@ -272,6 +299,42 @@ pub fn launch(directory: &Path) -> Result<Child, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(unix)]
+    #[test]
+    fn unix_stats_request_signals_the_engine() {
+        let directory = tempfile::tempdir().unwrap();
+        let ready = directory.path().join("ready");
+        let output = directory.path().join("stats");
+        let mut child = command("/bin/sh")
+            .args(["-c", "trap 'printf \"BYTES_IN : 123\\nBYTES_OUT : 456\\n\" > \"$STATS_OUTPUT\"; exit 0' USR1; touch \"$STATS_READY\"; while :; do sleep 0.1; done"])
+            .env("STATS_READY", &ready)
+            .env("STATS_OUTPUT", &output)
+            .spawn().unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !ready.exists() && Instant::now() < deadline {
+            thread::sleep(Duration::from_millis(25));
+        }
+        if !ready.exists() {
+            let _ = child.kill();
+            let _ = child.wait();
+            panic!("Mock engine did not install its statistics handler");
+        }
+        request_stats(&child);
+        while Instant::now() < deadline {
+            if let Some(status) = child.try_wait().unwrap() {
+                assert!(status.success());
+                assert_eq!(
+                    fs::read_to_string(output).unwrap(),
+                    "BYTES_IN : 123\nBYTES_OUT : 456\n"
+                );
+                return;
+            }
+            thread::sleep(Duration::from_millis(25));
+        }
+        let _ = child.kill();
+        let _ = child.wait();
+        panic!("Mock engine did not receive the statistics signal");
+    }
     #[test]
     fn shell_paths_cannot_inject_commands() {
         assert_eq!(shell_quote("/Apps/a'b $x.app"), "'/Apps/a'\"'\"'b $x.app'");
