@@ -5065,6 +5065,40 @@ dialog[data-closing='true']::backdrop {
   }
 }
 
+/* Use the fixed desktop surface efficiently: the connection action and session
+   summary keep a consistent rhythm instead of leaving a large middle gap. */
+@media (min-width: 841px) and (min-height: 580px) {
+  .connection-page {
+    gap: 16px;
+    padding: 24px 32px 16px 24px;
+  }
+  .connection-page .connection-card {
+    min-height: 230px;
+    height: 230px;
+    padding: 30px 24px 20px;
+  }
+  .connection-page .connection-copy {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .connection-page .connection-action-row {
+    margin-top: auto;
+  }
+  .connection-page .details-card {
+    margin-top: 0;
+    padding: 18px 24px 12px;
+  }
+  .connection-page .details-card-session {
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+  .connection-page .details-card-footer {
+    margin-top: 10px;
+    padding-top: 8px;
+  }
+}
+
 /* Balance the two overview cards in the fixed desktop window. */
 @media (min-width: 561px) and (max-width: 840px) and (min-height: 580px) {
   .connection-page .connection-card,

@@ -32,6 +32,9 @@ struct Data {
     logs: VecDeque<Log>,
     assigned_ip: Option<String>,
     gateway_addr: Option<String>,
+    bytes_in: u64,
+    bytes_out: u64,
+    metrics_available: bool,
 }
 impl Default for Data {
     fn default() -> Self {
@@ -42,6 +45,9 @@ impl Default for Data {
             logs: VecDeque::new(),
             assigned_ip: None,
             gateway_addr: None,
+            bytes_in: 0,
+            bytes_out: 0,
+            metrics_available: false,
         }
     }
 }
@@ -105,6 +111,16 @@ fn connected_payload(line: &str) -> Option<&str> {
 fn valid_address(value: &str) -> Option<String> {
     let address = value.parse::<std::net::IpAddr>().ok()?;
     (!address.is_unspecified()).then(|| address.to_string())
+}
+
+fn extract_counter(line: &str, name: &str) -> Option<u64> {
+    let mut tokens = line.split(|c: char| c == ':' || c == ',' || c.is_whitespace());
+    while let Some(token) = tokens.next() {
+        if token.eq_ignore_ascii_case(name) {
+            return tokens.find_map(|value| value.parse().ok());
+        }
+    }
+    None
 }
 
 fn extract_assigned_ip(line: &str) -> Option<String> {
@@ -203,6 +219,9 @@ impl Controller {
             data.last_error.clear();
             data.assigned_ip = None;
             data.gateway_addr = None;
+            data.bytes_in = 0;
+            data.bytes_out = 0;
+            data.metrics_available = false;
             data.log("system", "Connection requested (Tauri / OpenVPN 3).");
         }
         let cancel = Arc::new(AtomicBool::new(false));
@@ -220,6 +239,9 @@ impl Controller {
             data.started = None;
             data.assigned_ip = None;
             data.gateway_addr = None;
+            data.bytes_in = 0;
+            data.bytes_out = 0;
+            data.metrics_available = false;
             data.log("system", "Connection stopped.");
         });
         *session = Some(Session { cancel, thread });
@@ -241,12 +263,16 @@ impl Controller {
         data.started = None;
         data.assigned_ip = None;
         data.gateway_addr = None;
+        data.bytes_in = 0;
+        data.bytes_out = 0;
+        data.metrics_available = false;
         json!({ "ok": true, "state": "DISCONNECTED" })
     }
     pub fn status(&self) -> Value {
         let data = self.data.lock().unwrap();
         json!({ "state": data.state, "uptime": data.started.map(|t| t.elapsed().as_secs()).unwrap_or(0),
-            "bytesIn": 0, "bytesOut": 0, "metricsAvailable": false,
+            "bytesIn": data.bytes_in, "bytesOut": data.bytes_out,
+            "metricsAvailable": data.metrics_available,
             "assignedIp": data.assigned_ip, "gatewayAddress": data.gateway_addr,
             "lastError": data.last_error, "engine": "openvpn3" })
     }
@@ -370,6 +396,14 @@ impl Controller {
                 if let Some(endpoint) = extract_gateway(&line) {
                     data.gateway_addr = Some(endpoint);
                 }
+                if let Some(value) = extract_counter(&line, "BYTES_IN") {
+                    data.bytes_in = value;
+                    data.metrics_available = true;
+                }
+                if let Some(value) = extract_counter(&line, "BYTES_OUT") {
+                    data.bytes_out = value;
+                    data.metrics_available = true;
+                }
                 if let Some(error) = fatal_error(&line) {
                     data.error(error.replace(&options.password, "[redacted]"));
                     cancel.store(true, Ordering::SeqCst);
@@ -398,12 +432,18 @@ impl Controller {
                     data.started = None;
                     data.assigned_ip = None;
                     data.gateway_addr = None;
+                    data.bytes_in = 0;
+                    data.bytes_out = 0;
+                    data.metrics_available = false;
                     deadline = Instant::now() + Duration::from_secs(45);
                 } else if line.contains("EVENT: DISCONNECTED") {
                     data.state = "DISCONNECTED";
                     data.started = None;
                     data.assigned_ip = None;
                     data.gateway_addr = None;
+                    data.bytes_in = 0;
+                    data.bytes_out = 0;
+                    data.metrics_available = false;
                     cancel.store(true, Ordering::SeqCst);
                 }
             }
@@ -575,5 +615,16 @@ mod tests {
             extract_gateway("EVENT: CONNECTED_FAILED bad gw=[10.20.0.1/]"),
             None
         );
+    }
+
+    #[test]
+    fn traffic_counters_are_read_from_engine_stats_lines() {
+        assert_eq!(extract_counter("BYTES_IN : 3186", "BYTES_IN"), Some(3186));
+        assert_eq!(
+            extract_counter("STATS: BYTES_OUT : 5947", "BYTES_OUT"),
+            Some(5947)
+        );
+        assert_eq!(extract_counter("TUN_BYTES_IN : 2849", "BYTES_IN"), None);
+        assert_eq!(extract_counter("PACKETS_IN : 8", "BYTES_IN"), None);
     }
 }
