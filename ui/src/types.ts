@@ -44,6 +44,13 @@ export type LogsResult = {
   state?: VpnState;
 };
 
+export type ExportLogsResult = {
+  ok: boolean;
+  path: string;
+  fileName: string;
+  count: number;
+};
+
 export type AppMeta = {
   name: string;
   version: string;
@@ -63,6 +70,7 @@ export interface DesktopApi {
   getSavedCredentials(): Promise<SavedCredentialsResult>;
   getLogs(): Promise<LogsResult>;
   clearLogs(): Promise<{ ok: boolean }>;
+  exportLogs(rangeMinutes: 5 | 30 | 60): Promise<ExportLogsResult>;
   getAppMeta(): Promise<AppMeta>;
   getInstallationState(): Promise<InstallationState>;
   installToApplications(): Promise<void>;

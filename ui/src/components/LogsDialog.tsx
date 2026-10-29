@@ -3,6 +3,7 @@ import {
   AlertCircle,
   ArrowRight,
   Copy,
+  Download,
   LockKeyhole,
   Pause,
   Play,
@@ -30,6 +31,8 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
   const [paused, setPaused] = useState(false);
   const [query, setQuery] = useState('');
   const [logFilter, setLogFilter] = useState<LogFilter>('all');
+  const [exportRange, setExportRange] = useState<5 | 30 | 60>(5);
+  const [exporting, setExporting] = useState(false);
   const logsPending = useRef(false);
   const pausedRef = useRef(false);
   const requestVersion = useRef(0);
@@ -109,6 +112,18 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
       onNotify(t.copyFailed);
     }
   };
+  const exportLogs = async () => {
+    if (!window.vpn || exporting) return;
+    setExporting(true);
+    try {
+      const result = await window.vpn.exportLogs(exportRange);
+      onNotify(`${t.exportedLogs} ${result.path}`);
+    } catch {
+      onNotify(t.exportLogsFailed);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <dialog
@@ -179,6 +194,29 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
               {paused ? <Play size={16} /> : <Pause size={16} />}
               <span>{paused ? t.resumeRefresh : t.pauseRefresh}</span>
             </button>
+            <div className="logs-export-group">
+              <select
+                value={exportRange}
+                onChange={(event) => setExportRange(Number(event.target.value) as 5 | 30 | 60)}
+                aria-label={t.exportRange}
+                title={t.exportRange}
+                disabled={!isDesktop || exporting}
+              >
+                <option value={5}>{t.last5Minutes}</option>
+                <option value={30}>{t.last30Minutes}</option>
+                <option value={60}>{t.last1Hour}</option>
+              </select>
+              <button
+                className="logs-export-button"
+                onClick={() => void exportLogs()}
+                disabled={!isDesktop || !logs.length || exporting}
+                title={t.exportLogs}
+                aria-label={t.exportLogs}
+              >
+                <Download size={16} className={exporting ? 'export-pulse' : ''} />
+                <span>{exporting ? t.exportingLogs : t.exportLogs}</span>
+              </button>
+            </div>
             <button
               onClick={() => void loadLogs()}
               disabled={!isDesktop || logsLoading}

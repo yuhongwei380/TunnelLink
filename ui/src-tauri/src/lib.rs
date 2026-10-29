@@ -182,6 +182,68 @@ fn vpn_get_logs(state: tauri::State<'_, Controller>) -> serde_json::Value {
 fn vpn_clear_logs(state: tauri::State<'_, Controller>) -> serde_json::Value {
     state.clear_logs()
 }
+
+fn write_log_export(
+    directory: &std::path::Path,
+    stem: &str,
+    contents: &str,
+) -> Result<(std::path::PathBuf, String), String> {
+    use std::io::Write;
+    std::fs::create_dir_all(directory).map_err(|error| error.to_string())?;
+    for suffix in 0..1000 {
+        let filename = if suffix == 0 {
+            format!("{stem}.log")
+        } else {
+            format!("{stem}-{suffix}.log")
+        };
+        let path = directory.join(&filename);
+        let mut file = match std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)
+        {
+            Ok(file) => file,
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(format!("Unable to create log export: {error}")),
+        };
+        if let Err(error) = file
+            .write_all(contents.as_bytes())
+            .and_then(|_| file.sync_all())
+        {
+            drop(file);
+            let _ = std::fs::remove_file(&path);
+            return Err(format!("Unable to write log export: {error}"));
+        }
+        return Ok((path, filename));
+    }
+    Err("Unable to choose a unique log export filename.".into())
+}
+
+#[tauri::command]
+fn vpn_export_logs(
+    app: tauri::AppHandle,
+    range_minutes: u32,
+    state: tauri::State<'_, Controller>,
+) -> Result<serde_json::Value, String> {
+    let now = chrono::Utc::now();
+    let (contents, count) = state.export_logs(range_minutes, now)?;
+    if count == 0 {
+        return Err("No logs are available in the selected time range.".into());
+    }
+    let directory = app
+        .path()
+        .download_dir()
+        .map_err(|error| error.to_string())?;
+    let timestamp = now.format("%Y%m%d-%H%M%S");
+    let stem = format!("TunnelLink-logs-{timestamp}-{range_minutes}m");
+    let (path, filename) = write_log_export(&directory, &stem, &contents)?;
+    Ok(serde_json::json!({
+        "ok": true,
+        "path": path.to_string_lossy(),
+        "fileName": filename,
+        "count": count
+    }))
+}
 #[tauri::command]
 async fn vpn_get_saved_credentials(
     state: tauri::State<'_, Controller>,
@@ -345,6 +407,7 @@ pub fn run() {
             vpn_status,
             vpn_get_logs,
             vpn_clear_logs,
+            vpn_export_logs,
             vpn_get_saved_credentials,
             app_get_meta,
             app_get_installation_state,
@@ -381,4 +444,22 @@ pub fn run() {
         }
         _ => {}
     });
+}
+
+#[cfg(test)]
+mod app_tests {
+    #[test]
+    fn log_exports_are_log_files_and_do_not_overwrite_existing_exports() {
+        let directory = tempfile::tempdir().unwrap();
+        let (first_path, first_name) =
+            super::write_log_export(directory.path(), "TunnelLink-logs-test-5m", "first\n")
+                .unwrap();
+        let (second_path, second_name) =
+            super::write_log_export(directory.path(), "TunnelLink-logs-test-5m", "second\n")
+                .unwrap();
+        assert_eq!(first_name, "TunnelLink-logs-test-5m.log");
+        assert_eq!(second_name, "TunnelLink-logs-test-5m-1.log");
+        assert_eq!(std::fs::read_to_string(first_path).unwrap(), "first\n");
+        assert_eq!(std::fs::read_to_string(second_path).unwrap(), "second\n");
+    }
 }

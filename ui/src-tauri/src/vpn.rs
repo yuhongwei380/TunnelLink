@@ -13,6 +13,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+const MAX_LOG_ENTRIES: usize = 50_000;
+const DISPLAY_LOG_ENTRIES: usize = 300;
+
 #[derive(Clone, Deserialize, Serialize)]
 pub struct ConnectOptions {
     pub username: String,
@@ -67,7 +70,7 @@ impl Data {
             source: source.into(),
             line: self.log_privacy.redact(&line.into()),
         });
-        while self.logs.len() > 600 {
+        while self.logs.len() > MAX_LOG_ENTRIES {
             self.logs.pop_front();
         }
     }
@@ -295,9 +298,36 @@ impl Controller {
         let logs: Vec<_> = data
             .logs
             .iter()
-            .skip(data.logs.len().saturating_sub(300))
+            .skip(data.logs.len().saturating_sub(DISPLAY_LOG_ENTRIES))
             .collect();
         json!({ "ok": true, "logs": logs, "lastError": data.last_error, "state": data.state })
+    }
+    pub fn export_logs(
+        &self,
+        range_minutes: u32,
+        now: chrono::DateTime<chrono::Utc>,
+    ) -> Result<(String, usize), String> {
+        if !matches!(range_minutes, 5 | 30 | 60) {
+            return Err("Unsupported log export range.".into());
+        }
+        let cutoff = now - chrono::Duration::minutes(i64::from(range_minutes));
+        let data = self.data.lock().unwrap();
+        let selected: Vec<_> = data
+            .logs
+            .iter()
+            .filter(|entry| {
+                chrono::DateTime::parse_from_rfc3339(&entry.ts)
+                    .is_ok_and(|timestamp| timestamp.with_timezone(&chrono::Utc) >= cutoff)
+            })
+            .collect();
+        let mut output = String::new();
+        for entry in &selected {
+            output.push_str(&format!(
+                "[{}] [{}] {}\n",
+                entry.ts, entry.source, entry.line
+            ));
+        }
+        Ok((output, selected.len()))
     }
     pub fn clear_logs(&self) -> Value {
         self.data.lock().unwrap().logs.clear();
@@ -610,13 +640,53 @@ mod tests {
     #[test]
     fn logs_are_bounded_and_idle_status_has_no_fake_traffic() {
         let controller = Controller::new("test".into());
-        for i in 0..1000 {
-            controller.data.lock().unwrap().log("engine", i.to_string());
+        {
+            let mut data = controller.data.lock().unwrap();
+            for i in 0..MAX_LOG_ENTRIES {
+                data.logs.push_back(Log {
+                    ts: "2026-10-29T00:00:00.000Z".into(),
+                    source: "engine".into(),
+                    line: i.to_string(),
+                });
+            }
+            data.log("engine", "newest");
         }
-        assert_eq!(controller.data.lock().unwrap().logs.len(), 600);
-        assert_eq!(controller.logs()["logs"].as_array().unwrap().len(), 300);
+        assert_eq!(controller.data.lock().unwrap().logs.len(), MAX_LOG_ENTRIES);
+        assert_eq!(
+            controller.logs()["logs"].as_array().unwrap().len(),
+            DISPLAY_LOG_ENTRIES
+        );
         assert_eq!(controller.status()["metricsAvailable"], false);
         assert_eq!(controller.status()["state"], "DISCONNECTED");
+    }
+    #[test]
+    fn log_exports_use_the_selected_recent_time_range() {
+        use chrono::TimeZone;
+        let controller = Controller::new("test".into());
+        let now = chrono::Utc
+            .with_ymd_and_hms(2026, 10, 29, 12, 0, 0)
+            .unwrap();
+        let mut data = controller.data.lock().unwrap();
+        for (ts, line) in [
+            ("2026-10-29T10:59:59.000Z", "too old"),
+            ("2026-10-29T11:30:00.000Z", "thirty minutes"),
+            ("2026-10-29T11:55:00.000Z", "five minutes"),
+        ] {
+            data.logs.push_back(Log {
+                ts: ts.into(),
+                source: "engine".into(),
+                line: line.into(),
+            });
+        }
+        drop(data);
+        let (five, count) = controller.export_logs(5, now).unwrap();
+        assert_eq!(count, 1);
+        assert!(five.contains("five minutes"));
+        assert!(!five.contains("thirty minutes"));
+        let (hour, count) = controller.export_logs(60, now).unwrap();
+        assert_eq!(count, 2);
+        assert!(hour.ends_with("[engine] five minutes\n"));
+        assert!(controller.export_logs(15, now).is_err());
     }
     #[test]
     fn invalid_credentials_do_not_spawn_a_process() {

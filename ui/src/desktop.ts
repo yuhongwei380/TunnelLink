@@ -10,6 +10,7 @@ if (isTauri()) {
     getSavedCredentials: () => invoke('vpn_get_saved_credentials'),
     getLogs: () => invoke('vpn_get_logs'),
     clearLogs: () => invoke('vpn_clear_logs'),
+    exportLogs: (rangeMinutes) => invoke('vpn_export_logs', { rangeMinutes }),
     getAppMeta: () => invoke('app_get_meta'),
     getInstallationState: () => invoke('app_get_installation_state'),
     installToApplications: () => invoke('app_install_to_applications'),
