@@ -1941,6 +1941,65 @@ dialog::backdrop {
   margin: 15px 0 12px;
 }
 
+.about-uninstall {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+}
+.about-uninstall button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 12px;
+  color: #aa3645;
+  background: #fff4f5;
+  border: 1px solid #e9bcc3;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.about-uninstall button:hover {
+  background: #fce6e9;
+}
+.uninstall-dialog .exit-dialog-desc {
+  margin-bottom: 12px;
+}
+.uninstall-data-list {
+  margin: 0 0 16px;
+  padding-left: 22px;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.8;
+}
+.uninstall-note {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+.uninstall-error {
+  color: #aa3645;
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.uninstall-confirm-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: white;
+  background: #c34f5b;
+  border: 1px solid #c34f5b;
+}
+.uninstall-confirm-button:hover:not(:disabled) {
+  background: #b5424e;
+}
+.uninstall-dialog button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
 .spin {
   animation: spin 1s linear infinite;
 }
@@ -5013,8 +5072,26 @@ dialog[data-closing='true']::backdrop {
 .connection-page .connection-card[data-phase='connecting'] {
   background-color: #173762;
 }
-.connection-page .connection-card[data-phase='connected'] .connection-action {
-  background-color: #147d71;
+.connection-page
+  .connection-card:is([data-phase='connected'], [data-phase='disconnecting'])
+  .connection-action-row
+  .connection-action {
+  background: #c34f5b;
+  box-shadow: none;
+}
+.connection-page
+  .connection-card:is([data-phase='connected'], [data-phase='disconnecting'])
+  .connection-action-row
+  .connection-action:hover:not(:disabled) {
+  background: #b5424e;
+  box-shadow: 0 4px 14px #c34f5b33;
+}
+.connection-page
+  .connection-card:is([data-phase='connected'], [data-phase='disconnecting'])
+  .connection-action-row
+  .connection-action:active:not(:disabled) {
+  background: #a73643;
+  box-shadow: inset 0 2px 5px #641c2940;
 }
 .connection-page .connection-card .connection-button-content {
   animation-duration: 420ms;
@@ -5227,6 +5304,12 @@ dialog[data-closing='true']::backdrop {
 .logs-dialog .count-badge {
   font-size: 12px;
 }
+.logs-heading-actions .live-label.is-paused {
+  color: #94611b;
+}
+.logs-heading-actions .live-label.is-paused i {
+  background: #c08a35;
+}
 .logs-dialog .logs-controls {
   flex: 0 0 auto;
   gap: 10px;
@@ -5256,6 +5339,25 @@ dialog[data-closing='true']::backdrop {
 .logs-dialog .logs-toolbar button {
   width: 40px;
   height: 40px;
+}
+.logs-dialog .logs-toolbar .logs-pause-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+  padding: 0 10px;
+  border-color: #dce7f5;
+  background: #f2f6fc;
+  color: #335d92;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.logs-dialog .logs-toolbar .logs-pause-button[aria-pressed='true'] {
+  border-color: #e9d5b4;
+  background: #fff7e9;
+  color: #94611b;
 }
 .logs-dialog .log-column-labels,
 .logs-dialog .log-entry {

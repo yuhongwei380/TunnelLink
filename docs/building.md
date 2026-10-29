@@ -105,6 +105,8 @@ npm run dist:win
 
 原生引擎与 OpenSSL/MSVC DLL 放在 `.cache/native/bin/windows-x64/`。安装包命名为 `build_dist/windows/Tunnel Link-Tauri-Setup-<version>-x64.exe`，原始 NSIS 产物位于 `.cache/cargo-target/x86_64-pc-windows-msvc/release/bundle/nsis/`。
 
+Windows 和 macOS 的卸载入口均内置在客户端“关于软件”中，需二次确认后清除当前账户的凭据及应用数据。Windows 入口调用 NSIS 正式卸载程序并保留共享 TAP 驱动/适配器；macOS 将应用移入废纸篓，DMG 无需额外搭配卸载脚本。
+
 ### 驱动与 WebView2
 
 `resources/settings/windows-tap-driver.json` 固定 TAP-Windows6 9.27.0 的官方下载地址和 SHA-256。构建钩子下载 `dist.win10.zip`，缓存到 `.cache/tap-windows6/`，校验后将 amd64 驱动和许可文件放到 `.cache/native/drivers/windows-x64/tap-windows6/`。源码地址保存在来源记录中，源码压缩包不随安装包分发。

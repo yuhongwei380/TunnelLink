@@ -53,6 +53,17 @@ test('Windows packaging embeds the generated application icon', async () => {
   await fs.access(path.join(configDirectory, 'icons/icon.ico'));
 });
 
+test('Windows uninstall clears this account data but retains shared TAP resources', async () => {
+  const root = path.join(projectRoot, 'make/windows');
+  const hooks = await fs.readFile(path.join(root, 'installer-hooks.nsh'), 'utf8');
+  const nativeSource = await fs.readFile(path.join(projectRoot, 'ui/src-tauri/src/lib.rs'), 'utf8');
+  assert.match(hooks, /\$UpdateMode <> 1/);
+  assert.match(hooks, /--clear-uninstall-data/);
+  assert.doesNotMatch(hooks, /delete.*tap|remove.*tap/i);
+  assert.match(nativeSource, /uninstall\.exe/);
+  assert.match(nativeSource, /\.args\(\["\/S", "\/FROMAPP=1"\]\)/);
+});
+
 test('packaging accepts the matching engine, including PowerShell UTF-8 BOM metadata', async (t) => {
   const fixture = await engineFixture(t);
   await verifyWindowsEngine(fixture.directory);

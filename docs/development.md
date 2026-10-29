@@ -105,6 +105,10 @@ npm run tauri:dev
 
 凭据通过 Windows Credential Manager 或 macOS Keychain 保存，且仅在认证成功后写入；取消记住凭据会在成功连接后删除已保存内容。旧客户端凭据不自动迁移。
 
+`TunnelLink --clear-saved-credentials` 在 GUI 和单实例检查前执行，按编译时应用标识删除当前账户的 `vpn-account` 条目，条目不存在也视为成功；错误返回非零退出码，不读取或输出密码。Windows 安装版也在“关于软件”中提供带二次确认的“卸载并清除数据”入口；确认后禁止新连接、断开会话、启动同目录正式 `uninstall.exe /S /FROMAPP=1` 并退出 GUI。NSIS 卸载钩子在应用关闭后运行 `--clear-uninstall-data`，删除当前 Windows 账户的凭据以及 `%APPDATA%`、`%LOCALAPPDATA%` 下编译时应用标识对应的目录，任一清理失败即中止卸载；`/UPDATE` 更新除外。共享 TAP 驱动和适配器不会随卸载删除。
+
+macOS 使用同一应用内入口，确认后使旧凭据写入失效并删除钥匙串条目，再通过原生 `NSFileManager` 将当前应用移入废纸篓。一次性清理子进程在 GUI 退出后删除当前应用标识对应的 Application Support、Caches、WebKit、HTTPStorages、Logs、Preferences 和 Saved Application State 数据，避免关闭中的 WebView 重建缓存；失败时通过系统对话框提示。不分发独立卸载脚本。直接删除 `.app` 不会触发清理；两个平台的卸载都须以保存凭据的操作系统账户执行。
+
 GUI 使用短期私有会话文件向监督进程传递凭据，引擎启动后删除该文件。当前上游 `ovpncli` 仍通过命令行参数接收凭据；替换引擎 API 时需同时处理这一接口。日志会对密码脱敏。
 
 Windows 监督进程先请求引擎正常退出，超时再终止进程；Job Object 负责监督进程异常退出时的清理。macOS 每次连接只提升监督进程的权限，GUI 保持普通权限，不设置引擎 setuid，也不在用户机器上重写 dylib 链接。

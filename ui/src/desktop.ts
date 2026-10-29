@@ -13,6 +13,7 @@ if (isTauri()) {
     getAppMeta: () => invoke('app_get_meta'),
     getInstallationState: () => invoke('app_get_installation_state'),
     installToApplications: () => invoke('app_install_to_applications'),
+    uninstall: () => invoke('app_uninstall'),
     getUiCopy: () => invoke('app_get_ui_copy'),
     exit: () => invoke('app_exit'),
   };

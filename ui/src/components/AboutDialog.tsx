@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, FileText, Info, X } from 'lucide-react';
+import { Check, FileText, Info, Trash2, X } from 'lucide-react';
 import { AppLogo } from './AppLogo';
 import { useDialog } from '../hooks/useDialog';
 import type { Messages } from '../messages';
@@ -17,6 +17,8 @@ type Props = {
   t: Messages;
   onClose: () => void;
   onAcceptAgreement: () => void;
+  canUninstall: boolean;
+  onUninstall: () => void;
 };
 
 export function AboutDialog({
@@ -27,6 +29,8 @@ export function AboutDialog({
   t,
   onClose,
   onAcceptAgreement,
+  canUninstall,
+  onUninstall,
 }: Props) {
   const [legalPage, setLegalPage] = useState<'agreement' | 'notices'>('agreement');
   const aboutRef = useDialog(open);
@@ -90,6 +94,14 @@ export function AboutDialog({
       >
         {legalPage === 'agreement' ? agreement : notices}
       </pre>
+      {canUninstall && !agreementRequired && (
+        <div className="about-uninstall">
+          <button onClick={onUninstall}>
+            <Trash2 size={16} />
+            {t.uninstall}
+          </button>
+        </div>
+      )}
       {agreementRequired && (
         <div className="agreement-accept">
           <p className="input-hint">{t.firstRunAgreement}</p>

@@ -19,3 +19,20 @@
 !macroend
 
 ; Shared TAP drivers/adapters are deliberately retained on uninstall.
+
+!macro NSIS_HOOK_PREUNINSTALL
+  ; Stop the GUI before clearing account data so an in-flight login or WebView
+  ; shutdown cannot recreate it. Keep all user data during updater replacement.
+  !insertmacro CheckIfAppIsRunning "${MAINBINARYNAME}.exe" "${PRODUCTNAME}"
+  ${If} $UpdateMode <> 1
+    DetailPrint "Removing Tunnel Link credentials, settings, and caches..."
+    nsExec::ExecToStack '"$INSTDIR\${MAINBINARYNAME}.exe" --clear-uninstall-data'
+    Pop $0
+    Pop $1
+    ${If} $0 != "0"
+      MessageBox MB_OK|MB_ICONSTOP "Credentials or application data could not be removed. Uninstallation has stopped; please retry using the Windows account that used the client." /SD IDOK
+      SetErrorLevel 1
+      Abort "Unable to remove application data."
+    ${EndIf}
+  ${EndIf}
+!macroend

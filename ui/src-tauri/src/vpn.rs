@@ -86,6 +86,7 @@ pub struct Controller {
     session: Arc<Mutex<Option<Session>>>,
     credential_io: Arc<Mutex<()>>,
     generation: Arc<AtomicU64>,
+    uninstalling: Arc<AtomicBool>,
     service: String,
 }
 
@@ -197,6 +198,7 @@ impl Controller {
             session: Arc::new(Mutex::new(None)),
             credential_io: Arc::new(Mutex::new(())),
             generation: Arc::new(AtomicU64::new(0)),
+            uninstalling: Arc::new(AtomicBool::new(false)),
             service,
         }
     }
@@ -215,6 +217,9 @@ impl Controller {
             return Ok(json!({ "ok": false, "error": "Credentials are too long." }));
         }
         let mut session = self.session.lock().unwrap();
+        if self.uninstalling.load(Ordering::SeqCst) {
+            return Err("Uninstallation is in progress.".into());
+        }
         if session.as_ref().is_some_and(|s| !s.thread.is_finished()) {
             return Ok(json!({ "ok": true, "state": self.data.lock().unwrap().state }));
         }
@@ -299,7 +304,25 @@ impl Controller {
         json!({ "ok": true })
     }
     fn keyring(&self) -> Result<keyring::Entry, String> {
-        keyring::Entry::new(&self.service, "vpn-account").map_err(|e| e.to_string())
+        crate::credentials::entry(&self.service)
+    }
+    #[cfg(any(target_os = "macos", windows, test))]
+    pub fn prepare_uninstall(&self) -> Result<(), String> {
+        if self.uninstalling.swap(true, Ordering::SeqCst) {
+            return Err("Uninstallation is already in progress.".into());
+        }
+        self.disconnect();
+        self.generation.fetch_add(1, Ordering::SeqCst);
+        let _guard = self.credential_io.lock().unwrap();
+        let result = crate::credentials::clear(&self.service);
+        if result.is_err() {
+            self.cancel_uninstall();
+        }
+        result
+    }
+    #[cfg(any(target_os = "macos", windows, test))]
+    pub fn cancel_uninstall(&self) {
+        self.uninstalling.store(false, Ordering::SeqCst);
     }
     pub fn credentials(&self) -> Result<Value, String> {
         let _guard = self.credential_io.lock().unwrap();
@@ -609,6 +632,27 @@ mod tests {
             false
         );
         assert!(controller.session.lock().unwrap().is_none());
+    }
+    #[test]
+    fn uninstall_blocks_connections_and_stale_credential_writes() {
+        let service = format!("com.tunnellink.uninstall-race-test.{}", std::process::id());
+        let controller = Controller::new(service);
+        let options = ConnectOptions {
+            username: "test-account".into(),
+            password: "test-only-secret".into(),
+            remember: true,
+        };
+        controller.generation.store(1, Ordering::SeqCst);
+        controller.persist(&options, 1).unwrap();
+        controller.prepare_uninstall().unwrap();
+        // A save queued by an earlier successful connection must not recreate it.
+        controller.persist(&options, 1).unwrap();
+        assert!(controller.credentials().unwrap()["credentials"].is_null());
+        assert!(controller.connect(options).is_err());
+        assert!(controller.session.lock().unwrap().is_none());
+        assert!(controller.prepare_uninstall().is_err());
+        controller.cancel_uninstall();
+        assert!(!controller.uninstalling.load(Ordering::SeqCst));
     }
     #[test]
     fn connected_render_provides_tunnel_addresses_not_remote_or_client_addresses() {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { ChevronRight, Info, LayoutDashboard, Terminal, X } from 'lucide-react';
 import { AboutDialog, AGREEMENT_REVISION } from './components/AboutDialog';
@@ -9,6 +9,7 @@ import { ConnectionOverview } from './components/ConnectionOverview';
 import { ExitDialog } from './components/ExitDialog';
 import { InstallDialog } from './components/InstallDialog';
 import { LogsDialog } from './components/LogsDialog';
+import { UninstallDialog } from './components/UninstallDialog';
 import { useVpnConnection } from './hooks/useVpnConnection';
 import { getMessages } from './messages';
 import { mergeUiCopy, type Locale, type UiCopy } from './ui-copy';
@@ -39,6 +40,11 @@ export default function App() {
   const [installPromptOpen, setInstallPromptOpen] = useState(false);
   const [installRequired, setInstallRequired] = useState(false);
   const [installBusy, setInstallBusy] = useState(false);
+  const [canUninstall, setCanUninstall] = useState(false);
+  const [uninstallOpen, setUninstallOpen] = useState(false);
+  const [uninstallBusy, setUninstallBusy] = useState(false);
+  const [uninstallError, setUninstallError] = useState('');
+  const uninstallPending = useRef(false);
   const [meta, setMeta] = useState({ name: '', version: '' });
   const {
     status,
@@ -87,6 +93,7 @@ export default function App() {
     let disposed = false;
     let unlisten: (() => void) | undefined;
     void listen('app-close-requested', () => {
+      if (uninstallPending.current) return;
       setLogsOpen(false);
       closeAuth();
       setAboutOpen(false);
@@ -126,6 +133,10 @@ export default function App() {
           platform === 'macos' &&
           localStorage.getItem('vpn-agreement-revision') !== AGREEMENT_REVISION;
         setInstallRequired(needsInstall);
+        setCanUninstall(
+          installation?.canUninstall === true ||
+            (platform === 'macos' && installation?.needsInstall === false),
+        );
         setAgreementRequired(needsAgreement);
         if (needsInstall) setInstallPromptOpen(true);
         else if (needsAgreement) setAboutOpen(true);
@@ -170,6 +181,20 @@ export default function App() {
       await window.vpn?.exit();
     } catch {
       setToast(t.exitFailed);
+    }
+  };
+
+  const uninstallApp = async () => {
+    if (!window.vpn || uninstallPending.current) return;
+    uninstallPending.current = true;
+    setUninstallBusy(true);
+    setUninstallError('');
+    try {
+      await window.vpn.uninstall();
+    } catch (error) {
+      uninstallPending.current = false;
+      setUninstallBusy(false);
+      setUninstallError(`${t.uninstallFailed}\n${String(error)}`);
     }
   };
 
@@ -277,7 +302,7 @@ export default function App() {
 
       <LogsDialog open={logsOpen} t={t} onClose={() => setLogsOpen(false)} onNotify={setToast} />
       <ConnectionErrorDialog
-        open={connectionErrorOpen}
+        open={connectionErrorOpen && !uninstallOpen}
         statusError={statusError}
         t={t}
         onClose={dismissConnectionError}
@@ -295,7 +320,7 @@ export default function App() {
         onExit={exitApp}
       />
       <AuthDialog
-        open={authOpen}
+        open={authOpen && !uninstallOpen}
         credentials={credentials}
         busy={busy}
         busyLabel={action === 'disconnecting' ? t.disconnecting : t.connecting}
@@ -320,6 +345,12 @@ export default function App() {
         agreementRequired={agreementRequired}
         appTitle={appTitle}
         clientVersion={clientVersion}
+        canUninstall={canUninstall}
+        onUninstall={() => {
+          setAboutOpen(false);
+          setUninstallError('');
+          setUninstallOpen(true);
+        }}
         t={t}
         onClose={() => setAboutOpen(false)}
         onAcceptAgreement={() => {
@@ -327,6 +358,18 @@ export default function App() {
           setAgreementRequired(false);
           setAboutOpen(false);
         }}
+      />
+      <UninstallDialog
+        open={uninstallOpen}
+        busy={uninstallBusy}
+        error={uninstallError}
+        t={t}
+        onClose={() => {
+          if (uninstallPending.current) return;
+          setUninstallOpen(false);
+          setAboutOpen(true);
+        }}
+        onConfirm={() => void uninstallApp()}
       />
     </div>
   );

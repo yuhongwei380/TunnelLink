@@ -2344,6 +2344,7 @@ dependencies = [
  "chrono",
  "keyring",
  "libc",
+ "objc2-foundation",
  "serde",
  "serde_json",
  "tauri",

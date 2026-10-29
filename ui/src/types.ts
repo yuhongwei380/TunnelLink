@@ -52,6 +52,7 @@ export type AppMeta = {
 
 export type InstallationState = {
   needsInstall: boolean;
+  canUninstall?: boolean;
   platform: string;
 };
 
@@ -65,6 +66,7 @@ export interface DesktopApi {
   getAppMeta(): Promise<AppMeta>;
   getInstallationState(): Promise<InstallationState>;
   installToApplications(): Promise<void>;
+  uninstall(): Promise<void>;
   getUiCopy(): Promise<unknown>;
   exit(): Promise<void>;
 }

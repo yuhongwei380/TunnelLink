@@ -4,6 +4,8 @@ import {
   ArrowRight,
   Copy,
   LockKeyhole,
+  Pause,
+  Play,
   RefreshCw,
   Search,
   Terminal,
@@ -25,41 +27,64 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [logsError, setLogsError] = useState('');
   const [logsLoading, setLogsLoading] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [query, setQuery] = useState('');
   const [logFilter, setLogFilter] = useState<LogFilter>('all');
   const logsPending = useRef(false);
+  const pausedRef = useRef(false);
+  const requestVersion = useRef(0);
   const logsDialogRef = useDialog(open);
   const consoleRef = useRef<HTMLElement>(null);
   const followLatest = useRef(true);
   const isDesktop = Boolean(window.vpn);
   const errorCount = logs.filter(isErrorLog).length;
 
-  const loadLogs = useCallback(async () => {
-    if (!window.vpn || logsPending.current) return;
-    logsPending.current = true;
-    setLogsLoading(true);
-    try {
-      const result = await window.vpn.getLogs();
-      if (!result.ok) throw new Error();
-      const entries = [...result.logs];
-      if (result.lastError) entries.push({ ts: '', source: 'status', line: result.lastError });
-      setLogs(entries);
-      setLogsError('');
-    } catch {
-      setLogsError(t.loadLogsFailed);
-    } finally {
-      setLogsLoading(false);
-      logsPending.current = false;
-    }
-  }, [t.loadLogsFailed]);
+  const loadLogs = useCallback(
+    async (automatic = false) => {
+      if (!window.vpn || logsPending.current || (automatic && pausedRef.current)) return;
+      const version = requestVersion.current;
+      logsPending.current = true;
+      setLogsLoading(true);
+      try {
+        const result = await window.vpn.getLogs();
+        // Pausing also freezes the result of an automatic request already in flight.
+        if (version !== requestVersion.current) return;
+        if (!result.ok) throw new Error();
+        const entries = [...result.logs];
+        if (result.lastError) entries.push({ ts: '', source: 'status', line: result.lastError });
+        setLogs(entries);
+        setLogsError('');
+      } catch {
+        if (version === requestVersion.current) setLogsError(t.loadLogsFailed);
+      } finally {
+        setLogsLoading(false);
+        logsPending.current = false;
+      }
+    },
+    [t.loadLogsFailed],
+  );
 
   useEffect(() => {
-    if (!open) return;
-    followLatest.current = true;
-    void loadLogs();
-    const timer = window.setInterval(() => void loadLogs(), 1000);
+    if (open) followLatest.current = true;
+    else {
+      requestVersion.current += 1;
+      pausedRef.current = false;
+      setPaused(false);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || paused) return;
+    void loadLogs(true);
+    const timer = window.setInterval(() => void loadLogs(true), 1000);
     return () => window.clearInterval(timer);
-  }, [open, loadLogs]);
+  }, [open, paused, loadLogs]);
+
+  const togglePaused = () => {
+    pausedRef.current = !pausedRef.current;
+    requestVersion.current += 1;
+    setPaused(pausedRef.current);
+  };
 
   const clearLogs = async () => {
     if (!window.vpn) return;
@@ -101,11 +126,11 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
           <p>{t.logsDesc}</p>
         </div>
         <div className="logs-heading-actions">
-          <span className="live-label">
+          <span className={`live-label ${paused ? 'is-paused' : ''}`} role="status">
             {isDesktop ? (
               <>
-                <i />
-                {t.live}
+                <i aria-hidden="true" />
+                {paused ? t.refreshPaused : t.live}
               </>
             ) : (
               t.preview
@@ -144,6 +169,16 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
             )}
           </div>
           <div className="logs-toolbar">
+            <button
+              className="logs-pause-button"
+              onClick={togglePaused}
+              disabled={!isDesktop}
+              aria-pressed={paused}
+              title={paused ? t.resumeRefresh : t.pauseRefresh}
+            >
+              {paused ? <Play size={16} /> : <Pause size={16} />}
+              <span>{paused ? t.resumeRefresh : t.pauseRefresh}</span>
+            </button>
             <button
               onClick={() => void loadLogs()}
               disabled={!isDesktop || logsLoading}

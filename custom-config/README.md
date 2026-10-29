@@ -18,7 +18,7 @@
 { "endpointAlias": "demo.vpn" }
 ```
 
-执行 `node build.mjs` 后，配置覆盖隔离源码中的 `resources/settings/log-privacy.json`，重新安装构建产物后生效。启用时，内置日志和连接错误提示中的域名、IPv4/IPv6 地址（包括 DNS 解析结果）及 VPN 配置中的远程端口统一替换为别名；复制日志也使用脱敏内容。为防止解析结果或重定向泄露，日志中其他识别到的网络地址也会被隐藏。实际连接、连接页 IP/网关及磁盘上的引擎临时原始日志不受影响。
+执行 `node build.mjs` 后，配置覆盖隔离源码中的 `resources/settings/log-privacy.json`，重新安装构建产物后生效。启用时，仅将配置中 `remote` 指定的服务器域名或地址、远程端口，以及引擎远端连接日志中识别到的公网 IPv4/IPv6 地址替换为别名；复制日志和连接错误提示使用相同规则。登录用户名、分配的虚拟 IP、隧道网关、本机地址、其他域名/IP 及流量计数保留原文，不再按“看起来像网络地址”统一隐藏。实际连接、连接页 IP/网关及磁盘上的引擎临时原始日志不受影响。
 
 删除该文件、移除 `endpointAlias` 或设置为 `null`，使用默认正常展示；直接执行平台打包命令时读取 `resources/settings/log-privacy.json`，其默认值为 `null`。
 

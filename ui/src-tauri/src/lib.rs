@@ -1,4 +1,7 @@
+mod credentials;
 mod log_privacy;
+#[cfg(any(target_os = "macos", windows, test))]
+mod uninstall;
 mod vpn;
 #[cfg(windows)]
 mod windows_process;
@@ -6,13 +9,147 @@ pub mod worker;
 
 #[cfg(target_os = "macos")]
 use std::path::{Path, PathBuf};
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", windows))]
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, Manager};
 use vpn::Controller;
 
 struct ExitApproval(AtomicBool);
+
+/// Runs before GUI/single-instance initialization, including from an uninstaller.
+pub fn clear_saved_credentials() -> Result<(), String> {
+    let config: serde_json::Value = serde_json::from_str(include_str!("../tauri.conf.json"))
+        .map_err(|error| error.to_string())?;
+    let service = config["identifier"]
+        .as_str()
+        .ok_or("Missing application identifier")?;
+    credentials::clear(service)
+}
+
+/// Runs from the Windows uninstaller after the GUI has exited.
+#[cfg(windows)]
+pub fn clear_uninstall_data() -> Result<(), String> {
+    let config: serde_json::Value = serde_json::from_str(include_str!("../tauri.conf.json"))
+        .map_err(|error| error.to_string())?;
+    let identifier = config["identifier"]
+        .as_str()
+        .ok_or("Missing application identifier")?;
+    let mut errors = Vec::new();
+    if let Err(error) = credentials::clear(identifier) {
+        errors.push(error);
+    }
+    if let Err(error) = uninstall::remove_windows_app_data(identifier) {
+        errors.push(format!("Unable to remove application data: {error}"));
+    }
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors.join("\n"))
+    }
+}
+
+#[cfg(target_os = "macos")]
+pub fn finish_uninstall(parent_pid: u32) -> i32 {
+    let result = serde_json::from_str::<serde_json::Value>(include_str!("../tauri.conf.json"))
+        .map_err(|e| e.to_string())
+        .and_then(|config| {
+            uninstall::finish(
+                parent_pid,
+                config["identifier"]
+                    .as_str()
+                    .ok_or("Missing application identifier")?,
+            )
+        });
+    if let Err(error) = result {
+        let _ = Command::new("/usr/bin/osascript")
+            .args(["-e", "on run argv\ndisplay alert \"Tunnel Link 卸载未完成 / Uninstall incomplete\" message (item 1 of argv) as warning\nend run"])
+            .arg(error).status();
+        return 1;
+    }
+    0
+}
+
+#[tauri::command]
+async fn app_uninstall(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Controller>,
+) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        use std::io::Write;
+        use std::process::Stdio;
+        let bundle = macos_app_bundle(&app).ok_or("Unable to locate the application bundle")?;
+        if !macos_app_is_installed(&bundle) {
+            return Err("Uninstall is only available for an installed application.".into());
+        }
+        let controller = state.inner().clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            controller.prepare_uninstall()?;
+            let result = (|| -> Result<(), String> {
+                let mut child =
+                    worker::command(std::env::current_exe().map_err(|e| e.to_string())?)
+                        .args(["--finish-uninstall", &std::process::id().to_string()])
+                        .stdin(Stdio::piped())
+                        .stdout(Stdio::null())
+                        .stderr(Stdio::null())
+                        .spawn()
+                        .map_err(|e| e.to_string())?;
+                let mut commit = child
+                    .stdin
+                    .take()
+                    .ok_or("Unable to prepare uninstall cleanup")?;
+                if let Err(error) = uninstall::trash_bundle(&bundle) {
+                    drop(commit);
+                    let _ = child.wait();
+                    return Err(error);
+                }
+                commit
+                    .write_all(b"uninstall\n")
+                    .map_err(|e| e.to_string())?;
+                drop(commit);
+                app.state::<ExitApproval>().0.store(true, Ordering::SeqCst);
+                app.exit(0);
+                Ok(())
+            })();
+            if result.is_err() {
+                controller.cancel_uninstall();
+            }
+            result
+        })
+        .await
+        .map_err(|e| e.to_string())?
+    }
+    #[cfg(windows)]
+    {
+        let executable = std::env::current_exe().map_err(|error| error.to_string())?;
+        let uninstaller = executable
+            .parent()
+            .ok_or("Unable to locate the application directory")?
+            .join("uninstall.exe");
+        if !uninstaller.is_file() {
+            return Err("Uninstall is only available for an installed application.".into());
+        }
+        let controller = state.inner().clone();
+        controller.prepare_uninstall()?;
+        let result = Command::new(&uninstaller)
+            .args(["/S", "/FROMAPP=1"])
+            .spawn()
+            .map_err(|error| format!("Unable to start the Windows uninstaller: {error}"));
+        if result.is_err() {
+            controller.cancel_uninstall();
+            return result.map(|_| ());
+        }
+        app.state::<ExitApproval>().0.store(true, Ordering::SeqCst);
+        app.exit(0);
+        Ok(())
+    }
+    #[cfg(not(any(target_os = "macos", windows)))]
+    {
+        let _ = (app, state);
+        Err("Use the system uninstaller on this platform.".into())
+    }
+}
 
 #[tauri::command]
 async fn vpn_connect(
@@ -107,8 +244,15 @@ fn app_get_installation_state(app: tauri::AppHandle) -> serde_json::Value {
     }
     #[cfg(not(target_os = "macos"))]
     {
+        #[cfg(windows)]
+        let can_uninstall = std::env::current_exe()
+            .ok()
+            .and_then(|path| path.parent().map(|parent| parent.join("uninstall.exe")))
+            .is_some_and(|path| path.is_file());
+        #[cfg(not(windows))]
+        let can_uninstall = false;
         let _ = app;
-        serde_json::json!({ "needsInstall": false, "platform": std::env::consts::OS })
+        serde_json::json!({ "needsInstall": false, "canUninstall": can_uninstall, "platform": std::env::consts::OS })
     }
 }
 
@@ -205,6 +349,7 @@ pub fn run() {
             app_get_meta,
             app_get_installation_state,
             app_install_to_applications,
+            app_uninstall,
             app_get_ui_copy,
             app_exit
         ])
