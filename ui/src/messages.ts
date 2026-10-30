@@ -110,6 +110,7 @@ export const MESSAGES = {
     latestEvents: '最近事件',
     account: '身份验证',
     switchUser: '切换用户',
+    currentUser: '当前用户',
     switchUserDesc: '输入其他账号，登录并建立连接。',
     switchUserConnectedDesc: '输入新账号，点击“登录并连接”后将断开当前连接。',
     viewLogs: '查看日志',
@@ -273,6 +274,7 @@ export const MESSAGES = {
     latestEvents: 'Latest events',
     account: 'AUTHENTICATION',
     switchUser: 'Switch user',
+    currentUser: 'Current user',
     switchUserDesc: 'Enter another account to sign in and connect.',
     switchUserConnectedDesc:
       'Enter another account. Signing in will disconnect your current connection.',

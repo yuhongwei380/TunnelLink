@@ -1,7 +1,7 @@
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  ArrowRightLeft,
+  Pencil,
   Clock3,
   Check,
   LoaderCircle,
@@ -16,6 +16,7 @@ import release from '../../../resources/settings/openvpn3-release.json';
 
 type Props = {
   profile?: VpnProfile;
+  connectedUsername?: string;
   status: VpnState;
   stats: VpnStats;
   statusError: string;
@@ -29,6 +30,7 @@ type Props = {
 
 export function ConnectionOverview({
   profile,
+  connectedUsername,
   status,
   stats,
   statusError,
@@ -74,32 +76,39 @@ export function ConnectionOverview({
       >
         <div className="connection-copy">
           <div className="connection-heading">
-            <h3>{profile?.displayName || t.overview}</h3>
-            <span
-              className={`status-badge ${connectionFailed ? 'status-error' : ''}`}
-              role="status"
-            >
-              <i aria-hidden="true" />
-              <span key={statusLabel} className="connection-label">
-                {statusLabel}
+            <div className="connection-heading-identity">
+              <h3>{profile?.displayName || t.overview}</h3>
+              <div className="connection-account-info">
+                <span>{t.currentUser}</span>
+                <strong>{connectedUsername || '—'}</strong>
+              </div>
+            </div>
+            <div className="connection-heading-controls">
+              <span
+                className={`status-badge ${connectionFailed ? 'status-error' : ''}`}
+                role="status"
+              >
+                <i aria-hidden="true" />
+                <span key={statusLabel} className="connection-label">
+                  {statusLabel}
+                </span>
               </span>
-            </span>
+              <button
+                type="button"
+                className="switch-user-button"
+                onClick={onSwitchUser}
+                disabled={disabled || busy || connecting || stopping || !profile?.requiresAuth}
+                aria-haspopup="dialog"
+                aria-label={t.switchUser}
+                title={t.switchUser}
+              >
+                <Pencil size={16} strokeWidth={1.7} aria-hidden="true" />
+              </button>
+            </div>
           </div>
           <p className="connection-state-copy">
             {connected ? t.connectedDesc : connecting ? t.connectingDesc : t.offlineDesc}
           </p>
-          <div className="connection-account-row">
-            <button
-              type="button"
-              className="switch-user-button"
-              onClick={onSwitchUser}
-              disabled={disabled || busy || connecting || stopping || !profile?.requiresAuth}
-              aria-haspopup="dialog"
-            >
-              <ArrowRightLeft size={15} strokeWidth={1.7} aria-hidden="true" />
-              <span>{t.switchUser}</span>
-            </button>
-          </div>
           <div className="connection-action-row">
             <button
               className={`connection-action ${connected || connecting ? 'secondary-action' : ''}`}

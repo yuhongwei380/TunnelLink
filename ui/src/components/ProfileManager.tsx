@@ -35,6 +35,17 @@ export function ProfileManager({ data, locale, locked, pending, onAction }: Prop
           disabled={locked || pending || !data}
           onSelect={(id) => void onAction('select', id)}
         />
+        {selected && (
+          <span className="profile-source-badge">
+            {selected.source === 'builtin'
+              ? cn
+                ? '内置配置'
+                : 'Built-in'
+              : cn
+                ? '导入配置'
+                : 'Imported'}
+          </span>
+        )}
         {data?.capabilities.profileImport.enabled && (
           <button
             className="profile-toolbar-button"
@@ -55,17 +66,8 @@ export function ProfileManager({ data, locale, locked, pending, onAction }: Prop
           {cn ? '管理' : 'Manage'}
         </button>
       </div>
-      {selected && (
+      {selected && (selected.description || selected.error) && (
         <div className="profile-description">
-          <span>
-            {selected.source === 'builtin'
-              ? cn
-                ? '内置配置'
-                : 'Built-in profile'
-              : cn
-                ? '导入配置'
-                : 'Imported profile'}
-          </span>
           {selected.description && <p>{selected.description}</p>}
           {selected.error && <p role="alert">{selected.error}</p>}
         </div>

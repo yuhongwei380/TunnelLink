@@ -82,6 +82,7 @@ export default function App() {
   };
   const {
     status,
+    connectedUsername,
     stats,
     statusError,
     connectionErrorOpen,
@@ -308,6 +309,7 @@ export default function App() {
               onAction={profileAction}
             />
             <ConnectionOverview
+              connectedUsername={connectedUsername}
               status={status}
               stats={stats}
               statusError={statusError}

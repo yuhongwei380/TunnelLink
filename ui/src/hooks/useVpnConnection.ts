@@ -18,6 +18,7 @@ export function useVpnConnection(
   profile?: VpnProfile,
 ) {
   const [status, setStatus] = useState<VpnState>('DISCONNECTED');
+  const [connectedUsername, setConnectedUsername] = useState('');
   const [stats, setStats] = useState<VpnStats>({
     uptime: 0,
     bytesIn: 0,
@@ -58,6 +59,7 @@ export function useVpnConnection(
     let active = true;
     operationVersion.current += 1;
     sessionCredentials.current = null;
+    setConnectedUsername('');
     attemptedCredentials.current = null;
     interacted.current = false;
     setCredentials({ username: '', password: '', remember: false });
@@ -102,6 +104,7 @@ export function useVpnConnection(
       if (data.state === 'CONNECTED') {
         if (attemptedCredentials.current) {
           sessionCredentials.current = attemptedCredentials.current;
+          setConnectedUsername(sessionCredentials.current.username);
           attemptedCredentials.current = null;
           if (!sessionCredentials.current.remember) {
             setCredentials((current) => ({ ...current, password: '' }));
@@ -111,6 +114,7 @@ export function useVpnConnection(
       } else if (data.state === 'CONNECTING') {
         setAction('connecting');
       } else {
+        setConnectedUsername('');
         setAction(null);
         if (attemptedCredentials.current || sessionCredentials.current) {
           attemptedCredentials.current = null;
@@ -311,6 +315,7 @@ export function useVpnConnection(
 
   return {
     status,
+    connectedUsername,
     stats,
     statusError,
     connectionErrorOpen,
