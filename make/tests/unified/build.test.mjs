@@ -499,6 +499,7 @@ test('platform options are forwarded without shell interpolation', () => {
   assert.equal(windows.command, 'powershell.exe');
   assert.ok(windows.args.includes(path.join(sourceDir, 'make/windows/package.ps1')));
   assert.deepEqual(windows.args.slice(-2), ['-ForceOpenVpnBuild', '-NoAutoInstallDeps']);
+  assert.equal(windows.env.OPENVPN_ENGINE_WORK_ROOT, path.dirname(sourceDir));
   const mac = packageInvocation(
     { sourceDir, platform: 'macos' },
     { skipEngine: true },

@@ -157,6 +157,8 @@ const HTTP_PROXY_AUTH_MODES: &[&str] = &[
     "", "stdin", "none", "basic", "ntlm", "ntlm2", "auto", "auto-nct",
 ];
 
+const TLS_CRYPT_V2_MODES: &[&str] = &["force-cookie", "allow-noncookie"];
+
 fn blocked_directive(name: &str, in_connection: bool) -> Option<&'static str> {
     if BLOCKED_DIRECTIVES.contains(&name) {
         return Some("unsupported or executable directive");
@@ -185,6 +187,12 @@ fn parse_endpoint(
 ) -> Result<Endpoint, String> {
     if !(2..=4).contains(&fields.len()) || fields[0].trim_start_matches("--") != "remote" {
         return Err("Invalid remote directive".into());
+    }
+    if fields[1].is_empty()
+        || fields[1].chars().count() > 255
+        || fields[1].chars().any(char::is_control)
+    {
+        return Err("Invalid remote host".into());
     }
     let (port, protocol) = match fields.len() {
         2 => (default_port, default_protocol.to_string()),
@@ -260,6 +268,23 @@ fn parse_connection_block(
                 }
                 protocol = parse_protocol(&fields[1])?;
             }
+            "tls-auth" => {
+                if !(2..=3).contains(&fields.len()) {
+                    return Err("Invalid tls-auth directive in <connection> block".into());
+                }
+            }
+            "tls-crypt" => {
+                if fields.len() != 2 {
+                    return Err("Invalid tls-crypt directive in <connection> block".into());
+                }
+            }
+            "tls-crypt-v2" => {
+                if !(2..=3).contains(&fields.len())
+                    || (fields.len() == 3 && !TLS_CRYPT_V2_MODES.contains(&fields[2].as_str()))
+                {
+                    return Err("Invalid tls-crypt-v2 directive in <connection> block".into());
+                }
+            }
             _ => {
                 if let Some(reason) = blocked_directive(name, true) {
                     return Err(format!(
@@ -273,6 +298,109 @@ fn parse_connection_block(
         .into_iter()
         .map(|fields| parse_endpoint(&fields, port, &protocol))
         .collect()
+}
+
+/// Replace file references used by connection-scoped control-channel options
+/// with OpenVPN's inline marker.  Connection profiles are emitted into the
+/// normalized profile before the shared inline material is appended, so the
+/// elevated worker never needs to resolve a path from the imported text.
+fn normalize_connection_block(
+    content: &str,
+    references: &mut BTreeMap<String, String>,
+) -> Result<String, String> {
+    let mut normalized = String::new();
+    for raw in content.lines() {
+        let fields = tokens(raw.trim())?;
+        let replacement = if fields.is_empty() {
+            None
+        } else {
+            let name = fields[0].trim_start_matches("--");
+            match name {
+                "tls-auth" => {
+                    if !(2..=3).contains(&fields.len()) || fields[1].is_empty() {
+                        return Err("Invalid tls-auth directive in <connection> block".into());
+                    }
+                    if fields.len() == 3 && !matches!(fields[2].as_str(), "0" | "1") {
+                        return Err("Invalid tls-auth direction in <connection> block".into());
+                    }
+                    if fields[1] == "[inline]" {
+                        None
+                    } else {
+                        if let Some(existing) = references.get(name) {
+                            if existing != &fields[1] {
+                                return Err(
+                                    "Different external tls-auth files in connection profiles are not supported"
+                                        .into(),
+                                );
+                            }
+                        } else {
+                            references.insert(name.to_string(), fields[1].clone());
+                        }
+                        Some(if fields.len() == 3 {
+                            format!("tls-auth [inline] {}", fields[2])
+                        } else {
+                            "tls-auth [inline]".into()
+                        })
+                    }
+                }
+                "tls-crypt" => {
+                    if fields.len() != 2 || fields[1].is_empty() {
+                        return Err("Invalid tls-crypt directive in <connection> block".into());
+                    }
+                    if fields[1] == "[inline]" {
+                        None
+                    } else {
+                        if let Some(existing) = references.get(name) {
+                            if existing != &fields[1] {
+                                return Err(
+                                    "Different external tls-crypt files in connection profiles are not supported"
+                                        .into(),
+                                );
+                            }
+                        } else {
+                            references.insert(name.to_string(), fields[1].clone());
+                        }
+                        Some("tls-crypt [inline]".into())
+                    }
+                }
+                "tls-crypt-v2" => {
+                    if !(2..=3).contains(&fields.len())
+                        || fields[1].is_empty()
+                        || (fields.len() == 3 && !TLS_CRYPT_V2_MODES.contains(&fields[2].as_str()))
+                    {
+                        return Err("Invalid tls-crypt-v2 directive in <connection> block".into());
+                    }
+                    if fields[1] == "[inline]" {
+                        None
+                    } else {
+                        if let Some(existing) = references.get(name) {
+                            if existing != &fields[1] {
+                                return Err(
+                                    "Different external tls-crypt-v2 files in connection profiles are not supported"
+                                        .into(),
+                                );
+                            }
+                        } else {
+                            references.insert(name.to_string(), fields[1].clone());
+                        }
+                        Some(if fields.len() == 3 {
+                            format!("tls-crypt-v2 [inline] {}", fields[2])
+                        } else {
+                            "tls-crypt-v2 [inline]".into()
+                        })
+                    }
+                }
+                _ => None,
+            }
+        };
+        if let Some(line) = replacement {
+            normalized.push_str(&line);
+        } else {
+            normalized.push_str(raw);
+        }
+        normalized.push('\n');
+    }
+    Ok(normalized)
 }
 
 const INLINE_BLOCKS: &[&str] = &[
@@ -297,6 +425,10 @@ const INLINE_BLOCKS: &[&str] = &[
 fn validate_inline_block(kind: &str, content: &str) -> Result<(), String> {
     if content.len() > MAX_MATERIAL || content.contains('\0') {
         return Err(format!("Invalid or oversized {kind} block"));
+    }
+    let closing = format!("</{kind}>");
+    if content.lines().any(|line| line.trim() == closing) {
+        return Err(format!("Invalid nested closing tag in {kind} block"));
     }
     match kind {
         "ca" | "cert" | "key" | "crl-verify" | "tls-auth" | "tls-crypt" => {
@@ -480,7 +612,7 @@ pub fn parse(
     let mut blocks = HashSet::new();
     let mut references = BTreeMap::new();
     let mut remote: Vec<Vec<String>> = Vec::new();
-    let mut connection_blocks: Vec<String> = Vec::new();
+    let mut connection_blocks: Vec<(String, u16, String)> = Vec::new();
     let mut port = 1194;
     let mut protocol = "udp".to_string();
     let mut requires_auth = false;
@@ -497,8 +629,15 @@ pub fn parse(
         let line = raw.trim();
         if let Some((kind, content)) = &mut block {
             if line == format!("</{kind}>") {
-                if kind == "connection" {
-                    connection_blocks.push(content.clone());
+                let normalized_content = if kind == "connection" {
+                    let normalized = normalize_connection_block(content, &mut references)?;
+                    // OpenVPN applies top-level connection defaults to blocks
+                    // that appear after the option.  Capture them at the
+                    // closing tag instead of applying the final global value
+                    // to every block (the engine still receives the original
+                    // ordering and performs the authoritative interpretation).
+                    connection_blocks.push((normalized.clone(), port, protocol.clone()));
+                    normalized
                 } else {
                     validate_inline_block(kind, content)?;
                     blocks.insert(kind.clone());
@@ -517,8 +656,9 @@ pub fn parse(
                     {
                         requires_auth = true;
                     }
-                }
-                output.push_str(&format!("<{kind}>\n{content}</{kind}>\n"));
+                    content.clone()
+                };
+                output.push_str(&format!("<{kind}>\n{normalized_content}</{kind}>\n"));
                 block = None;
             } else {
                 content.push_str(raw);
@@ -544,8 +684,8 @@ pub fn parse(
         }
         match name {
             "setenv" => {
-                if fields.len() >= 2 && fields[1] == "opt" {
-                    if fields.len() < 3 {
+                if fields.get(1).is_some_and(|value| value == "opt") {
+                    if fields.len() != 3 {
                         return Err("Invalid setenv opt directive".into());
                     }
                     if let Some(optional_name) = fields.get(2) {
@@ -565,7 +705,7 @@ pub fn parse(
                     client_cert_not_required = true;
                     // OpenVPN Connect uses this metadata directive to state
                     // that a profile intentionally has no client certificate.
-                } else if !(2..=3).contains(&fields.len()) {
+                } else if fields.len() != 3 {
                     return Err("Invalid setenv directive".into());
                 }
             }
@@ -574,6 +714,12 @@ pub fn parse(
                     return Err("client-cert-not-required does not accept arguments".into());
                 }
                 client_cert_not_required = true;
+                // This legacy server-side directive is intentionally not sent
+                // to OpenVPN 3 (which reports it as unsupported).  OpenVPN
+                // Connect's documented compatibility marker has the same
+                // meaning for a client profile.
+                output.push_str("setenv CLIENT_CERT 0\n");
+                continue;
             }
             "http-proxy" => {
                 if !(3..=5).contains(&fields.len()) {
@@ -585,11 +731,22 @@ pub fn parse(
                 // to open a profile-controlled path.
                 if fields.len() >= 4 && !HTTP_PROXY_AUTH_MODES.contains(&fields[3].as_str()) {
                     references.insert("http-proxy-user-pass".into(), fields[3].clone());
-                    let method = fields.get(4).map(String::as_str).unwrap_or("auto");
+                    let method = fields
+                        .get(4)
+                        .map(String::as_str)
+                        .filter(|value| !value.is_empty())
+                        .unwrap_or("auto");
                     if !HTTP_PROXY_AUTH_MODES.contains(&method) {
                         return Err("Invalid http-proxy authentication method".into());
                     }
-                    output.push_str(&format!("http-proxy {} {} auto\n", fields[1], fields[2]));
+                    // Once the credentials are moved into an inline block,
+                    // the auth method becomes the third argument.  Keeping a
+                    // supplied method (basic/ntlm/auto...) is important: it
+                    // changes proxy negotiation semantics.
+                    output.push_str(&format!(
+                        "http-proxy {} {} {}\n",
+                        fields[1], fields[2], method
+                    ));
                     continue;
                 }
             }
@@ -605,11 +762,30 @@ pub fn parse(
             | "tls-crypt-v2"
             | "pkcs12"
             | "http-proxy-user-pass" => {
-                let valid_arity = if name == "tls-auth" {
-                    (2..=3).contains(&fields.len())
-                } else {
-                    fields.len() == 2
+                if name == "dh" && fields.get(1).is_some_and(|value| value == "none") {
+                    // OpenVPN uses `dh none` to disable finite-field DH and
+                    // rely on ECDH.  `none` is a value, not a file path.
+                    output.push_str(raw);
+                    output.push('\n');
+                    continue;
+                }
+                let valid_arity = match name {
+                    "tls-auth" => (2..=3).contains(&fields.len()),
+                    "tls-crypt-v2" => (2..=3).contains(&fields.len()),
+                    _ => fields.len() == 2,
                 };
+                if name == "tls-auth"
+                    && fields.len() == 3
+                    && !matches!(fields[2].as_str(), "0" | "1")
+                {
+                    return Err("Invalid tls-auth direction".into());
+                }
+                if name == "tls-crypt-v2"
+                    && fields.len() == 3
+                    && !TLS_CRYPT_V2_MODES.contains(&fields[2].as_str())
+                {
+                    return Err("Invalid tls-crypt-v2 mode".into());
+                }
                 if !valid_arity || fields[1].is_empty() {
                     return Err(format!("Invalid {name} directive"));
                 }
@@ -624,12 +800,24 @@ pub fn parse(
                     // to OpenVPN's inline marker before appending the block.
                     output.push_str(&format!("{name} [inline] {}\n", fields[2]));
                 }
+                if name == "tls-crypt-v2" && fields.len() == 3 {
+                    output.push_str(&format!("{name} [inline] {}\n", fields[2]));
+                }
                 continue;
             }
             "auth-user-pass" => {
                 if fields.len() == 2 {
-                    references.insert(name.to_string(), fields[1].clone());
-                    continue;
+                    if fields[1].is_empty() || fields[1] == "stdin" {
+                        // An empty argument and stdin both mean interactive
+                        // credentials.  They are supplied through the app's
+                        // credential fields, not read from a profile path.
+                        requires_auth = true;
+                        output.push_str("auth-user-pass\n");
+                        continue;
+                    } else {
+                        references.insert(name.to_string(), fields[1].clone());
+                        continue;
+                    }
                 } else if fields.len() != 1 {
                     return Err("Invalid auth-user-pass directive".into());
                 }
@@ -732,6 +920,11 @@ pub fn parse(
             if kind == "key" {
                 private_key = Some(value.clone());
             }
+            if kind == "auth-user-pass"
+                && value.lines().filter(|line| !line.trim().is_empty()).count() < 2
+            {
+                requires_auth = true;
+            }
             output.push_str(&format!(
                 "<{kind}>\n{}\n</{kind}>\n",
                 value.trim().replace("\r\n", "\n")
@@ -747,8 +940,12 @@ pub fn parse(
         .into_iter()
         .map(|fields| parse_endpoint(&fields, port, &protocol))
         .collect::<Result<Vec<_>, _>>()?;
-    for connection in connection_blocks {
-        endpoints.extend(parse_connection_block(&connection, port, &protocol)?);
+    for (connection, default_port, default_protocol) in connection_blocks {
+        endpoints.extend(parse_connection_block(
+            &connection,
+            default_port,
+            &default_protocol,
+        )?);
     }
     if endpoints.is_empty() {
         return Err("The profile must contain a remote server".into());
@@ -850,7 +1047,7 @@ http-proxy proxy.example.test 8080 "" basic
         );
         assert!(parsed
             .content
-            .contains("http-proxy proxy.example.test 8080 auto"));
+            .contains("http-proxy proxy.example.test 8080 basic"));
     }
     #[test]
     fn tls_auth_direction_survives_external_material_import() {
@@ -874,17 +1071,128 @@ http-proxy proxy.example.test 8080 "" basic
         );
     }
     #[test]
+    fn connection_scoped_tls_material_is_normalized_without_losing_direction() {
+        let key = format!(
+            "-----BEGIN OpenVPN Static key V1-----\n{}\n-----END OpenVPN Static key V1-----",
+            "A".repeat(512)
+        );
+        let parsed = parse(
+            "client\nsetenv CLIENT_CERT 0\n<connection>\nremote vpn.example.test 11999 tcp\ntls-auth ta.key 1\n</connection>\n",
+            &BTreeMap::from([("tls-auth".into(), key)]),
+            false,
+        )
+        .unwrap();
+        assert!(parsed
+            .content
+            .contains("tls-auth [inline] 1\n</connection>"));
+        assert!(parsed.content.contains("<tls-auth>"));
+        assert_eq!(parsed.endpoints.len(), 1);
+        assert_eq!(parsed.endpoints[0].protocol, "tcp");
+    }
+    #[test]
+    fn connection_defaults_follow_profile_order() {
+        let parsed = parse(
+            "client\nsetenv CLIENT_CERT 0\nport 1111\nproto tcp\n<connection>\nremote first.example\n</connection>\nport 2222\nproto udp\n<connection>\nremote second.example\n</connection>\n",
+            &BTreeMap::new(),
+            false,
+        )
+        .unwrap();
+        assert_eq!(
+            parsed
+                .endpoints
+                .iter()
+                .map(|endpoint| (
+                    endpoint.host.as_str(),
+                    endpoint.port,
+                    endpoint.protocol.as_str()
+                ))
+                .collect::<Vec<_>>(),
+            vec![
+                ("first.example", 1111, "tcp"),
+                ("second.example", 2222, "udp")
+            ]
+        );
+    }
+    #[test]
+    fn tls_crypt_v2_optional_mode_is_preserved() {
+        let key = "-----BEGIN OpenVPN tls-crypt-v2 client key-----\nZm9v\n-----END OpenVPN tls-crypt-v2 client key-----";
+        let parsed = parse(
+            "client\nremote vpn.example.test\nsetenv CLIENT_CERT 0\ntls-crypt-v2 client.key force-cookie\n",
+            &BTreeMap::from([("tls-crypt-v2".into(), key.into())]),
+            false,
+        )
+        .unwrap();
+        assert!(parsed
+            .content
+            .contains("tls-crypt-v2 [inline] force-cookie"));
+        assert!(parsed.content.contains("<tls-crypt-v2>"));
+    }
+    #[test]
+    fn interactive_auth_user_pass_does_not_open_stdin_as_a_file() {
+        for directive in ["auth-user-pass stdin", "auth-user-pass \"\""] {
+            let parsed = parse(
+                &format!("client\nremote vpn.example.test\n{directive}\n"),
+                &BTreeMap::new(),
+                false,
+            )
+            .unwrap();
+            assert!(parsed.requires_auth);
+            assert!(parsed.dependencies.is_empty());
+            assert!(parsed.content.contains("auth-user-pass\n"));
+        }
+    }
+    #[test]
+    fn official_value_form_dh_none_is_not_treated_as_a_path() {
+        let parsed = parse(
+            "client\nremote vpn.example.test\nsetenv CLIENT_CERT 0\ndh none\n",
+            &BTreeMap::new(),
+            false,
+        )
+        .unwrap();
+        assert!(parsed.dependencies.is_empty());
+        assert!(parsed.content.contains("dh none\n"));
+        assert!(parse(
+            "client\nremote \"\"\nsetenv CLIENT_CERT 0\n",
+            &BTreeMap::new(),
+            false,
+        )
+        .is_err());
+    }
+    #[test]
+    fn external_auth_file_keeps_optional_password_semantics() {
+        let parsed = parse(
+            "client\nremote vpn.example.test\nauth-user-pass credentials.txt\n",
+            &BTreeMap::from([(String::from("auth-user-pass"), String::from("alice\n"))]),
+            false,
+        )
+        .unwrap();
+        assert!(parsed.requires_auth);
+        assert!(parsed.content.contains("<auth-user-pass>\nalice\n"));
+    }
+    #[test]
     fn password_profile_without_client_certificate_preserves_server_verification() {
         let ca = rcgen::generate_simple_self_signed(vec!["ca.test".into()]).unwrap();
         let input = format!("client\nremote vpn.example.com\nauth-user-pass\nclient-cert-not-required\nremote-cert-tls server\n<ca>\n{}</ca>\n", ca.cert.pem());
         let parsed = parse(&input, &BTreeMap::new(), false).unwrap();
         assert!(parsed.requires_auth);
         assert!(!parsed.has_client_certificate);
-        assert!(parsed.content.contains("client-cert-not-required\n"));
+        assert!(parsed.content.contains("setenv CLIENT_CERT 0\n"));
+        assert!(!parsed.content.contains("client-cert-not-required"));
         assert!(parsed.content.contains("remote-cert-tls server\n"));
         assert!(parsed
             .content
             .contains(&ca.cert.pem().replace("\r\n", "\n")));
+        let no_auth = parse(
+            "client\nremote vpn.example.com\nclient-cert-not-required\n",
+            &BTreeMap::new(),
+            false,
+        )
+        .unwrap();
+        assert!(!no_auth.requires_auth);
+        assert_eq!(
+            no_auth.content.matches("setenv CLIENT_CERT 0").count(),
+            1
+        );
         assert!(parse(
             "remote test\nauth-user-pass\nclient-cert-not-required extra\n",
             &BTreeMap::new(),
@@ -972,5 +1280,6 @@ http-proxy proxy.example.test 8080 "" basic
             false
         )
         .is_err());
+        assert!(validate_inline_block("auth-user-pass", "user\n</auth-user-pass>\n").is_err());
     }
 }

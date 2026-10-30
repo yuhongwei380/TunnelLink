@@ -6,6 +6,7 @@ param(
   [string]$Platform = "x64",
   [ValidateSet("tap0901", "tap_ovpnconnect")]
   [string]$TapComponentId = "tap0901",
+  [string]$WorkRoot = "",
   [string]$WorkDir = "",
   [switch]$KeepWorkDir,
   [switch]$Force,
@@ -26,7 +27,13 @@ if (-not $OpenVpn3Ref) { $OpenVpn3Ref = $releaseLock.ref }
 if ($OpenVpn3Ref -ne $releaseLock.ref) { throw 'OpenVpn3Ref must match resources/settings/openvpn3-release.json.' }
 if ([string]::IsNullOrWhiteSpace($WorkDir)) {
   $cacheVariant = ($Generator + '-' + $Platform + '-' + $Configuration + '-' + $TapComponentId + '-' + $ScriptVersion) -replace '[^A-Za-z0-9_.-]', '_'
-  $WorkDir = Join-Path $ProjectRoot (".cache/work/windows/openvpn3-" + $releaseLock.commit + '-' + $cacheVariant)
+  $cacheRoot = if ([string]::IsNullOrWhiteSpace($WorkRoot)) {
+    Join-Path $ProjectRoot ".cache/work/windows"
+  }
+  else {
+    [IO.Path]::GetFullPath($WorkRoot)
+  }
+  $WorkDir = Join-Path $cacheRoot ("openvpn3-" + $releaseLock.commit + '-' + $cacheVariant)
 }
 
 $SrcDir = Join-Path $WorkDir "openvpn3"

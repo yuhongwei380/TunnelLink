@@ -5745,9 +5745,233 @@ dialog[data-closing='true']::backdrop {
   color: var(--primary);
   background: var(--blue-tint);
 }
+
+/* Keep profile management aligned with the overview cards and centered in
+   the native dialog viewport. */
+.profile-panel {
+  margin: 20px 40px 0 24px;
+}
+.profile-dialog {
+  margin: auto;
+  color: var(--text);
+  background: #fff;
+  box-shadow: 0 24px 80px #00143233;
+  box-sizing: border-box;
+}
+
+@media (min-width: 841px) and (min-height: 580px) {
+  .profile-panel {
+    margin: 12px 32px 0 24px;
+    padding: 12px 16px;
+  }
+}
+
+@media (min-width: 561px) and (max-width: 840px) {
+  .profile-panel {
+    margin: 14px 16px 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .profile-panel {
+    margin: 12px 14px 0;
+  }
+}
+
+/* The fixed desktop window has enough room for the three overview cards when
+   their vertical rhythm is compact. Keep the main surface stable so a normal
+   840 × 640 window does not require a second scrolling step. */
+@media (min-width: 561px) and (min-height: 580px) {
+  .app-body .main-scroll {
+    overflow: hidden;
+  }
+  .profile-picker-row {
+    gap: 8px;
+  }
+  .profile-select-trigger {
+    min-height: 38px;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+  .profile-toolbar-button {
+    min-height: 32px;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  .profile-description {
+    margin-top: 4px;
+    font-size: 11px;
+  }
+  .profile-description p {
+    margin: 2px 0;
+  }
+}
+
+@media (min-width: 841px) and (min-height: 580px) {
+  .connection-page {
+    gap: 12px;
+    padding: 12px 32px 8px 24px;
+  }
+  .connection-page .connection-card {
+    height: 200px;
+    min-height: 200px;
+    padding: 24px 24px 18px;
+  }
+  .connection-page .details-card {
+    height: 200px;
+    min-height: 200px;
+    margin-top: 0;
+    padding: 14px 24px 10px;
+  }
+  .connection-page .workspace-footer {
+    display: none;
+  }
+}
+
+@media (min-width: 561px) and (max-width: 840px) and (min-height: 580px) {
+  .profile-panel {
+    margin: 10px 16px 0;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+  .profile-picker-label {
+    font-size: 11px;
+  }
+  .connection-page {
+    gap: 10px;
+    padding: 10px 16px 4px;
+  }
+  .connection-page .connection-card {
+    height: 180px;
+    min-height: 180px;
+    padding: 18px 18px 14px;
+    border-radius: 16px;
+  }
+  .connection-page .connection-copy h3 {
+    font-size: 26px;
+  }
+  .connection-page .connection-action-row {
+    margin-top: auto;
+  }
+  .connection-page .connection-action-row .status-badge {
+    margin-bottom: 10px;
+    font-size: 15px;
+  }
+  .connection-page .connection-action-row .connection-action {
+    min-height: 48px;
+    font-size: 20px;
+  }
+  .connection-page .details-card {
+    height: 180px;
+    min-height: 180px;
+    margin-top: 0;
+    padding: 12px 18px 8px;
+    border-radius: 16px;
+  }
+  .connection-page .details-card-main .panel-heading .eyebrow {
+    font-size: 16px;
+  }
+  .connection-page .details-card-main .gateway-identity h3 {
+    font-size: 20px;
+  }
+  .connection-page .details-card-main .gateway-net {
+    margin-top: 4px;
+  }
+  .connection-page .details-card-session {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+  .connection-page .details-card-session .metric-card .metric-label {
+    font-size: 12px;
+  }
+  .connection-page .details-card-session .metric-card > strong,
+  .connection-page .details-card:not(.is-connected) .metric-card > strong {
+    margin-top: 3px;
+    font-size: 16px;
+  }
+  .connection-page .details-card-footer {
+    margin-top: 4px;
+    padding-top: 4px;
+  }
+  .connection-page .workspace-footer {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .profile-select-chevron,
   .profile-select-option {
     transition: none;
+  }
+}
+
+/* Desktop overview spacing follows the approved layout direction: keep the
+   existing top-to-bottom order while using the unused lower space to give the
+   connection action card more presence. */
+@media (min-width: 841px) and (min-height: 580px) {
+  .app-body .main-scroll {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .profile-picker-row {
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+
+  .profile-panel {
+    flex: 0 0 auto;
+  }
+
+  .profile-picker-label {
+    flex: 0 0 auto;
+    color: #405a78;
+    font-size: clamp(16px, 1.35vw, 22px);
+    font-weight: 650;
+    letter-spacing: -0.25px;
+  }
+
+  .profile-select {
+    flex: 0 1 66.666%;
+    width: 66.666%;
+    max-width: 66.666%;
+    min-width: 240px;
+  }
+
+  .profile-select-trigger {
+    min-height: 48px;
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-size: 15px;
+  }
+
+  .connection-page {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    padding-bottom: 10px;
+  }
+
+  .connection-page .connection-card {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: clamp(230px, 28vh, 360px);
+    padding: 32px 32px 26px;
+  }
+
+  .connection-page .details-card {
+    flex: 0 0 auto;
+  }
+
+  .connection-page .connection-action-row .connection-action {
+    min-height: clamp(76px, 6.2vh, 92px);
+    border-radius: 16px;
+    font-size: clamp(26px, 2.1vw, 32px);
+  }
+
+  .connection-page .connection-action-row .connection-action svg {
+    width: 30px;
+    height: 30px;
   }
 }

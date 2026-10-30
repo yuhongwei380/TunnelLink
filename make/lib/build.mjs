@@ -482,6 +482,11 @@ export function packageInvocation(prepared, options, baseEnv = process.env) {
       ],
       env: {
         ...baseEnv,
+        // Keep the native engine checkout beside the isolated source tree.
+        // Git stores pack files below .git/objects, so nesting another
+        // .cache/work/windows path inside source can exceed Windows' path
+        // limit when the project itself lives in a deep directory.
+        OPENVPN_ENGINE_WORK_ROOT: path.dirname(prepared.sourceDir),
         OPENVPN_BUILD_OUTPUT: path.join(prepared.sourceDir, '.cache/packaging'),
       },
     };

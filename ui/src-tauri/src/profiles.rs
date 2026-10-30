@@ -481,16 +481,36 @@ pub fn import_dialog() -> Result<Option<(String, Parsed)>, String> {
     Ok(Some((name, parsed)))
 }
 
+fn eval_message(result: &str) -> Option<String> {
+    ["message=", "Main thread exception: ", "Error: "]
+        .into_iter()
+        .find_map(|prefix| {
+            result
+                .lines()
+                .find_map(|line| line.strip_prefix(prefix))
+                .map(str::trim)
+                .filter(|message| !message.is_empty())
+                .map(|message| message.chars().take(512).collect::<String>())
+        })
+}
+
 fn evaluate(parsed: &Parsed) -> Result<(), String> {
     use std::process::Stdio;
     use std::time::{Duration, Instant};
     let dir = tempfile::tempdir().map_err(|e| e.to_string())?;
     private_directory(dir.path())?;
-    let mut profile = tempfile::NamedTempFile::new_in(dir.path()).map_err(|e| e.to_string())?;
+    // ovpncli's merge stage requires the input path to carry an `.ovpn`
+    // extension, even when the profile contents are otherwise valid.
+    let mut profile = tempfile::Builder::new()
+        .prefix("openvpn-profile-")
+        .suffix(".ovpn")
+        .tempfile_in(dir.path())
+        .map_err(|e| e.to_string())?;
     profile
         .write_all(parsed.content.as_bytes())
         .map_err(|e| e.to_string())?;
-    let log = tempfile::NamedTempFile::new_in(dir.path()).map_err(|e| e.to_string())?;
+    let stdout_log = tempfile::NamedTempFile::new_in(dir.path()).map_err(|e| e.to_string())?;
+    let stderr_log = tempfile::NamedTempFile::new_in(dir.path()).map_err(|e| e.to_string())?;
     let mut command = crate::worker::command(crate::worker::engine_path()?);
     command.arg("--eval");
     if !parsed.has_client_certificate {
@@ -499,8 +519,8 @@ fn evaluate(parsed: &Parsed) -> Result<(), String> {
     let mut child = command
         .arg(profile.path())
         .stdin(Stdio::null())
-        .stdout(log.as_file().try_clone().map_err(|e| e.to_string())?)
-        .stderr(Stdio::null())
+        .stdout(stdout_log.as_file().try_clone().map_err(|e| e.to_string())?)
+        .stderr(stderr_log.as_file().try_clone().map_err(|e| e.to_string())?)
         .spawn()
         .map_err(|e| e.to_string())?;
     let start = Instant::now();
@@ -515,7 +535,19 @@ fn evaluate(parsed: &Parsed) -> Result<(), String> {
             }
         }
         if start.elapsed() > Duration::from_secs(15)
-            || log.as_file().metadata().map_err(|e| e.to_string())?.len() > 64 * 1024
+            || stdout_log
+                .as_file()
+                .metadata()
+                .map_err(|e| e.to_string())?
+                .len()
+                .saturating_add(
+                    stderr_log
+                        .as_file()
+                        .metadata()
+                        .map_err(|e| e.to_string())?
+                        .len(),
+                )
+                > 64 * 1024
         {
             let _ = child.kill();
             let _ = child.wait();
@@ -523,13 +555,29 @@ fn evaluate(parsed: &Parsed) -> Result<(), String> {
         }
         std::thread::sleep(Duration::from_millis(50));
     };
-    let result = read_text(log.path(), 64 * 1024)?;
+    let stdout = read_text(stdout_log.path(), 64 * 1024)?;
+    let stderr = read_text(stderr_log.path(), 64 * 1024)?;
+    let result = [stdout.as_str(), stderr.as_str()]
+        .into_iter()
+        .filter(|value| !value.is_empty())
+        .collect::<Vec<_>>()
+        .join("\n");
     let field = |key: &str| result.lines().find_map(|line| line.strip_prefix(key));
     if !status.success() || field("error=") != Some("0") {
-        return Err(
-            "The bundled OpenVPN engine rejected this profile. Check its options and certificates."
-                .into(),
-        );
+        let detail = eval_message(&result).or_else(|| {
+            status
+                .code()
+                .map(|code| format!("engine exited with status {code}"))
+        });
+        return Err(match detail {
+            Some(message) => format!(
+                "The bundled OpenVPN engine rejected this profile: {message}"
+            ),
+            None => {
+                "The bundled OpenVPN engine rejected this profile. Check its options and certificates."
+                    .into()
+            }
+        });
     }
     if field("privateKeyPasswordRequired=") != Some("0")
         || field("externalPki=") != Some("0")
@@ -548,6 +596,19 @@ fn evaluate(parsed: &Parsed) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn engine_validation_error_preserves_diagnostic_message() {
+        let output = "EVAL PROFILE\nerror=1\nmessage=ERR_PROFILE_GENERIC: unsupported directive\nautologin=0\n";
+        assert_eq!(
+            eval_message(output).as_deref(),
+            Some("ERR_PROFILE_GENERIC: unsupported directive")
+        );
+        assert_eq!(
+            eval_message("error=1\nmessage=\nMain thread exception: bad profile\n").as_deref(),
+            Some("bad profile")
+        );
+    }
+
     #[test]
     fn profiles_survive_restart_and_have_independent_identity() {
         if !import_enabled() {

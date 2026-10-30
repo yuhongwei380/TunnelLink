@@ -236,4 +236,4 @@ node build.mjs --builtin-profile=disabled --profile-import=enabled
 
 直接 Cargo/Tauri 构建使用 resources/settings/client-features.json，Rust 构建脚本同样验证能力组合。用于代码检查且本地尚无引擎/驱动资源时，可临时设置 TAURI_CONFIG 为 {"bundle":{"resources":[]}}；该方式仅用于检查和测试，不可用于发布安装包。
 
-导入支持内嵌材料以及通过原生选择器提供的外部 CA、客户端证书和未加密私钥。支持账号密码、仅证书和组合认证；不支持加密私钥、PKCS#12、MFA、脚本、配置包含和外部 TLS 静态密钥文件。导入会检查 PEM、证书与私钥匹配，并调用随包引擎 --eval；没有随包引擎时不能完成导入。引擎拒绝的配置不会保存。
+导入按 OpenVPN 2.6 的配置文件语法处理注释、引号、转义、多个 `remote`、多个 `<connection>` 块和官方 inline 块；普通客户端指令交给随包 OpenVPN 3 引擎校验，不再维护一份不完整的自定义指令白名单。配置中的外部 `ca`、`cert`、`key`、`extra-certs`、`crl-verify`、`dh`、`pkcs12`、`auth-user-pass`、`http-proxy-user-pass`、`tls-auth`、`tls-crypt` 和 `tls-crypt-v2` 文件会在导入时由原生选择器明确选择并转换为 inline 材料。支持账号密码、仅证书和组合认证；`client-cert-not-required` 会转换为 OpenVPN Connect 使用的 `setenv CLIENT_CERT 0`。脚本、插件、配置包含、任意输出路径、加密私钥、硬件令牌、MFA，以及 OpenVPN Connect 明确不支持的模式仍会拒绝。导入会检查 PEM、证书与私钥匹配，并调用随包引擎 `--eval`；没有随包引擎时不能完成导入。引擎拒绝的配置不会保存。

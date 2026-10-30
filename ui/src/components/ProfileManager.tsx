@@ -67,11 +67,6 @@ export function ProfileManager({ data, locale, locked, pending, onAction }: Prop
                 : 'Imported profile'}
           </span>
           {selected.description && <p>{selected.description}</p>}
-          {selected.endpoints.map((endpoint, index) => (
-            <p key={index}>
-              {endpoint.host}:{endpoint.port} · {endpoint.protocol}
-            </p>
-          ))}
           {selected.error && <p role="alert">{selected.error}</p>}
         </div>
       )}

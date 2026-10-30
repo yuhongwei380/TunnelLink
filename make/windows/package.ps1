@@ -12,6 +12,12 @@ Set-Location $ProjectRoot
 $OpenVpnBinDir = Join-Path $ProjectRoot ".cache\native\bin\windows-x64"
 $OpenVpnExe = Join-Path $ProjectRoot ".cache\native\bin\windows-x64\ovpncli.exe"
 $BuildOpenVpnScript = Join-Path $PSScriptRoot "build-openvpn3.ps1"
+$OpenVpnEngineWorkRoot = if ($env:OPENVPN_ENGINE_WORK_ROOT) {
+  [IO.Path]::GetFullPath($env:OPENVPN_ENGINE_WORK_ROOT)
+}
+else {
+  Join-Path $ProjectRoot ".cache\work\windows"
+}
 
 & node make/engine-cache.mjs verify windows x64 Release tap0901
 $engineMatchesBundledDriver = $LASTEXITCODE -eq 0
@@ -25,7 +31,7 @@ if ($SkipOpenVpnBuild) {
 }
 elseif ($ForceOpenVpnBuild -or -not $engineMatchesBundledDriver) {
   $autoInstall = if ($NoAutoInstallDeps) { $false } else { $true }
-  & $BuildOpenVpnScript -AutoInstallDeps:$autoInstall -Force:$ForceOpenVpnBuild
+  & $BuildOpenVpnScript -AutoInstallDeps:$autoInstall -Force:$ForceOpenVpnBuild -WorkRoot $OpenVpnEngineWorkRoot
 }
 else {
   Write-Host "Existing ovpncli.exe found: $OpenVpnExe"

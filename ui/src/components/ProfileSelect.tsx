@@ -131,18 +131,13 @@ export function ProfileSelect({ profiles, selectedId, disabled, locale, onSelect
                     ? cn
                       ? '配置不可用，请检查或重新导入'
                       : 'Unavailable — check or reimport'
-                    : [
-                        profile.source === 'builtin'
-                          ? cn
-                            ? '内置'
-                            : 'Built-in'
-                          : cn
-                            ? '导入'
-                            : 'Imported',
-                        profile.endpoints[0]?.host,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
+                    : profile.source === 'builtin'
+                      ? cn
+                        ? '内置'
+                        : 'Built-in'
+                      : cn
+                        ? '导入'
+                        : 'Imported'}
                 </span>
               </span>
               {profile.id === selectedId && <Check size={16} strokeWidth={2} aria-hidden="true" />}
