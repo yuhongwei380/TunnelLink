@@ -20,20 +20,39 @@ param(
 $ErrorActionPreference = "Stop"
 $ScriptVersion = "2026-10-28.1"
 
+function Get-EngineCacheDirectoryName([string]$Commit, [string]$Variant) {
+  $shortCommit = $Commit.Substring(0, [Math]::Min(12, $Commit.Length)).ToLowerInvariant()
+  $identityBytes = [Text.Encoding]::UTF8.GetBytes($Commit + "`n" + $Variant)
+  $sha256 = [Security.Cryptography.SHA256]::Create()
+  try {
+    $identityHash = [BitConverter]::ToString($sha256.ComputeHash($identityBytes)).Replace('-', '').ToLowerInvariant()
+  }
+  finally {
+    $sha256.Dispose()
+  }
+  return "ovpn3-$shortCommit-$($identityHash.Substring(0, 12))"
+}
+
 $ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 . (Join-Path $PSScriptRoot 'openssl.ps1')
+$DependencyCacheRoot = if ($env:OPENVPN_DEPENDENCY_CACHE_ROOT) {
+  [IO.Path]::GetFullPath($env:OPENVPN_DEPENDENCY_CACHE_ROOT)
+}
+else {
+  Join-Path $ProjectRoot ".cache/deps"
+}
 $releaseLock = Get-Content -LiteralPath (Join-Path $ProjectRoot 'resources/settings/openvpn3-release.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 if (-not $OpenVpn3Ref) { $OpenVpn3Ref = $releaseLock.ref }
 if ($OpenVpn3Ref -ne $releaseLock.ref) { throw 'OpenVpn3Ref must match resources/settings/openvpn3-release.json.' }
 if ([string]::IsNullOrWhiteSpace($WorkDir)) {
-  $cacheVariant = ($Generator + '-' + $Platform + '-' + $Configuration + '-' + $TapComponentId + '-' + $ScriptVersion) -replace '[^A-Za-z0-9_.-]', '_'
+  $cacheVariant = ($Generator, $Platform, $Configuration, $TapComponentId, $ScriptVersion) -join "`n"
   $cacheRoot = if ([string]::IsNullOrWhiteSpace($WorkRoot)) {
     Join-Path $ProjectRoot ".cache/work/windows"
   }
   else {
     [IO.Path]::GetFullPath($WorkRoot)
   }
-  $WorkDir = Join-Path $cacheRoot ("openvpn3-" + $releaseLock.commit + '-' + $cacheVariant)
+  $WorkDir = Join-Path $cacheRoot (Get-EngineCacheDirectoryName $releaseLock.commit $cacheVariant)
 }
 
 $SrcDir = Join-Path $WorkDir "openvpn3"
@@ -117,8 +136,8 @@ function Get-AsioIncludeOrNull {
   }
 
   $candidates = @(
-    (Join-Path $ProjectRoot ".cache\deps\asio\asio\include"),
-    (Join-Path $ProjectRoot ".cache\deps\asio\include")
+    (Join-Path $DependencyCacheRoot "asio\asio\include"),
+    (Join-Path $DependencyCacheRoot "asio\include")
   )
   foreach ($candidate in $candidates) {
     if (Test-AsioIncludeValid $candidate) {
@@ -140,8 +159,8 @@ function Get-FmtIncludeOrNull {
   }
 
   $candidates = @(
-    (Join-Path $ProjectRoot ".cache\deps\fmt-master\include"),
-    (Join-Path $ProjectRoot ".cache\deps\fmt\include")
+    (Join-Path $DependencyCacheRoot "fmt-master\include"),
+    (Join-Path $DependencyCacheRoot "fmt\include")
   )
   foreach ($candidate in $candidates) {
     if (Test-FmtIncludeValid $candidate) {
@@ -298,7 +317,7 @@ function Ensure-AsioIncludeDir {
     throw "ASIO include dir not found. Set ASIO_INCLUDE_DIR to a folder containing asio.hpp."
   }
 
-  $thirdPartyRoot = Join-Path $ProjectRoot ".cache/deps"
+  $thirdPartyRoot = $DependencyCacheRoot
   $asioRoot = Join-Path $thirdPartyRoot "asio"
   $zipPath = Join-Path $thirdPartyRoot "asio-master.zip"
 
@@ -332,7 +351,7 @@ function Ensure-FmtIncludeDir {
     throw "fmt include dir not found. Set FMT_INCLUDE_DIR to a folder containing fmt/core.h."
   }
 
-  $thirdPartyRoot = Join-Path $ProjectRoot ".cache/deps"
+  $thirdPartyRoot = $DependencyCacheRoot
   $fmtRoot = Join-Path $thirdPartyRoot "fmt-master"
   $zipPath = Join-Path $thirdPartyRoot "fmt-master.zip"
 
@@ -359,7 +378,7 @@ function Ensure-FmtIncludeDir {
 function Install-CMakeFallbackMsi {
   $isArm64 = $env:PROCESSOR_ARCHITECTURE -eq "ARM64"
   $url = if ($isArm64) { $CMakeMsiUrlArm64 } else { $CMakeMsiUrlX64 }
-  $downloadDirectory = Join-Path $ProjectRoot '.cache/downloads'
+  $downloadDirectory = Join-Path $DependencyCacheRoot 'downloads'
   New-Item -ItemType Directory -Path $downloadDirectory -Force | Out-Null
   $msi = Join-Path $downloadDirectory ([System.IO.Path]::GetFileName($url))
 

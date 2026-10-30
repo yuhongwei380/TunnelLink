@@ -11,12 +11,12 @@ const inheritedPath = process.env.PATH || process.env.Path || '';
 for (const key of Object.keys(env)) if (key.toLowerCase() === 'path') delete env[key];
 env.PATH = path.dirname(process.execPath) + path.delimiter + inheritedPath;
 // Support the project-local toolchain without changing the user's global PATH.
-const localCargo = path.join(root, '.cache/rust/cargo');
+const localCargo = path.join(env.TUNNEL_BUILD_CACHE_ROOT, 'rust/cargo');
 if (
   fs.existsSync(path.join(localCargo, 'bin', process.platform === 'win32' ? 'cargo.exe' : 'cargo'))
 ) {
   env.CARGO_HOME = localCargo;
-  env.RUSTUP_HOME = path.join(root, '.cache/rust/rustup');
+  env.RUSTUP_HOME = path.join(env.TUNNEL_BUILD_CACHE_ROOT, 'rust/rustup');
   env.PATH = path.join(localCargo, 'bin') + path.delimiter + env.PATH;
 }
 const args = process.argv.slice(2);

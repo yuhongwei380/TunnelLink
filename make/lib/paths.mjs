@@ -4,22 +4,33 @@ import { fileURLToPath } from 'node:url';
 
 export const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
+function buildCacheRoot(root, base = process.env) {
+  return base.TUNNEL_BUILD_CACHE_ROOT
+    ? path.resolve(root, base.TUNNEL_BUILD_CACHE_ROOT)
+    : path.join(root, '.cache');
+}
+
 export function buildEnvironment(root = projectRoot, base = process.env) {
-  const temporary = path.join(root, '.cache/tmp');
+  // Unified builds run from an isolated source checkout. Keep compiler and
+  // download caches at the caller-provided project cache so tool-generated
+  // paths do not gain another .cache/work/<platform>/source prefix.
+  const cacheRoot = buildCacheRoot(root, base);
+  const temporary = path.join(cacheRoot, 'tmp');
   fs.mkdirSync(temporary, { recursive: true, mode: 0o700 });
   return {
     ...base,
+    TUNNEL_BUILD_CACHE_ROOT: cacheRoot,
     TMPDIR: temporary,
     TMP: temporary,
     TEMP: temporary,
-    SWC_NATIVE_BINDING_CACHE: path.join(root, '.cache/swc'),
-    npm_config_cache: path.join(root, '.cache/npm'),
-    CARGO_TARGET_DIR: path.join(root, '.cache/cargo-target'),
+    SWC_NATIVE_BINDING_CACHE: path.join(cacheRoot, 'swc'),
+    npm_config_cache: path.join(cacheRoot, 'npm'),
+    CARGO_TARGET_DIR: path.join(cacheRoot, 'cargo-target'),
   };
 }
 
 export async function createTempDirectory(prefix, root = projectRoot) {
-  const directory = path.join(root, '.cache/tmp');
+  const directory = path.join(buildCacheRoot(root), 'tmp');
   await fs.promises.mkdir(directory, { recursive: true, mode: 0o700 });
   return fs.promises.mkdtemp(path.join(directory, prefix));
 }

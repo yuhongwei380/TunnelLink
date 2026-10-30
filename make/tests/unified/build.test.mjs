@@ -489,19 +489,36 @@ test('concurrent builds are excluded and errors release the lock', async (t) => 
   await assert.doesNotReject(withBuildLock(f.root, 'windows', async () => {}));
 });
 
-test('platform options are forwarded without shell interpolation', () => {
+test('platform options are forwarded without shell interpolation', (t) => {
   const sourceDir = path.join(projectRoot, '.cache/work/source with $spaces');
+  const preparedRoot = path.join(fixtureRoot, 'package invocation project');
+  t.after(() => fs.rm(preparedRoot, { recursive: true, force: true }));
   const windows = packageInvocation(
-    { sourceDir, platform: 'windows' },
+    { root: preparedRoot, sourceDir, platform: 'windows' },
     { forceEngine: true, noAutoInstallDeps: true },
     {},
   );
   assert.equal(windows.command, 'powershell.exe');
   assert.ok(windows.args.includes(path.join(sourceDir, 'make/windows/package.ps1')));
   assert.deepEqual(windows.args.slice(-2), ['-ForceOpenVpnBuild', '-NoAutoInstallDeps']);
-  assert.equal(windows.env.OPENVPN_ENGINE_WORK_ROOT, path.dirname(sourceDir));
+  const cacheRoot = path.join(preparedRoot, '.cache');
+  assert.equal(windows.env.TUNNEL_BUILD_CACHE_ROOT, cacheRoot);
+  assert.equal(windows.env.CARGO_TARGET_DIR, path.join(cacheRoot, 'cargo-target'));
+  assert.equal(windows.env.npm_config_cache, path.join(cacheRoot, 'npm'));
+  assert.equal(windows.env.TEMP, path.join(cacheRoot, 'tmp'));
+  assert.equal(windows.env.OPENVPN_ENGINE_WORK_ROOT, path.join(cacheRoot, 'work/windows'));
+  assert.equal(windows.env.OPENVPN_DEPENDENCY_CACHE_ROOT, path.join(cacheRoot, 'deps'));
+  for (const directory of [
+    windows.env.CARGO_TARGET_DIR,
+    windows.env.npm_config_cache,
+    windows.env.TEMP,
+    windows.env.OPENVPN_ENGINE_WORK_ROOT,
+    windows.env.OPENVPN_DEPENDENCY_CACHE_ROOT,
+  ]) {
+    assert.equal(path.relative(sourceDir, directory).startsWith(`..${path.sep}`), true);
+  }
   const mac = packageInvocation(
-    { sourceDir, platform: 'macos' },
+    { root: preparedRoot, sourceDir, platform: 'macos' },
     { skipEngine: true },
     { APPLE_SIGNING_IDENTITY: 'test identity', FORCE_OPENVPN3_BUILD: '1' },
   );
@@ -510,6 +527,8 @@ test('platform options are forwarded without shell interpolation', () => {
   assert.equal(mac.env.FORCE_OPENVPN3_BUILD, '0');
   assert.equal(mac.env.SKIP_OPENVPN3_BUILD, '1');
   assert.equal(mac.env.APPLE_SIGNING_IDENTITY, 'test identity');
+  assert.equal(mac.env.CARGO_TARGET_DIR, path.join(cacheRoot, 'cargo-target'));
+  assert.equal(mac.env.OPENVPN_ENGINE_WORK_ROOT, path.join(cacheRoot, 'work/macos'));
 });
 
 async function artifactFixture(t) {

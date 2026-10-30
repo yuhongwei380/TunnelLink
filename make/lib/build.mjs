@@ -356,7 +356,7 @@ export async function prepareSource({ root, platform, upstream, profile }) {
     await fs.writeFile(destination, profile.contents, { mode: 0o600 });
   }
   await fs.chmod(destination, 0o600);
-  return { sourceDir, platform, upstream, profileSha256: profile.sha256 };
+  return { root, sourceDir, platform, upstream, profileSha256: profile.sha256 };
 }
 
 export async function prepareLocalSource({
@@ -413,8 +413,8 @@ export async function prepareLocalSource({
     if (logPrivacy) {
       await fs.writeFile(path.join(stagingDir, 'resources/settings/log-privacy.json'), logPrivacy);
     }
-    // Update source files in place: Cargo/CMake caches and node_modules belong
-    // to this build tree and must survive subsequent snapshots.
+    // Update source files in place: generated resources and node_modules belong
+    // to this isolated tree and must survive subsequent snapshots.
     await syncLocalSource(stagingDir, sourceDir);
     // Seed prepared inputs once. A later build in the isolated tree may have
     // produced a newer cache than the repository root.
@@ -430,7 +430,7 @@ export async function prepareLocalSource({
   }
   const destination = path.join(sourceDir, profileTarget);
   await fs.chmod(destination, 0o600);
-  return { sourceDir, platform, upstream, profileSha256: profile.sha256 };
+  return { root, sourceDir, platform, upstream, profileSha256: profile.sha256 };
 }
 
 async function syncLocalSource(source, destination, relative = '') {
@@ -467,6 +467,11 @@ async function syncLocalSource(source, destination, relative = '') {
 }
 
 export function packageInvocation(prepared, options, baseEnv = process.env) {
+  const cacheRoot = path.join(prepared.root, '.cache');
+  const sharedEnv = buildEnvironment(prepared.sourceDir, {
+    ...baseEnv,
+    TUNNEL_BUILD_CACHE_ROOT: cacheRoot,
+  });
   if (prepared.platform === 'windows') {
     return {
       command: 'powershell.exe',
@@ -481,12 +486,13 @@ export function packageInvocation(prepared, options, baseEnv = process.env) {
         ...(options.noAutoInstallDeps ? ['-NoAutoInstallDeps'] : []),
       ],
       env: {
-        ...baseEnv,
+        ...sharedEnv,
         // Keep the native engine checkout beside the isolated source tree.
         // Git stores pack files below .git/objects, so nesting another
         // .cache/work/windows path inside source can exceed Windows' path
         // limit when the project itself lives in a deep directory.
-        OPENVPN_ENGINE_WORK_ROOT: path.dirname(prepared.sourceDir),
+        OPENVPN_ENGINE_WORK_ROOT: path.join(cacheRoot, 'work/windows'),
+        OPENVPN_DEPENDENCY_CACHE_ROOT: path.join(cacheRoot, 'deps'),
         OPENVPN_BUILD_OUTPUT: path.join(prepared.sourceDir, '.cache/packaging'),
       },
     };
@@ -495,7 +501,8 @@ export function packageInvocation(prepared, options, baseEnv = process.env) {
     command: 'bash',
     args: [path.join(prepared.sourceDir, 'make/macos/package.sh')],
     env: {
-      ...baseEnv,
+      ...sharedEnv,
+      OPENVPN_ENGINE_WORK_ROOT: path.join(cacheRoot, 'work/macos'),
       OPENVPN_BUILD_OUTPUT: path.join(prepared.sourceDir, '.cache/packaging'),
       FORCE_OPENVPN3_BUILD: options.forceEngine ? '1' : '0',
       SKIP_OPENVPN3_BUILD: options.skipEngine ? '1' : '0',
@@ -509,7 +516,7 @@ export async function buildPackage(prepared, options) {
   await fs.rm(path.join(prepared.sourceDir, '.cache/packaging/build-verification.json'), {
     force: true,
   });
-  const invocation = packageInvocation(prepared, options, buildEnvironment(prepared.sourceDir));
+  const invocation = packageInvocation(prepared, options);
   run(invocation.command, invocation.args, { cwd: prepared.sourceDir, env: invocation.env });
 }
 

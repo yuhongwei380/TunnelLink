@@ -47,6 +47,16 @@ Assert-True (-not (Test-OpenSslSdk $version4)) 'The installed Light 4.x package 
 $script:release = Read-OpenSslRelease
 Assert-True ($script:release.version -match '^3\.') 'The production SDK must pin OpenSSL 3.'
 Assert-True ($script:release.url -match '\.zip$') 'Use a portable ZIP, not a conflicting system installer.'
+$previousDependencyCacheRoot = $env:OPENVPN_DEPENDENCY_CACHE_ROOT
+try {
+    $externalDependencyCache = Join-Path $WorkDirectory 'External Dependency Cache'
+    $env:OPENVPN_DEPENDENCY_CACHE_ROOT = $externalDependencyCache
+    Assert-True ((Get-OpenSslCacheDirectory $script:release) -eq (Join-Path $externalDependencyCache "openssl-$($script:release.version)")) 'Unified builds must keep OpenSSL outside the isolated source tree.'
+}
+finally {
+    if ($null -eq $previousDependencyCacheRoot) { Remove-Item Env:OPENVPN_DEPENDENCY_CACHE_ROOT -ErrorAction SilentlyContinue }
+    else { $env:OPENVPN_DEPENDENCY_CACHE_ROOT = $previousDependencyCacheRoot }
+}
 $script:cache = Join-Path $WorkDirectory 'Project SDK Cache With Spaces'
 $script:roots = @($version4, $light, $complete)
 function Get-OpenSslCandidates {

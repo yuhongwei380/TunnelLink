@@ -4,10 +4,16 @@ $ProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../..'))
 $parseErrors = $null
 $ast = [Management.Automation.Language.Parser]::ParseFile((Join-Path $ProjectRoot 'make/windows/build-openvpn3.ps1'), [ref]$null, [ref]$parseErrors)
 if ($parseErrors) { throw ($parseErrors | Out-String) }
-foreach ($name in @('Write-PatchedFile', 'Patch-OpenVpn3ForMinimalWindowsCliBuild')) {
+foreach ($name in @('Get-EngineCacheDirectoryName', 'Write-PatchedFile', 'Patch-OpenVpn3ForMinimalWindowsCliBuild')) {
     $definition = $ast.Find({ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name }, $true)
     . ([scriptblock]::Create($definition.Extent.Text))
 }
+$commit = '4f3bdef73245d4ee9e8216c5d65baccc9568f6ef'
+$variant = "Visual Studio 17 2022`nx64`nRelease`ntap0901`n2026-10-28.1"
+$cacheName = Get-EngineCacheDirectoryName $commit $variant
+if ($cacheName -notmatch '^ovpn3-[0-9a-f]{12}-[0-9a-f]{12}$') { throw "Unexpected engine cache name: $cacheName" }
+if ($cacheName -ne (Get-EngineCacheDirectoryName $commit $variant)) { throw 'Engine cache name is not stable.' }
+if ($cacheName -eq (Get-EngineCacheDirectoryName $commit ($variant + '-changed'))) { throw 'Engine cache variants collided.' }
 $source = Join-Path $WorkDirectory 'patched-source'
 New-Item -ItemType Directory -Path (Join-Path $source 'cmake'), (Join-Path $source 'test/ovpncli') -Force | Out-Null
 $core = Join-Path $source 'cmake/findcoredeps.cmake'
