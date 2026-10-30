@@ -134,9 +134,6 @@ export function ConnectionOverview({
               </span>
             </button>
           </div>
-          <div className="connection-progress" aria-hidden="true">
-            <span />
-          </div>
         </div>
       </section>
 

@@ -4905,37 +4905,6 @@ dialog::backdrop {
 .connection-label {
   animation: connection-content-enter 280ms ease-out both;
 }
-.connection-progress {
-  position: absolute;
-  inset: auto 0 0;
-  height: 3px;
-  overflow: hidden;
-  opacity: 0;
-  transition: opacity 240ms ease;
-}
-.connection-progress > span {
-  display: block;
-  height: 100%;
-  width: 36%;
-  background: linear-gradient(90deg, transparent, #93c5fd, transparent);
-}
-.connection-card:is(
-    [data-phase='connecting'],
-    [data-phase='cancelling'],
-    [data-phase='disconnecting']
-  )
-  .connection-progress {
-  opacity: 1;
-}
-.connection-card:is(
-    [data-phase='connecting'],
-    [data-phase='cancelling'],
-    [data-phase='disconnecting']
-  )
-  .connection-progress
-  > span {
-  animation: connection-progress-travel 1.5s ease-in-out infinite;
-}
 .auth-introduction {
   text-align: center;
   margin-bottom: 20px;
@@ -4972,14 +4941,6 @@ dialog[data-closing='true']::backdrop {
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-@keyframes connection-progress-travel {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(380%);
   }
 }
 @keyframes dialog-exit {
@@ -5099,13 +5060,6 @@ dialog[data-closing='true']::backdrop {
 .connection-page .connection-card[data-phase='connected'] .connection-button-content svg {
   animation: connection-confirm 600ms ease-out both;
 }
-.connection-page .connection-card[data-phase='connected'] .connection-progress {
-  animation: connection-complete 850ms ease-out both;
-}
-.connection-page .connection-card[data-phase='connected'] .connection-progress > span {
-  width: 100%;
-  background: #6ee7b7;
-}
 .connection-page .details-card .gateway-net strong,
 .connection-page .details-card .metric-card {
   transition:
@@ -5127,15 +5081,6 @@ dialog[data-closing='true']::backdrop {
   100% {
     opacity: 1;
     transform: scale(1);
-  }
-}
-@keyframes connection-complete {
-  0%,
-  60% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
   }
 }
 /* Reduced motion retains a brief colour fade, without rotation or translation. */
@@ -6165,23 +6110,42 @@ dialog[data-closing='true']::backdrop {
     color: #6ee7b7;
   }
   .connection-page .connection-action-row {
-    margin-top: auto;
-    padding-top: 16px;
+    flex: 1 0 auto;
+    justify-content: center;
+    margin-top: 0;
+    padding: 16px 0 0;
   }
   .connection-page .connection-action-row .connection-action {
     min-height: 48px;
     margin: 0;
     border-radius: 12px;
-    background: linear-gradient(#2b6bff, #1652f0);
-    box-shadow: 0 6px 22px #1d5eff73;
+    background: #2859ad;
+    box-shadow: 0 4px 12px #0b1d3b40;
     font-size: 15px;
+    user-select: none;
   }
   .connection-page .connection-action-row .connection-action svg {
     width: 18px;
     height: 18px;
   }
   .connection-page .connection-card:is([data-phase='connected'], [data-phase='disconnecting']) .connection-action-row .connection-action {
-    background: linear-gradient(#f43f5e, #dc2626);
+    background: #a74752;
+    box-shadow: 0 4px 12px #28101540;
+  }
+  .connection-page .connection-card .connection-action-row .connection-action:hover:not(:disabled) {
+    background: #3266b9;
+    box-shadow: 0 4px 12px #0b1d3b40;
+  }
+  .connection-page .connection-card:is([data-phase='connected'], [data-phase='disconnecting']) .connection-action-row .connection-action:hover:not(:disabled) {
+    background: #b5535e;
+    box-shadow: 0 4px 12px #28101540;
+  }
+  .connection-page .connection-card .connection-action-row .connection-action:disabled {
+    background: #355785;
+    box-shadow: none;
+  }
+  .connection-page .connection-card[data-phase='disconnecting'] .connection-action-row .connection-action:disabled {
+    background: #87434b;
   }
   .connection-page .details-card {
     display: flex;
