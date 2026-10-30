@@ -4,7 +4,7 @@ import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
-import { buildEnvironment } from './paths.mjs';
+import { assertBuildRoot, buildEnvironment } from './paths.mjs';
 
 const profileTarget = 'resources/settings/client.ovpn';
 
@@ -269,6 +269,7 @@ export async function withBuildLock(root, platform, action) {
 }
 
 export async function prepareSource({ root, platform, upstream, profile }) {
+  assertBuildRoot(root);
   const sourceDir = path.join(root, '.cache/work', platform, 'source');
   await fs.mkdir(path.dirname(sourceDir), { recursive: true, mode: 0o700 });
   if (!(await exists(sourceDir))) {
@@ -353,6 +354,7 @@ export async function prepareLocalSource({
   branding,
   logPrivacy,
 }) {
+  assertBuildRoot(root);
   const sourceDir = path.join(root, '.cache/work', platform, 'source');
   const relativeSource = path.relative(root, sourceDir);
   if (!relativeSource || relativeSource.startsWith('..') || path.isAbsolute(relativeSource)) {
@@ -446,6 +448,12 @@ async function syncLocalSource(source, destination, relative = '') {
 }
 
 export function packageInvocation(prepared, options, baseEnv = process.env) {
+  const env = {
+    ...baseEnv,
+    // Compiler and download caches belong beside source, not inside another .cache/work tree.
+    OPENVPN_BUILD_WORK_ROOT: path.dirname(prepared.sourceDir),
+    OPENVPN_BUILD_OUTPUT: path.join(prepared.sourceDir, '.cache/packaging'),
+  };
   if (prepared.platform === 'windows') {
     return {
       command: 'powershell.exe',
@@ -459,18 +467,14 @@ export function packageInvocation(prepared, options, baseEnv = process.env) {
         ...(options.skipEngine ? ['-SkipOpenVpnBuild'] : []),
         ...(options.noAutoInstallDeps ? ['-NoAutoInstallDeps'] : []),
       ],
-      env: {
-        ...baseEnv,
-        OPENVPN_BUILD_OUTPUT: path.join(prepared.sourceDir, '.cache/packaging'),
-      },
+      env,
     };
   }
   return {
     command: 'bash',
     args: [path.join(prepared.sourceDir, 'make/macos/package.sh')],
     env: {
-      ...baseEnv,
-      OPENVPN_BUILD_OUTPUT: path.join(prepared.sourceDir, '.cache/packaging'),
+      ...env,
       FORCE_OPENVPN3_BUILD: options.forceEngine ? '1' : '0',
       SKIP_OPENVPN3_BUILD: options.skipEngine ? '1' : '0',
     },
@@ -483,7 +487,8 @@ export async function buildPackage(prepared, options) {
   await fs.rm(path.join(prepared.sourceDir, '.cache/packaging/build-verification.json'), {
     force: true,
   });
-  const invocation = packageInvocation(prepared, options, buildEnvironment(prepared.sourceDir));
+  const invocation = packageInvocation(prepared, options);
+  invocation.env = buildEnvironment(prepared.sourceDir, invocation.env);
   run(invocation.command, invocation.args, { cwd: prepared.sourceDir, env: invocation.env });
 }
 

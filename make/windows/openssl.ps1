@@ -83,8 +83,16 @@ function Read-OpenSslRelease {
     return $release
 }
 
+function Get-WindowsBuildWorkRoot([string]$Root) {
+    if ($env:OPENVPN_BUILD_WORK_ROOT) { return [IO.Path]::GetFullPath($env:OPENVPN_BUILD_WORK_ROOT) }
+    $Root = [IO.Path]::GetFullPath($Root)
+    if ($Root -match '[\\/]\.cache[\\/]work[\\/]windows[\\/]source$') { return Split-Path -Parent $Root }
+    return Join-Path $Root '.cache/work/windows'
+}
+
 function Get-OpenSslCacheDirectory($Release) {
-    return [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "../../.cache/work/windows/deps/openssl-$($Release.version)"))
+    $root = Get-WindowsBuildWorkRoot (Join-Path $PSScriptRoot '../..')
+    return [IO.Path]::GetFullPath((Join-Path $root "deps/openssl-$($Release.version)"))
 }
 
 function Get-OpenSslImageRoot([string]$Directory) {
