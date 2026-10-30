@@ -5905,6 +5905,50 @@ dialog[data-closing='true']::backdrop {
   }
 }
 
+/* The native 840px window also needs the flexible overview layout; display
+   scaling does not change its CSS viewport width. */
+@media (min-width: 561px) and (max-width: 840px) and (min-height: 580px) {
+  .app-body .main-scroll {
+    display: flex;
+    flex-direction: column;
+  }
+  .profile-panel {
+    flex: 0 0 auto;
+  }
+  .profile-picker-row {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .profile-picker-label {
+    flex: 0 0 auto;
+    font-size: 16px;
+    font-weight: 420;
+  }
+  .profile-select {
+    flex: 0 1 44%;
+    width: 44%;
+    min-width: 0;
+  }
+  .connection-page {
+    flex: 1 0 auto;
+    width: 100%;
+    margin: 0;
+    height: auto;
+    min-height: 0;
+    padding-bottom: 10px;
+  }
+  .connection-page .connection-card {
+    flex: 1 0 180px;
+    height: auto;
+    min-height: 180px;
+    max-height: none;
+  }
+  .connection-page .details-card {
+    flex: 0 0 180px;
+    height: 180px;
+  }
+}
+
 /* Desktop overview spacing follows the approved layout direction: keep the
    existing top-to-bottom order while using the unused lower space to give the
    connection action card more presence. */
