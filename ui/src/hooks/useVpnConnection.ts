@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Messages } from '../messages';
 import type { ConnectOptions, VpnAction, VpnState, VpnStats, VpnProfile } from '../types';
+import { isAuthenticationError, localizeConnectionError } from '../errors';
 
 type ConnectionMessages = Pick<
   Messages,
-  'statusFailed' | 'disconnectFailed' | 'invalidCredentials' | 'runtimeOnly' | 'connectFailed'
+  | 'statusFailed'
+  | 'disconnectFailed'
+  | 'invalidCredentials'
+  | 'authenticationFailed'
+  | 'runtimeOnly'
+  | 'connectFailed'
 >;
-
-const isAuthenticationError = (message: string) =>
-  /AUTH_FAILED|AUTH_REJECT|authentication.*fail|invalid.*(credential|password)|认证失败|身份验证失败/i.test(
-    message,
-  );
 
 export function useVpnConnection(
   t: ConnectionMessages,
@@ -101,6 +102,9 @@ export function useVpnConnection(
       // A poll started before a click must not overwrite the new transition.
       if (version !== operationVersion.current || actionPending.current) return;
       setStatus(data.state);
+      const lastError = data.lastError
+        ? localizeConnectionError(data.lastError, t.authenticationFailed)
+        : '';
       if (data.state === 'CONNECTED') {
         if (attemptedCredentials.current) {
           sessionCredentials.current = attemptedCredentials.current;
@@ -120,8 +124,8 @@ export function useVpnConnection(
           attemptedCredentials.current = null;
           if (profile?.requiresAuth && isAuthenticationError(data.lastError || '')) {
             sessionCredentials.current = null;
-            dismissedConnectionError.current = data.lastError || '';
-            setAuthError(data.lastError || t.connectFailed);
+            dismissedConnectionError.current = lastError;
+            setAuthError(lastError || t.connectFailed);
             setAuthOpen(true);
           }
         }
@@ -134,12 +138,12 @@ export function useVpnConnection(
         assignedIp: data.assignedIp ?? null,
         gatewayAddress: data.gatewayAddress ?? null,
       });
-      setStatusError(data.lastError || connectionErrorOverride.current);
+      setStatusError(lastError || connectionErrorOverride.current);
     } catch {
       if (version === operationVersion.current && !actionPending.current)
         setStatusError(t.statusFailed);
     }
-  }, [t.statusFailed, t.connectFailed, profile?.id, profile?.requiresAuth]);
+  }, [t.statusFailed, t.connectFailed, t.authenticationFailed, profile?.id, profile?.requiresAuth]);
 
   useEffect(() => {
     void refreshStatus();
@@ -204,19 +208,19 @@ export function useVpnConnection(
       if (!result.ok) throw new Error(result.error || t.connectFailed);
     } catch (error) {
       const message = error instanceof Error ? error.message : t.connectFailed;
-      const needsLogin = Boolean(
-        profile.requiresAuth && (!automatic || isAuthenticationError(message)),
-      );
+      const authenticationError = isAuthenticationError(message);
+      const userMessage = localizeConnectionError(message, t.authenticationFailed);
+      const needsLogin = Boolean(profile.requiresAuth && (!automatic || authenticationError));
       attemptedCredentials.current = null;
-      if (isAuthenticationError(message)) sessionCredentials.current = null;
-      connectionErrorOverride.current = message;
-      dismissedConnectionError.current = needsLogin ? message : '';
+      if (authenticationError) sessionCredentials.current = null;
+      connectionErrorOverride.current = userMessage;
+      dismissedConnectionError.current = needsLogin ? userMessage : '';
       setAction(null);
       setStatus('DISCONNECTED');
-      setStatusError(message);
+      setStatusError(userMessage);
       if (needsLogin) {
         setCredentials(options);
-        setAuthError(message);
+        setAuthError(userMessage);
         setAuthOpen(true);
       }
     } finally {
@@ -247,8 +251,9 @@ export function useVpnConnection(
       stopped = true;
     } catch (error) {
       const message = error instanceof Error ? error.message : t.disconnectFailed;
-      if (authOpen) setAuthError(message);
-      else notify(message);
+      const userMessage = localizeConnectionError(message, t.authenticationFailed);
+      if (authOpen) setAuthError(userMessage);
+      else notify(userMessage);
     } finally {
       setBusy(false);
       actionPending.current = false;

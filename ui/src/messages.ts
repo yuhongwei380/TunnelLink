@@ -64,6 +64,7 @@ export const MESSAGES = {
     acceptAgreement: '我已阅读并同意用户协议',
     firstRunAgreement: '首次使用前请阅读用户协议；不同意可关闭客户端。',
     invalidCredentials: '请输入用户名和密码。',
+    authenticationFailed: '身份验证失败，请检查用户名和密码。',
     connectFailed: '连接失败，请查看日志。',
     disconnectFailed: '断开失败，请重试。',
     statusFailed: '无法读取连接状态，请重试或查看日志。',
@@ -227,6 +228,7 @@ export const MESSAGES = {
     firstRunAgreement:
       'Please review the agreement before first use. Close the app if you do not agree.',
     invalidCredentials: 'Enter your username and password.',
+    authenticationFailed: 'Authentication failed. Check your username and password.',
     connectFailed: 'Connection failed. Check the logs for details.',
     disconnectFailed: 'Unable to disconnect. Please retry.',
     statusFailed: 'Unable to read connection status. Retry or check logs.',

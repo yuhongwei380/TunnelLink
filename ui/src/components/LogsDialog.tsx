@@ -18,6 +18,7 @@ import {
 import { useDialog } from '../hooks/useDialog';
 import { filterLogs, formatLogs, isErrorLog, type LogEntry, type LogFilter } from '../logs';
 import type { Messages } from '../messages';
+import { localizeConnectionError } from '../errors';
 
 type Props = {
   open: boolean;
@@ -58,8 +59,17 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
         // Pausing also freezes the result of an automatic request already in flight.
         if (version !== requestVersion.current) return;
         if (!result.ok) throw new Error();
-        const entries = [...result.logs];
-        if (result.lastError) entries.push({ ts: '', source: 'status', line: result.lastError });
+        const entries = result.logs.map((entry) => ({
+          ...entry,
+          line: localizeConnectionError(entry.line, t.authenticationFailed),
+        }));
+        if (result.lastError) {
+          entries.push({
+            ts: '',
+            source: 'status',
+            line: localizeConnectionError(result.lastError, t.authenticationFailed),
+          });
+        }
         setLogs(entries);
         setLogsError('');
       } catch {

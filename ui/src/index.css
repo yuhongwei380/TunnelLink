@@ -3780,7 +3780,7 @@ dialog::backdrop {
   flex-direction: column;
   align-items: stretch;
   gap: 0;
-  margin-top: 24px;
+  margin-top: 36px;
 }
 .connection-page .connection-action-row .status-badge {
   order: -1;
@@ -3804,7 +3804,7 @@ dialog::backdrop {
 .connection-page .connection-action-row .connection-action {
   width: 100%;
   min-width: 0;
-  min-height: 76px;
+  min-height: 102px;
   margin: 0;
   justify-content: center;
   gap: 13px;
