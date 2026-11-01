@@ -35,36 +35,29 @@ export function ProfileManager({ data, locale, locked, pending, onAction }: Prop
           disabled={locked || pending || !data}
           onSelect={(id) => void onAction('select', id)}
         />
-        {selected && (
-          <span className="profile-source-badge">
-            {selected.source === 'builtin'
-              ? cn
-                ? '内置配置'
-                : 'Built-in'
-              : cn
-                ? '导入配置'
-                : 'Imported'}
-          </span>
-        )}
-        {data?.capabilities.profileImport.enabled && (
+        <div className="profile-toolbar-actions">
+          {data?.capabilities.profileImport.enabled && (
+            <button
+              type="button"
+              className="profile-toolbar-button profile-import-button"
+              disabled={pending}
+              onClick={() => void onAction('import')}
+            >
+              <Plus size={16} aria-hidden="true" />
+              {cn ? '导入' : 'Import'}
+            </button>
+          )}
           <button
+            type="button"
             className="profile-toolbar-button"
-            disabled={pending}
-            onClick={() => void onAction('import')}
+            disabled={!data || pending}
+            onClick={() => setOpen(true)}
+            aria-haspopup="dialog"
           >
-            <Plus size={16} />
-            {cn ? '导入' : 'Import'}
+            <Settings2 size={16} aria-hidden="true" />
+            {cn ? '配置管理' : 'Manage profiles'}
           </button>
-        )}
-        <button
-          className="profile-toolbar-button"
-          disabled={!data || pending}
-          onClick={() => setOpen(true)}
-          aria-haspopup="dialog"
-        >
-          <Settings2 size={16} />
-          {cn ? '管理' : 'Manage'}
-        </button>
+        </div>
       </div>
       {selected && (selected.description || selected.error) && (
         <div className="profile-description">

@@ -77,11 +77,9 @@ export function ConnectionOverview({
         <div className="connection-copy">
           <div className="connection-heading">
             <div className="connection-heading-identity">
-              <h3>{profile?.displayName || t.overview}</h3>
-              <div className="connection-account-info">
-                <span>{t.currentUser}</span>
-                <strong>{connectedUsername || '—'}</strong>
-              </div>
+              <h3 title={profile?.displayName || t.overview}>
+                {profile?.displayName || t.overview}
+              </h3>
             </div>
             <div className="connection-heading-controls">
               <span
@@ -93,18 +91,24 @@ export function ConnectionOverview({
                   {statusLabel}
                 </span>
               </span>
-              <button
-                type="button"
-                className="switch-user-button"
-                onClick={onSwitchUser}
-                disabled={disabled || busy || connecting || stopping || !profile?.requiresAuth}
-                aria-haspopup="dialog"
-                aria-label={t.switchUser}
-                title={t.switchUser}
-              >
-                <Pencil size={16} strokeWidth={1.7} aria-hidden="true" />
-              </button>
             </div>
+          </div>
+          <div className="connection-account-row">
+            <div className="connection-account-info">
+              <span>{t.currentUser}</span>
+              <strong title={connectedUsername}>{connectedUsername || '—'}</strong>
+            </div>
+            <button
+              type="button"
+              className="switch-user-button"
+              onClick={onSwitchUser}
+              disabled={disabled || busy || connecting || stopping || !profile?.requiresAuth}
+              aria-haspopup="dialog"
+              aria-label={t.switchUser}
+              title={t.switchUser}
+            >
+              <Pencil size={14} strokeWidth={1.7} aria-hidden="true" />
+            </button>
           </div>
           <p className="connection-state-copy">
             {connected ? t.connectedDesc : connecting ? t.connectingDesc : t.offlineDesc}

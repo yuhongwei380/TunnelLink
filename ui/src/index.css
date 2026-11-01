@@ -4988,38 +4988,6 @@ dialog[data-closing='true']::backdrop {
   }
 }
 
-/* Give the desktop overview breathing room without crowding short windows. */
-@media (min-width: 561px) and (min-height: 580px) {
-  .connection-page .connection-heading {
-    position: relative;
-    top: -20px;
-  }
-  .connection-page {
-    padding-top: 24px;
-  }
-  .connection-page .connection-card {
-    padding: 26px 24px 24px;
-  }
-  .connection-page .connection-action-row {
-    margin-top: 26px;
-  }
-  .connection-page .details-card {
-    margin-top: 20px;
-    padding: 20px 24px 14px;
-  }
-  .connection-page .details-card-main .gateway-identity {
-    margin-top: 12px;
-  }
-  .connection-page .details-card-main .gateway-net {
-    margin-top: 16px;
-    column-gap: 28px;
-  }
-  .connection-page .details-card-session {
-    margin-top: 18px;
-    padding-top: 16px;
-  }
-}
-
 /* Make the whole connection surface participate in state changes. */
 .connection-page .connection-card {
   transition:
@@ -5092,87 +5060,6 @@ dialog[data-closing='true']::backdrop {
   /* Keep the connection progress indicator visible, at a gentler speed. */
   .connection-page .connection-action .connection-button-content .spin {
     animation: spin 2.4s linear infinite !important;
-  }
-}
-
-/* Use the fixed desktop surface efficiently: the connection action and session
-   summary keep a consistent rhythm instead of leaving a large middle gap. */
-@media (min-width: 841px) and (min-height: 580px) {
-  .connection-page {
-    gap: 16px;
-    padding: 24px 32px 16px 24px;
-  }
-  .connection-page .connection-card {
-    min-height: 230px;
-    height: 230px;
-    padding: 30px 24px 20px;
-  }
-  .connection-page .connection-copy {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
-  .connection-page .connection-action-row {
-    margin-top: auto;
-  }
-  .connection-page .details-card {
-    margin-top: 0;
-    padding: 18px 24px 12px;
-  }
-  .connection-page .details-card-session {
-    margin-top: 14px;
-    padding-top: 14px;
-  }
-  .connection-page .details-card-footer {
-    margin-top: 10px;
-    padding-top: 8px;
-  }
-}
-
-/* Balance the two overview cards in the fixed desktop window. */
-@media (min-width: 561px) and (max-width: 840px) and (min-height: 580px) {
-  .connection-page .connection-card,
-  .connection-page .details-card {
-    height: 230px;
-    min-height: 230px;
-  }
-  .connection-page .connection-card {
-    display: flex;
-    align-items: stretch;
-    padding-top: 50px;
-    padding-bottom: 20px;
-  }
-  .connection-page .connection-heading .status-badge {
-    font-family: inherit;
-    font-size: 20px;
-    font-weight: 720;
-    letter-spacing: -0.4px;
-  }
-  .connection-page .connection-copy {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-  .connection-page .connection-action-row {
-    margin-top: auto;
-  }
-  .connection-page .details-card {
-    margin-top: 16px;
-    padding: 14px 24px 10px;
-  }
-  .connection-page .details-card-main .gateway-identity {
-    margin-top: 4px;
-  }
-  .connection-page .details-card-main .gateway-net {
-    margin-top: 8px;
-  }
-  .connection-page .details-card-session {
-    margin-top: 8px;
-    padding-top: 8px;
-  }
-  .connection-page .details-card-footer {
-    margin-top: 6px;
-    padding-top: 4px;
   }
 }
 
@@ -5511,8 +5398,8 @@ dialog[data-closing='true']::backdrop {
 }
 
 .profile-panel {
-  margin: 20px 28px 0;
-  padding: 18px;
+  margin: 12px 14px 0;
+  padding: 12px 14px;
   border: 1px solid #dce3ec;
   border-radius: 14px;
   background: #fff;
@@ -5689,393 +5576,171 @@ dialog[data-closing='true']::backdrop {
   font-size: 11px;
   font-weight: 400;
 }
+.profile-toolbar-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
 .profile-toolbar-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 36px;
-  padding: 8px 10px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--muted);
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  color: #4d5c6e;
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
 }
 .profile-toolbar-button:hover:not(:disabled) {
+  border-color: #b3c9f4;
   color: var(--primary);
   background: var(--blue-tint);
 }
-
-/* Keep profile management aligned with the overview cards and centered in
-   the native dialog viewport. */
-.profile-panel {
-  margin: 20px 40px 0 24px;
+.profile-import-button {
+  border-color: #d4e2fc;
+  background: var(--blue-tint);
+  color: #2459b5;
 }
+
 .profile-dialog {
   margin: auto;
   color: var(--text);
   background: #fff;
   box-shadow: 0 24px 80px #00143233;
-  box-sizing: border-box;
 }
 
-@media (min-width: 841px) and (min-height: 580px) {
-  .profile-panel {
-    margin: 12px 32px 0 24px;
-    padding: 12px 16px;
+/* One content-sized desktop layout for the native window and browser preview.
+   Extra height belongs below the cards; short windows scroll the workspace. */
+@media (min-width: 561px) {
+  .app-header {
+    flex-basis: 64px;
+    padding: 0 20px;
   }
-}
-
-@media (min-width: 561px) and (max-width: 840px) {
-  .profile-panel {
-    margin: 14px 16px 0;
-  }
-}
-
-@media (max-width: 560px) {
-  .profile-panel {
-    margin: 12px 14px 0;
-  }
-}
-
-/* The fixed desktop window has enough room for the three overview cards when
-   their vertical rhythm is compact. Keep the main surface stable so a normal
-   840 × 640 window does not require a second scrolling step. */
-@media (min-width: 561px) and (min-height: 580px) {
-  .app-body .main-scroll {
-    overflow: hidden;
-  }
-  .profile-picker-row {
-    gap: 8px;
-  }
-  .profile-select-trigger {
-    min-height: 38px;
-    padding: 7px 10px;
-    font-size: 12px;
-  }
-  .profile-toolbar-button {
-    min-height: 32px;
-    padding: 6px 8px;
-    font-size: 11px;
-  }
-  .profile-description {
-    margin-top: 4px;
-    font-size: 11px;
-  }
-  .profile-description p {
-    margin: 2px 0;
-  }
-}
-
-@media (min-width: 841px) and (min-height: 580px) {
-  .connection-page {
-    gap: 12px;
-    padding: 12px 32px 8px 24px;
-  }
-  .connection-page .connection-card {
-    height: 200px;
-    min-height: 200px;
-    padding: 24px 24px 18px;
-  }
-  .connection-page .details-card {
-    height: 200px;
-    min-height: 200px;
-    margin-top: 0;
-    padding: 14px 24px 10px;
-  }
-  .connection-page .workspace-footer {
-    display: none;
-  }
-}
-
-@media (min-width: 561px) and (max-width: 840px) and (min-height: 580px) {
-  .profile-panel {
-    margin: 10px 16px 0;
-    padding: 10px 12px;
-    border-radius: 12px;
-  }
-  .profile-picker-label {
-    font-size: 11px;
-  }
-  .connection-page {
+  .app-header-brand {
     gap: 10px;
-    padding: 10px 16px 4px;
   }
-  .connection-page .connection-card {
-    height: 180px;
-    min-height: 180px;
-    padding: 18px 18px 14px;
-    border-radius: 16px;
+  .app-header-brand .brand-icon {
+    width: 32px;
+    height: 32px;
   }
-  .connection-page .connection-copy h3 {
-    font-size: 26px;
+  .app-header-brand h1 {
+    font-size: 19px;
+    letter-spacing: -0.5px;
   }
-  .connection-page .connection-action-row {
-    margin-top: auto;
+  .app-header > .language-button {
+    min-width: 52px;
+    min-height: 34px;
   }
-  .connection-page .connection-action-row .status-badge {
-    margin-bottom: 10px;
-    font-size: 15px;
+  .app-body > .sidebar {
+    width: 156px;
+    flex: 0 0 156px;
+    padding: 16px 12px 14px;
+    border-right: 1px solid var(--line);
   }
-  .connection-page .connection-action-row .connection-action {
-    min-height: 48px;
-    font-size: 20px;
-  }
-  .connection-page .details-card {
-    height: 180px;
-    min-height: 180px;
+  .app-body .primary-nav {
+    width: 100%;
     margin-top: 0;
-    padding: 12px 18px 8px;
-    border-radius: 16px;
+    gap: 6px;
   }
-  .connection-page .details-card-main .panel-heading .eyebrow {
-    font-size: 16px;
+  .app-body .primary-nav button {
+    justify-content: flex-start;
+    min-height: 44px;
+    padding: 0 10px;
+    gap: 10px;
+    border-radius: 10px;
+    font-size: 13px;
   }
-  .connection-page .details-card-main .gateway-identity h3 {
-    font-size: 20px;
+  .app-body .primary-nav button svg {
+    width: 18px;
+    height: 18px;
   }
-  .connection-page .details-card-main .gateway-net {
-    margin-top: 4px;
+  .app-body .primary-nav button > span:not(.error-dot),
+  html[lang='en'] .app-body .primary-nav button > span:not(.error-dot) {
+    display: inline;
+    min-width: 0;
+    width: auto;
   }
-  .connection-page .details-card-session {
-    margin-top: 8px;
-    padding-top: 8px;
-  }
-  .connection-page .details-card-session .metric-card .metric-label {
+  .app-body .about-button {
+    justify-content: flex-start;
+    min-height: 38px;
+    padding: 0 10px;
+    gap: 10px;
     font-size: 12px;
   }
-  .connection-page .details-card-session .metric-card > strong,
-  .connection-page .details-card:not(.is-connected) .metric-card > strong {
-    margin-top: 3px;
-    font-size: 16px;
+  .app-body .about-button > svg:first-child {
+    display: block;
+    width: 16px;
+    height: 16px;
   }
-  .connection-page .details-card-footer {
-    margin-top: 4px;
-    padding-top: 4px;
-  }
-  .connection-page .workspace-footer {
-    display: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .profile-select-chevron,
-  .profile-select-option {
-    transition: none;
-  }
-}
-
-/* The native 840px window also needs the flexible overview layout; display
-   scaling does not change its CSS viewport width. */
-@media (min-width: 561px) and (max-width: 840px) and (min-height: 580px) {
   .app-body .main-scroll {
     display: flex;
     flex-direction: column;
+    gap: 12px;
+    padding: 14px 20px;
+    overflow-y: auto;
+    background: #f6f8fc;
   }
   .profile-panel {
     flex: 0 0 auto;
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 12px 14px;
+    border-radius: 12px;
   }
-  .profile-picker-row {
+  .profile-panel > .profile-picker-row {
     flex-wrap: nowrap;
     gap: 8px;
   }
-  .profile-picker-label {
-    flex: 0 0 auto;
-    font-size: 16px;
-    font-weight: 420;
-  }
-  .profile-select {
-    flex: 0 1 44%;
-    width: 44%;
+  .profile-panel .profile-select {
+    flex: 0 1 50%;
+    width: 50%;
     min-width: 0;
+    max-width: none;
+  }
+  .profile-panel .profile-toolbar-actions {
+    margin-left: auto;
+  }
+  .profile-select-trigger {
+    min-height: 40px;
+    padding: 8px 10px;
+    font-size: 13px;
   }
   .connection-page {
     flex: 1 0 auto;
-    width: 100%;
-    margin: 0;
-    height: auto;
-    min-height: 0;
-    padding-bottom: 10px;
-  }
-  .connection-page .connection-card {
-    flex: 1 0 180px;
-    height: auto;
-    min-height: 180px;
-    max-height: none;
-  }
-  .connection-page .details-card {
-    flex: 0 0 180px;
-    height: 180px;
-  }
-}
-
-/* Group account switching with the primary action in the native window. */
-@media (min-width: 561px) and (max-width: 840px) and (min-height: 580px) {
-  .connection-page .connection-card {
-    padding: 24px 18px 14px;
-  }
-  .connection-page .connection-copy {
-    position: static;
-    display: flex;
-    flex-direction: column;
-    height: auto;
-    align-self: stretch;
-  }
-  .connection-page .connection-heading {
-    align-items: center;
-    margin: 0;
-  }
-  .connection-page .connection-heading h3 {
-    flex-shrink: 1;
-    min-width: 0;
-    font-size: 24px;
-    line-height: 1.25;
-  }
-  .connection-page .connection-heading .status-badge {
-    flex-shrink: 0;
-    font-size: 17px;
-  }
-  .connection-page .connection-account-row {
-    margin-top: auto;
-    padding-top: 20px;
-  }
-  .connection-page .connection-action-row {
-    margin-top: 12px;
-  }
-  .connection-page .connection-action {
-    margin-top: 0;
-  }
-}
-
-/* Desktop overview spacing follows the approved layout direction: keep the
-   existing top-to-bottom order while using the unused lower space to give the
-   connection action card more presence. */
-@media (min-width: 841px) and (min-height: 580px) {
-  .app-body .main-scroll {
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-  }
-
-  .profile-picker-row {
-    flex-wrap: nowrap;
     gap: 12px;
-  }
-
-  .profile-panel {
-    flex: 0 0 auto;
-  }
-
-  .profile-picker-label {
-    flex: 0 0 auto;
-    color: #405a78;
-    font-size: clamp(16px, 1.35vw, 22px);
-    font-weight: 650;
-    letter-spacing: -0.25px;
-  }
-
-  .profile-select {
-    flex: 0 1 66.666%;
-    width: 66.666%;
-    max-width: 66.666%;
-    min-width: 240px;
-  }
-
-  .profile-select-trigger {
-    min-height: 48px;
-    padding: 8px 14px;
-    border-radius: 12px;
-    font-size: 15px;
-  }
-
-  .connection-page {
-    flex: 1 1 auto;
+    width: 100%;
+    max-width: 960px;
+    height: auto;
     min-height: 0;
-    height: auto;
-    padding-bottom: 10px;
-  }
-
-  .connection-page .connection-card {
-    flex: 1 1 auto;
-    height: auto;
-    min-height: clamp(230px, 28vh, 360px);
-    padding: 32px 32px 26px;
-  }
-
-  .connection-page .details-card {
-    flex: 0 0 auto;
-  }
-
-  .connection-page .connection-action-row .connection-action {
-    min-height: clamp(76px, 6.2vh, 92px);
-    border-radius: 16px;
-    font-size: clamp(26px, 2.1vw, 32px);
-  }
-
-  .connection-page .connection-action-row .connection-action svg {
-    width: 30px;
-    height: 30px;
-  }
-}
-
-/* Connection overview: identity and status above a full-width action. */
-.profile-source-badge {
-  flex: 0 0 auto;
-  padding: 3px 7px;
-  border-radius: 6px;
-  background: #f1f5f9;
-  color: #64748b;
-  font-size: 11px;
-  white-space: nowrap;
-}
-.connection-page .connection-heading-identity {
-  min-width: 0;
-}
-.connection-page .connection-heading-controls {
-  display: flex;
-  flex: 0 0 auto;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-}
-.connection-page .connection-heading-identity .connection-account-info {
-  margin-top: 10px;
-}
-@media (min-width: 561px) {
-  .profile-panel > .profile-picker-row {
-    flex-wrap: wrap;
-  }
-  .profile-panel .profile-select {
-    flex: 0 1 240px;
-    width: 240px;
-    min-width: 120px;
+    margin: 0 auto;
+    padding: 0;
+    overflow: visible;
   }
   .connection-page .connection-card {
     position: relative;
     display: flex;
+    flex: 0 0 auto;
     align-items: stretch;
-    min-height: 274px;
-    padding: 24px;
-    background: linear-gradient(180deg, #0a1e3c, #0d274c 55%, #081830);
-    box-shadow: 0 14px 30px -12px #0a1e3c73;
+    height: auto;
+    min-height: 180px;
+    max-height: none;
+    padding: 20px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #0b203e, #102f58);
+    box-shadow: 0 8px 18px -12px #0a1e3c73;
   }
   .connection-page .connection-card::before {
-    background: radial-gradient(ellipse at 50% 115%, #2563eb55, transparent 55%);
+    background: radial-gradient(ellipse at 90% 100%, #2563eb26, transparent 65%);
   }
   .connection-page .connection-card[data-phase='connected']::before {
-    background: radial-gradient(ellipse at 50% 115%, #10b98155, transparent 55%);
-  }
-  .connection-page .connection-card::after {
-    position: absolute;
-    inset: 0;
-    content: '';
-    pointer-events: none;
-    opacity: 0.07;
-    background-image: radial-gradient(circle, #fff 1px, transparent 1px);
-    background-size: 18px 18px;
+    background: radial-gradient(ellipse at 90% 100%, #10b98133, transparent 65%);
   }
   .connection-page .connection-copy {
     position: relative;
@@ -6090,97 +5755,258 @@ dialog[data-closing='true']::backdrop {
     position: static;
     align-items: flex-start;
     gap: 16px;
+    margin: 0;
+  }
+  .connection-page .connection-heading-identity {
+    flex: 1;
+    min-width: 0;
   }
   .connection-page .connection-heading h3 {
+    display: -webkit-box;
+    overflow: hidden;
     overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     font-size: 22px;
-    line-height: 1.2;
+    font-weight: 680;
+    letter-spacing: -0.5px;
+    line-height: 1.3;
+  }
+  .connection-page .connection-heading-controls {
+    flex: 0 0 auto;
+    max-width: 50%;
   }
   .connection-page .connection-heading .status-badge {
-    padding: 4px 12px;
+    min-height: 26px;
+    padding: 4px 9px;
     border: 1px solid #ffffff1a;
     border-radius: 999px;
-    background: #ffffff12;
-    color: #e2e8f0;
-    font-size: 12px;
+    background: #ffffff0d;
+    color: #d2dcec;
+    font-size: 11px;
     font-weight: 500;
+    text-align: right;
+    white-space: normal;
   }
   .connection-page .connection-card[data-phase='connected'] .status-badge {
-    border-color: #34d3994d;
-    background: #10b98126;
-    color: #6ee7b7;
+    border-color: #34d39940;
+    background: #10b9811a;
+    color: #a7f3d0;
+  }
+  .connection-page .connection-account-row {
+    justify-content: flex-start;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 0;
+  }
+  .connection-page .connection-account-info {
+    font-size: 12px;
+  }
+  .connection-page .connection-account-info > span {
+    flex: 0 0 auto;
+  }
+  .connection-page .switch-user-button {
+    width: 28px;
+    min-height: 28px;
+    padding: 6px;
+    border-color: #ffffff26;
+    border-radius: 7px;
+    background: #ffffff0d;
+    box-shadow: none;
   }
   .connection-page .connection-action-row {
-    flex: 1 0 auto;
-    justify-content: center;
-    margin-top: 0;
-    padding: 28px 0 0;
+    flex: 0 0 auto;
+    margin-top: 24px;
+    padding: 0;
   }
   .connection-page .connection-action-row .connection-action {
-    min-height: 64px;
+    width: 100%;
+    min-height: 48px;
     margin: 0;
-    border-radius: 12px;
-    background: #2859ad;
-    box-shadow: 0 4px 12px #0b1d3b40;
-    font-size: 15px;
+    border-radius: 10px;
+    background: #2c63bc;
+    box-shadow: none;
+    font-size: 16px;
+    font-weight: 600;
     user-select: none;
   }
   .connection-page .connection-action-row .connection-action svg {
     width: 18px;
     height: 18px;
   }
-  .connection-page .connection-card:is([data-phase='connected'], [data-phase='disconnecting']) .connection-action-row .connection-action {
-    background: #a74752;
-    box-shadow: 0 4px 12px #28101540;
-  }
   .connection-page .connection-card .connection-action-row .connection-action:hover:not(:disabled) {
-    background: #3266b9;
-    box-shadow: 0 4px 12px #0b1d3b40;
+    background: #3572d2;
   }
-  .connection-page .connection-card:is([data-phase='connected'], [data-phase='disconnecting']) .connection-action-row .connection-action:hover:not(:disabled) {
+  .connection-page
+    .connection-card:is([data-phase='connected'], [data-phase='disconnecting'])
+    .connection-action-row
+    .connection-action {
+    background: #a74752;
+  }
+  .connection-page
+    .connection-card:is([data-phase='connected'], [data-phase='disconnecting'])
+    .connection-action-row
+    .connection-action:hover:not(:disabled) {
     background: #b5535e;
-    box-shadow: 0 4px 12px #28101540;
   }
   .connection-page .connection-card .connection-action-row .connection-action:disabled {
+    cursor: not-allowed;
     background: #355785;
     box-shadow: none;
   }
-  .connection-page .connection-card[data-phase='disconnecting'] .connection-action-row .connection-action:disabled {
+  .connection-page
+    .connection-card
+    .connection-action-row
+    .connection-action:disabled[aria-busy='true'] {
+    cursor: progress;
+  }
+  .connection-page
+    .connection-card[data-phase='disconnecting']
+    .connection-action-row
+    .connection-action:disabled {
     background: #87434b;
   }
   .connection-page .details-card {
     display: flex;
+    flex: 0 0 auto;
     flex-direction: column;
-    justify-content: center;
-    padding: 18px 20px;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
+    justify-content: flex-start;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    padding: 14px 20px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
   }
   .connection-page .details-card-main {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    display: block;
   }
   .connection-page .details-card-main .gateway-identity {
     display: none;
   }
   .connection-page .details-card-main .panel-heading .eyebrow {
-    color: #94a3b8;
+    color: #52657d;
     font-size: 12px;
+    font-weight: 600;
     white-space: nowrap;
   }
   .connection-page .details-card-main .gateway-net {
-    justify-content: flex-end;
-    gap: 8px 24px;
-    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 8px;
   }
-  .connection-page .details-card-main .gateway-net-item span,
+  .connection-page .details-card-main .gateway-net-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .connection-page .details-card-main .gateway-net-item span {
+    color: #617086;
+    font-size: 11px;
+  }
   .connection-page .details-card-main .gateway-net-item strong {
+    color: #22374f;
     font-size: 13px;
   }
   .connection-page .details-card-session {
-    margin-top: 14px;
-    padding-top: 14px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-color: var(--line);
+  }
+  .connection-page .details-card-session .metric-card {
+    padding: 0 16px;
+    border-color: var(--line);
+  }
+  .connection-page .details-card:not(.is-connected) .metric-card {
+    opacity: 1;
+  }
+  .connection-page .details-card-session .metric-card:first-child {
+    padding-left: 0;
+  }
+  .connection-page .details-card-session .metric-card .metric-label {
+    color: #617086;
+    font-size: 11px;
+  }
+  .connection-page .details-card-session .metric-card .metric-icon {
+    display: flex;
+    width: 16px;
+    height: 16px;
+    background: transparent;
+  }
+  .connection-page .details-card-session .metric-card .metric-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+  .connection-page .details-card-session .metric-card > strong,
+  .connection-page .details-card-session .metric-card > strong.time-value,
+  .connection-page .details-card:not(.is-connected) .metric-card > strong {
+    margin-top: 8px;
+    color: #22374f;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+  .connection-page .metric-placeholder {
+    color: #617086;
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+  .connection-page .workspace-footer {
+    display: flex;
+    flex: 0 0 auto;
+    min-height: 0;
+    margin-top: auto;
+    padding: 0;
+  }
+  .connection-page .workspace-copyright {
+    color: #617086;
+    font-size: 10px;
+    line-height: 1.4;
+  }
+}
+
+@media (min-width: 561px) and (max-height: 600px) {
+  .app-header {
+    flex-basis: 56px;
+  }
+  .app-body .main-scroll {
+    gap: 10px;
+    padding: 12px 16px;
+  }
+  .connection-page .connection-card {
+    min-height: 0;
+    padding: 16px 20px;
+  }
+  .connection-page .connection-action-row {
+    margin-top: 18px;
+  }
+}
+
+@media (max-width: 560px) {
+  .profile-panel > .profile-picker-row {
+    gap: 8px;
+  }
+  .profile-panel .profile-select {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .profile-toolbar-actions {
+    margin-left: auto;
+  }
+  .connection-page .connection-account-row {
+    justify-content: flex-start;
+    margin-top: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-select-chevron,
+  .profile-select-option {
+    transition: none;
   }
 }
