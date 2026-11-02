@@ -231,9 +231,9 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
               disabled={!isDesktop}
               aria-pressed={paused}
               title={paused ? t.resumeRefresh : t.pauseRefresh}
+              aria-label={paused ? t.resumeRefresh : t.pauseRefresh}
             >
               {paused ? <Play size={16} /> : <Pause size={16} />}
-              <span>{paused ? t.resumeRefresh : t.pauseRefresh}</span>
             </button>
             <div className="logs-export-control" ref={exportControlRef}>
               <button
@@ -273,11 +273,11 @@ export function LogsDialog({ open, t, onClose, onNotify }: Props) {
                 className="logs-export-button"
                 onClick={() => void exportLogs()}
                 disabled={!isDesktop || !logs.length || exporting}
-                title={t.exportLogs}
-                aria-label={t.exportLogs}
+                title={exporting ? t.exportingLogs : t.exportLogs}
+                aria-label={exporting ? t.exportingLogs : t.exportLogs}
+                aria-busy={exporting}
               >
                 <Download size={16} className={exporting ? 'export-pulse' : ''} />
-                <span>{exporting ? t.exportingLogs : t.exportLogs}</span>
               </button>
             </div>
             <button

@@ -1,3 +1,8 @@
 {
-  "endpointAlias": null
+  "_comment": "内置连接配置的地址脱敏。此配置随编译写入客户端，修改后需要重新构建安装包。只影响客户端展示与日志，不修改实际连接地址。",
+  "_comment_build": "node build.mjs 优先使用本文件；直接平台打包或 Tauri 构建请修改 resources/settings/log-privacy.json。",
+  "builtinProfile": {
+    "_comment": "enabled 填 true 开启、false 关闭（不要加引号）。开启时将内置配置的服务器域名、端口和解析后的公网 IPv4/IPv6 替换为 [hidden]，覆盖日志窗口、复制、导出及错误提示，并隐藏配置列表的域名及公网候选地址，内网 IP 保留。导入配置不受影响；账号、隧道 IP 和隧道网关保持原样。",
+    "enabled": false
+  }
 }

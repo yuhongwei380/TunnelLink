@@ -242,15 +242,23 @@ export async function readLogPrivacy(file) {
   } catch {
     throw new Error(`Invalid JSON in ${file}.`);
   }
+  const object = (value, allowed) =>
+    value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.keys(value).every((key) => key.startsWith('_comment') || allowed.includes(key));
+  if (!object(config, ['builtinProfile', 'endpointAlias']))
+    throw new Error(`${file}: invalid log privacy settings.`);
+  if (config.endpointAlias != null)
+    throw new Error(
+      `${file}: endpointAlias is obsolete; use builtinProfile.enabled (true or false).`,
+    );
   if (
-    !config ||
-    typeof config !== 'object' ||
-    Array.isArray(config) ||
-    (config.endpointAlias != null &&
-      (typeof config.endpointAlias !== 'string' || !/^[a-z0-9.-]+$/i.test(config.endpointAlias)))
-  ) {
-    throw new Error(`${file}: endpointAlias must be null or a non-empty hostname alias.`);
-  }
+    'builtinProfile' in config &&
+    (!object(config.builtinProfile, ['enabled']) ||
+      typeof config.builtinProfile.enabled !== 'boolean')
+  )
+    throw new Error(`${file}: builtinProfile.enabled must be a boolean (true or false).`);
   return contents;
 }
 

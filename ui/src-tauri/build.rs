@@ -1,4 +1,12 @@
+#[path = "src/privacy_settings.rs"]
+mod privacy_settings;
+
 fn main() {
+    let privacy_path = "../../resources/settings/log-privacy.json";
+    println!("cargo:rerun-if-changed={privacy_path}");
+    let privacy_raw = std::fs::read_to_string(privacy_path).expect("Missing log-privacy.json");
+    let builtin_privacy =
+        privacy_settings::builtin_enabled(&privacy_raw).expect("Invalid log privacy settings");
     let settings = "../../resources/settings/client-features.json";
     let profile = "../../resources/settings/client.ovpn";
     println!("cargo:rerun-if-changed={settings}");
@@ -41,8 +49,9 @@ fn main() {
     } else {
         String::new()
     };
-    let generated =
-        format!("pub const FEATURES: &str = {raw:?};\npub const BUILTIN: &str = {contents:?};\n");
+    let generated = format!(
+        "pub const FEATURES: &str = {raw:?};\npub const BUILTIN: &str = {contents:?};\npub const BUILTIN_LOG_PRIVACY: bool = {builtin_privacy};\n"
+    );
     std::fs::write(
         std::path::Path::new(&std::env::var("OUT_DIR").unwrap()).join("client_features.rs"),
         generated,

@@ -80,7 +80,7 @@ npm run tauri:dev
 
 使用 `node build.mjs` 构建安装包时，连接配置默认读取 `custom-config/client.ovpn`，也可通过 `--profile PATH` 指定。入口仅在隔离源码中替换 `resources/settings/client.ovpn`，不改写当前工作树的默认配置。`custom-config/` 中说明文件、品牌配置与日志脱敏配置被 Git 跟踪，其余本地文件被忽略。
 
-`client-features.json` 控制内置配置与导入功能；私有构建覆盖和发行示例见[客户端配置功能](building.md#客户端配置功能)。真实域名与 IP 始终展示，旧 endpointAlias 必须清空。
+`client-features.json` 控制内置配置与导入功能；私有构建覆盖和发行示例见[客户端配置功能](building.md#客户端配置功能)。`log-privacy.json` 独立控制内置配置的地址脱敏：`builtinProfile.enabled=true` 开启，`false` 关闭。统一构建优先使用 `custom-config/log-privacy.json`，直接构建使用 `resources/settings/log-privacy.json`；设置由 `build.rs` 校验并编译进客户端，修改后须重新构建。导入配置始终保留真实地址，详见[脱敏配置](../custom-config/README.md#内置配置地址脱敏)。
 
 - `resources/settings/client.ovpn`：可选内置配置；仅启用 builtinProfile 时编译进程序，修改后需要重新构建客户端。
 - `resources/settings/app-branding.json`：应用名称、标识、安装向导语言与默认界面语言（`defaultLocale`：`CN` 中文 / `EN` 英文；安装向导语言优先于系统语言，协议展示与首次启动默认语言保持一致，用户手动切换后记住用户选择）；直接构建时修改后运行 `npm run sync:branding`。统一构建优先使用 `custom-config/app-branding.json`，复制到隔离源码后参与构建；该文件不存在时使用 `resources/settings/` 下的默认值。

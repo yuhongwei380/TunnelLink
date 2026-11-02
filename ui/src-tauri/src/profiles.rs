@@ -38,6 +38,16 @@ pub struct Profile {
     pub error: Option<String>,
 }
 
+impl Profile {
+    fn for_display(mut self, builtin_privacy: bool) -> Self {
+        if self.source == "builtin" && builtin_privacy {
+            self.endpoints
+                .retain(|endpoint| crate::log_privacy::is_local_address(&endpoint.host));
+        }
+        self
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct Record {
@@ -349,7 +359,8 @@ impl Store {
         let profiles: Vec<_> = ids
             .iter()
             .map(|id| match self.snapshot(id) {
-                Ok(s) => s.profile,
+                // Keep the connection snapshot intact; filter only its UI copy.
+                Ok(s) => s.profile.for_display(BUILTIN_LOG_PRIVACY),
                 Err(error) => Profile {
                     id: id.clone(),
                     source: if id == "builtin" {
@@ -623,6 +634,48 @@ fn evaluate(parsed: &Parsed) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn builtin_privacy_hides_public_candidates_and_preserves_private_and_imported_addresses() {
+        assert_eq!(
+            BUILTIN_LOG_PRIVACY,
+            crate::privacy_settings::builtin_enabled(include_str!(
+                "../../../resources/settings/log-privacy.json"
+            ))
+            .unwrap()
+        );
+        let parsed = profile_import::parse(
+            "remote vpn.example.test 11194\nremote 10.20.0.1 11194\nremote fd00::1 11194\nauth-user-pass\n",
+            &BTreeMap::new(), false).unwrap();
+        let profile = Profile {
+            id: "builtin".into(),
+            source: "builtin".into(),
+            display_name: "Internal Tunnel".into(),
+            description: String::new(),
+            endpoints: parsed.endpoints,
+            requires_auth: true,
+            revision: "test".into(),
+            error: None,
+        };
+        let snapshot = Snapshot {
+            profile,
+            content: parsed.content,
+        };
+        let hidden = snapshot.profile.clone().for_display(true);
+        assert_eq!(hidden.endpoints.len(), 2);
+        assert_eq!(hidden.endpoints[0].host, "10.20.0.1");
+        assert_eq!(hidden.endpoints[1].host, "fd00::1");
+        assert_eq!(snapshot.profile.endpoints.len(), 3);
+        assert!(snapshot.content.contains("vpn.example.test"));
+        assert_eq!(
+            snapshot.profile.clone().for_display(false).endpoints.len(),
+            3
+        );
+        let mut imported = snapshot.profile.clone();
+        imported.id = "imported".into();
+        imported.source = "imported".into();
+        assert_eq!(imported.for_display(true).endpoints.len(), 3);
+    }
 
     #[test]
     fn private_temporary_directory_supports_profile_io() {

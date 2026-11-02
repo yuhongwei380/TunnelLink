@@ -16,6 +16,7 @@ import {
   prepareLocalSource,
   prepareSource,
   readProfile,
+  readLogPrivacy,
   withBuildLock,
 } from '../../lib/build.mjs';
 import { runBuild } from '../../build.mjs';
@@ -328,36 +329,69 @@ test('local snapshots preserve compiler and dependency caches while updating and
   assert.equal(await fs.readFile(profile, 'utf8'), 'client\nremote changed.invalid\n');
 });
 
-test('legacy address aliases are rejected and null preserves real addresses', async (t) => {
+test('builtin privacy switches are copied into isolated builds and fall back to defaults', async (t) => {
   const f = await fixture(t);
   await fs.writeFile(path.join(f.root, 'resources/settings/client.ovpn'), 'client\n');
   const defaultPath = path.join(f.root, 'resources/settings/log-privacy.json');
-  await fs.writeFile(defaultPath, '{"endpointAlias":null}');
+  const defaults = { builtinProfile: { enabled: false } };
+  await fs.writeFile(defaultPath, JSON.stringify(defaults));
   await fs.mkdir(path.join(f.root, 'custom-config'));
   await fs.copyFile(f.profileFile, path.join(f.root, 'custom-config/client.ovpn'));
   const customPath = path.join(f.root, 'custom-config/log-privacy.json');
-  await fs.writeFile(customPath, '{"endpointAlias":"demo.vpn"}');
-  const options = { root: f.root, localSource: true };
   const target = path.join(
     f.root,
     '.cache/work/windows/source/resources/settings/log-privacy.json',
   );
+  const options = { root: f.root, localSource: true };
+  for (const enabled of [true, false]) {
+    const privacy = { _comment: '编译配置', builtinProfile: { _comment: '地址脱敏', enabled } };
+    await fs.writeFile(customPath, JSON.stringify(privacy));
+    await runBuild(['--platform', 'windows', '--prepare-only'], options);
+    assert.deepEqual(JSON.parse(await fs.readFile(target, 'utf8')), privacy);
+    assert.deepEqual(
+      await fs.readFile(path.join(path.dirname(target), 'client.ovpn')),
+      f.profile.contents,
+    );
+    assert.deepEqual(JSON.parse(await fs.readFile(defaultPath, 'utf8')), defaults);
+  }
+  // Failed validation must not replace a previously prepared, valid build.
+  await fs.writeFile(customPath, '{"builtinProfile":{"enabled":"true"}}');
+  await assert.rejects(runBuild(['--platform', 'windows', '--prepare-only'], options), /boolean/);
+  assert.equal(JSON.parse(await fs.readFile(target, 'utf8')).builtinProfile.enabled, false);
+  await fs.writeFile(customPath, '{"endpointAlias":"demo.vpn"}');
   await assert.rejects(
     runBuild(['--platform', 'windows', '--prepare-only'], options),
-    /Remove endpointAlias/,
+    /endpointAlias.*builtinProfile.enabled/,
   );
-  await fs.writeFile(customPath, '{"endpointAlias":null}');
+  // Removing a custom override must clear a stale enabled setting in the cache.
+  await fs.writeFile(customPath, '{"builtinProfile":{"enabled":true}}');
   await runBuild(['--platform', 'windows', '--prepare-only'], options);
-  assert.deepEqual(JSON.parse(await fs.readFile(target, 'utf8')), { endpointAlias: null });
-  assert.deepEqual(JSON.parse(await fs.readFile(defaultPath, 'utf8')), { endpointAlias: null });
-  await fs.writeFile(customPath, '{"endpointAlias":true}');
-  await assert.rejects(
-    runBuild(['--platform', 'windows', '--prepare-only'], options),
-    /endpointAlias/,
-  );
   await fs.unlink(customPath);
   await runBuild(['--platform', 'windows', '--prepare-only'], options);
-  assert.deepEqual(JSON.parse(await fs.readFile(target, 'utf8')), { endpointAlias: null });
+  assert.deepEqual(JSON.parse(await fs.readFile(target, 'utf8')), defaults);
+  // The default is validated before any compiler or environment setup.
+  await fs.writeFile(defaultPath, '{"builtinProfile":{"enabled":1}}');
+  await assert.rejects(runBuild(['--platform', 'windows', '--prepare-only'], options), /boolean/);
+});
+
+test('privacy settings reject typos and non-boolean switches while accepting legacy null', async (t) => {
+  const f = await fixture(t);
+  const file = path.join(f.root, 'privacy.json');
+  for (const raw of [
+    'null',
+    '[]',
+    '{',
+    '{"enabled":true}',
+    '{"builtinProfile":null}',
+    '{"builtinProfile":{}}',
+    '{"builtinProfile":{"enabled":"false"}}',
+    '{"builtinProfile":{"enabled":true,"enabeld":false}}',
+  ]) {
+    await fs.writeFile(file, raw);
+    await assert.rejects(readLogPrivacy(file), undefined, raw);
+  }
+  await fs.writeFile(file, '{"_comment":"旧配置","endpointAlias":null}');
+  assert.equal(JSON.parse((await readLogPrivacy(file)).toString()).endpointAlias, null);
 });
 
 test('repeat preparation uses cached source without a reachable remote or needless rewrites', async (t) => {

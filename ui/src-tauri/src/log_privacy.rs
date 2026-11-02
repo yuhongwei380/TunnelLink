@@ -33,7 +33,37 @@ fn token_char(c: char) -> bool {
     c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | ':' | '[' | ']' | '%' | '@')
 }
 
+/// Internal/local addresses remain visible even when builtin privacy is enabled.
+pub fn is_local_address(value: &str) -> bool {
+    match host_name(value).parse::<IpAddr>() {
+        Ok(IpAddr::V4(ip)) => {
+            ip.is_private()
+                || ip.is_loopback()
+                || ip.is_link_local()
+                || ip.is_unspecified()
+                || ip.is_multicast()
+                || ip.is_broadcast()
+        }
+        Ok(IpAddr::V6(ip)) => {
+            ip.to_ipv4_mapped()
+                .is_some_and(|v| is_local_address(&v.to_string()))
+                || ip.is_loopback()
+                || ip.is_unspecified()
+                || ip.is_multicast()
+                || (ip.segments()[0] & 0xfe00) == 0xfc00
+                || (ip.segments()[0] & 0xffc0) == 0xfe80
+        }
+        Err(_) => false,
+    }
+}
+
 impl LogPrivacy {
+    /// Recreate per session so imported profiles never inherit builtin masking.
+    pub fn for_profile(profile_id: &str, profile: &str, builtin_enabled: bool) -> Self {
+        let alias = (builtin_enabled && profile_id == "builtin").then(|| "[hidden]".into());
+        Self::new(alias, profile)
+    }
+
     pub fn new(alias: Option<String>, profile: &str) -> Self {
         let mut hosts = HashSet::new();
         let mut ports = HashSet::new();
@@ -53,10 +83,10 @@ impl LogPrivacy {
             if inline {
                 continue;
             }
-            let fields: Vec<_> = line.split_whitespace().collect();
+            let fields = crate::profile_import::tokens(line).unwrap_or_default();
             let option = fields
                 .first()
-                .copied()
+                .map(String::as_str)
                 .unwrap_or("")
                 .trim_start_matches("--");
             if option == "remote" {
@@ -88,33 +118,16 @@ impl LogPrivacy {
 
     fn remote_host(&self, value: &str) -> bool {
         let host = host_name(value);
-        self.hosts.contains(&host)
-            || host
-                .parse::<IpAddr>()
-                .is_ok_and(|ip| self.resolved.contains(&ip))
+        !is_local_address(&host)
+            && (self.hosts.contains(&host)
+                || host
+                    .parse::<IpAddr>()
+                    .is_ok_and(|ip| self.resolved.contains(&ip)))
     }
 
     fn remember_address(&mut self, value: &str) {
         if let Ok(address) = value.trim_matches(['[', ']', '.', ',']).parse::<IpAddr>() {
-            // A private/local IP elsewhere in a log is not a public DNS result.
-            let public = match address {
-                IpAddr::V4(ip) => {
-                    !ip.is_private()
-                        && !ip.is_loopback()
-                        && !ip.is_link_local()
-                        && !ip.is_unspecified()
-                        && !ip.is_multicast()
-                        && !ip.is_broadcast()
-                }
-                IpAddr::V6(ip) => {
-                    !ip.is_loopback()
-                        && !ip.is_unspecified()
-                        && !ip.is_multicast()
-                        && (ip.segments()[0] & 0xfe00) != 0xfc00
-                        && (ip.segments()[0] & 0xffc0) != 0xfe80
-                }
-            };
-            if public {
+            if !is_local_address(value) {
                 self.resolved.insert(address);
             }
         }
@@ -135,7 +148,13 @@ impl LogPrivacy {
         }
         // Connected::render() and transport logs associate a configured host
         // with its resolved server IP in parentheses, before the local/tun IPs.
-        for marker in ["EVENT: CONNECTED ", "Connecting to ", "Contacting "] {
+        for marker in [
+            "EVENT: CONNECTED ",
+            "Received event CONNECTED ",
+            "Connecting to ",
+            "Contacting ",
+            "",
+        ] {
             let Some(tail) = line.split_once(marker).map(|(_, tail)| tail) else {
                 continue;
             };
@@ -162,6 +181,25 @@ impl LogPrivacy {
             .strip_prefix("[AF_INET]")
             .or_else(|| token.strip_prefix("[AF_INET6]"))
             .unwrap_or(token);
+        if let Some((name, server)) = unwrapped.rsplit_once('@') {
+            if self.remote_host(server)
+                || endpoint(server).is_some_and(|(host, _)| self.remote_host(host))
+            {
+                return format!("{name}@{alias}");
+            }
+        }
+        if let Some((host, port)) = endpoint(unwrapped) {
+            if is_local_address(host)
+                && self.hosts.contains(&host_name(host))
+                && self.ports.contains(&port)
+            {
+                return if host.contains(':') {
+                    format!("[{host}]:{alias}")
+                } else {
+                    format!("{host}:{alias}")
+                };
+            }
+        }
         if self.remote_host(unwrapped)
             || endpoint(unwrapped).is_some_and(|(host, _)| self.remote_host(host))
         {
@@ -175,8 +213,11 @@ impl LogPrivacy {
         }
         if let Some((label, value)) = unwrapped.split_once(':') {
             let label_name = label.trim_matches(['[', ']']).to_ascii_lowercase();
-            if label_name == "remote" && self.redact_token(value, alias) != value {
-                return format!("{label}:{alias}");
+            if label_name == "remote" {
+                let masked = self.redact_token(value, alias);
+                if masked != value {
+                    return format!("{label}:{masked}");
+                }
             }
             if matches!(
                 label_name.as_str(),
@@ -198,7 +239,20 @@ impl LogPrivacy {
         self.observe_remote(line);
         // Preserve the entire username (including dots and @), along with the
         // client/tunnel addresses following "via" in the connected event.
-        if let Some((prefix, payload)) = line.split_once("EVENT: CONNECTED ") {
+        let connected = ["EVENT: CONNECTED ", "Received event CONNECTED "]
+            .into_iter()
+            .find_map(|marker| {
+                line.split_once(marker)
+                    .map(|(prefix, payload)| (prefix, marker, payload))
+            })
+            .or_else(|| {
+                // Some engine callbacks print CONNECTED and its payload on separate lines.
+                let (server, _) = line.split_once(" via ")?;
+                let server = server.split_once(" (")?.0.rsplit('@').next()?;
+                let host = endpoint(server).map(|(host, _)| host).unwrap_or(server);
+                self.remote_host(host).then_some(("", "", line))
+            });
+        if let Some((prefix, marker, payload)) = connected {
             let (server, local) = payload.split_once(" via ").unwrap_or((payload, ""));
             let name_end = server
                 .split_once(" (")
@@ -209,7 +263,7 @@ impl LogPrivacy {
                 .unwrap_or(0);
             let masked = self.redact_fields(&server[name_end..], &alias);
             return format!(
-                "{prefix}EVENT: CONNECTED {}{masked}{}",
+                "{prefix}{marker}{}{masked}{}",
                 &server[..name_end],
                 if local.is_empty() {
                     String::new()
@@ -235,16 +289,16 @@ impl LogPrivacy {
                 && (matches!(
                     label.as_str(),
                     "port" | "rport" | "remote_port" | "server_port"
-                ) || self.remote_host(previous));
+                ) || self.remote_host(previous)
+                    || self.hosts.contains(&host_name(previous)));
             if !field.is_empty() {
                 if matches!(label.as_str(), "username" | "user") {
                     output.push_str(field);
                 } else if is_port {
                     output.push_str(alias);
                 } else if let Some((host, _)) = endpoint(field).filter(|(host, port)| {
-                    label == "contacting" && self.ports.contains(port) && !self.remote_host(host)
+                    label == "contacting" && is_local_address(host) && self.ports.contains(port)
                 }) {
-                    // Preserve private/local resolved IPs, but hide the remote port.
                     if host.contains(':') {
                         output.push_str(&format!("[{host}]:{alias}"));
                     } else {
@@ -270,6 +324,66 @@ mod tests {
             "remote vpn.example.com 443\nrport 8443",
         )
     }
+    #[test]
+    fn builtin_switch_leaves_imported_profiles_untouched() {
+        let profile = "remote vpn.example.com 443";
+        let line = "EVENT: CONNECTED user@vpn.example.com:443 (203.0.113.7) via /UDP on tun0/10.8.0.6/ gw=[10.8.0.1/]";
+        for (id, enabled, masked) in [
+            ("builtin", true, true),
+            ("builtin", false, false),
+            ("imported-profile", true, false),
+            ("imported-profile", false, false),
+        ] {
+            let result = LogPrivacy::for_profile(id, profile, enabled).redact(line);
+            if masked {
+                assert!(!result.contains("vpn.example.com"));
+                assert!(!result.contains("443"));
+                assert!(!result.contains("203.0.113.7"));
+                assert!(result.contains("user@[hidden] ([hidden])"));
+                assert!(result.contains("tun0/10.8.0.6/ gw=[10.8.0.1/]"));
+            } else {
+                assert_eq!(result, line);
+            }
+        }
+    }
+
+    #[test]
+    fn split_connected_payloads_preserve_private_server_ips() {
+        let mut privacy = LogPrivacy::for_profile("builtin", "remote vpn.example.com 11194", true);
+        assert_eq!(
+            privacy.redact("Received event CONNECTED"),
+            "Received event CONNECTED"
+        );
+        assert_eq!(privacy.redact("user@example.org@vpn.example.com:11194 (192.168.20.30) via /UDP on TUN_WIN/10.20.0.2/ gw=[10.20.0.1/] mtu=1500"),
+            "user@example.org@[hidden] (192.168.20.30) via /UDP on TUN_WIN/10.20.0.2/ gw=[10.20.0.1/] mtu=1500");
+        assert_eq!(
+            privacy.redact("remote:[AF_INET]192.168.20.30:11194"),
+            "remote:[AF_INET]192.168.20.30:11194"
+        );
+        assert_eq!(
+            privacy.redact("Contacting [fd00::7]:11194 via TCPv6"),
+            "Contacting [fd00::7]:[hidden] via TCPv6"
+        );
+        assert_eq!(
+            privacy.redact("fd00::7 fe80::2 10.20.0.2"),
+            "fd00::7 fe80::2 10.20.0.2"
+        );
+    }
+
+    #[test]
+    fn quoted_ports_and_escaped_profile_hosts_use_the_openvpn_parser() {
+        let profile = r#"remote "vpn\.example.com" "11194""#;
+        let mut privacy = LogPrivacy::for_profile("builtin", profile, true);
+        assert_eq!(
+            privacy.redact("Contacting 192.168.20.30:11194 via UDP"),
+            "Contacting 192.168.20.30:[hidden] via UDP"
+        );
+        assert_eq!(privacy.redact("user@vpn.example.com:11194 (192.168.20.30) via /UDP on tun0/192.168.20.31/ gw=[192.168.20.30/]"),
+            "user@[hidden] (192.168.20.30) via /UDP on tun0/192.168.20.31/ gw=[192.168.20.30/]");
+        assert_eq!(privacy.redact("Received event CONNECTED user@vpn.example.com:11194 (192.168.20.30) via /UDP on tun0/192.168.20.31/ gw=[192.168.20.30/]"),
+            "Received event CONNECTED user@[hidden] (192.168.20.30) via /UDP on tun0/192.168.20.31/ gw=[192.168.20.30/]");
+    }
+
     #[test]
     fn disabled_preserves_logs_exactly() {
         let line = "Contacting vpn.example.com:443 (203.0.113.7)";

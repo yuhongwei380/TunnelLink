@@ -70,13 +70,9 @@ export async function runBuild(
     ? await readBranding(path.join(root, 'custom-config/app-branding.json'))
     : null;
   const logPrivacy = localSource
-    ? await readLogPrivacy(path.join(root, 'custom-config/log-privacy.json'))
+    ? ((await readLogPrivacy(path.join(root, 'custom-config/log-privacy.json'))) ??
+      (await readLogPrivacy(path.join(root, 'resources/settings/log-privacy.json'))))
     : null;
-  if (logPrivacy && JSON.parse(logPrivacy).endpointAlias) {
-    throw new Error(
-      'Remove endpointAlias from custom-config/log-privacy.json: profiles display real domain names and IP addresses.',
-    );
-  }
   await withBuildLock(root, platform, async () => {
     // Validate the private input before installing tools or downloading source.
     if (prepareEnvironment && !options.prepareOnly && !options.noAutoInstallDeps) {

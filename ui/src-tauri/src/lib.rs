@@ -1,5 +1,7 @@
 mod credentials;
 mod log_privacy;
+#[cfg(test)]
+mod privacy_settings;
 mod profile_import;
 mod profiles;
 #[cfg(any(target_os = "macos", windows, test))]

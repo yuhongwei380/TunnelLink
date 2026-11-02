@@ -23,7 +23,7 @@ Tunnel Link 是面向 Windows 和 macOS 的虚拟专网加密隧道客户端，�
 
 `custom-config/` 保存本地构建输入，`resources/settings/` 保存仓库默认配置与依赖版本锁；前端和 Tauri 原生后端统一位于 `ui/`。`node build.mjs` 构建安装包，`npm run build` 只构建前端静态文件。目录职责与分步构建命令见[开发指南](docs/development.md#代码目录)和[构建与发布](docs/building.md)。
 
-客户端保留真实服务器域名和 IP 展示；密码和私钥仍需保护。旧 `log-privacy.json` 的非空 `endpointAlias` 已停用，构建前请移除或设置为 `null`。
+内置配置支持编译时地址脱敏：在 `custom-config/log-privacy.json` 设置 `builtinProfile.enabled` 为 `true` 开启、`false` 关闭，再执行 `node build.mjs`。开启后，客户端日志、复制、导出及错误提示隐藏服务器域名、端口和解析后的公网 IP，配置列表不返回内置服务器的域名及公网候选地址，内网 IP 保留；导入配置不受影响。详细配置见[内置配置地址脱敏](custom-config/README.md#内置配置地址脱敏)。
 
 ## 连接和断开
 

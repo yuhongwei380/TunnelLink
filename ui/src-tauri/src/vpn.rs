@@ -322,6 +322,11 @@ impl Controller {
         }
         {
             let mut data = self.data.lock().unwrap();
+            data.log_privacy = crate::log_privacy::LogPrivacy::for_profile(
+                &snapshot.profile.id,
+                &snapshot.content,
+                crate::profiles::BUILTIN_LOG_PRIVACY,
+            );
             data.active_profile = Some(snapshot.profile.id.clone());
             data.active_revision = Some(snapshot.profile.revision.clone());
             data.state = "CONNECTING";
@@ -811,6 +816,43 @@ mod tests {
         assert!(hour.ends_with("[engine] five minutes\n"));
         assert!(controller.export_logs(15, now).is_err());
     }
+    #[test]
+    fn builtin_privacy_covers_logs_errors_exports_and_session_switches() {
+        let controller = Controller::new("privacy-test".into());
+        let profile = "remote vpn.example.com 11194";
+        let line = "EVENT: CONNECTED user@vpn.example.com:11194 (203.0.113.7) via /UDP on tun0/10.20.0.2/ gw=[10.20.0.1/]";
+        {
+            let mut data = controller.data.lock().unwrap();
+            data.log_privacy =
+                crate::log_privacy::LogPrivacy::for_profile("builtin", profile, true);
+            data.log("engine", line);
+            // Connection state is always extracted from the original engine line.
+            data.assigned_ip = extract_assigned_ip(line);
+            data.gateway_addr = extract_gateway(line);
+            data.error("Connect failed for vpn.example.com:11194 (203.0.113.7)");
+        }
+        let visible = controller.logs().to_string();
+        let status = controller.status();
+        let (exported, count) = controller.export_logs(5, chrono::Utc::now()).unwrap();
+        assert_eq!(count, 2);
+        for output in [visible, exported, status["lastError"].to_string()] {
+            for secret in ["vpn.example.com", "11194", "203.0.113.7"] {
+                assert!(!output.contains(secret), "{output}");
+            }
+        }
+        assert_eq!(status["assignedIp"], "10.20.0.2");
+        assert_eq!(status["gatewayAddress"], "10.20.0.1");
+        {
+            let mut data = controller.data.lock().unwrap();
+            data.log_privacy =
+                crate::log_privacy::LogPrivacy::for_profile("imported", profile, true);
+            data.log("engine", line);
+        }
+        let data = controller.data.lock().unwrap();
+        assert_eq!(data.logs.back().unwrap().line, line);
+        assert!(!data.logs.front().unwrap().line.contains("vpn.example.com"));
+    }
+
     #[test]
     fn invalid_credentials_do_not_spawn_a_process() {
         let controller = Controller::new("test".into());

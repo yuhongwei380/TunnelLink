@@ -31,6 +31,22 @@ node build.mjs
 
 统一入口要求 Node.js 22+，Windows 构建要求 x64 Node.js 和 Windows 主机，macOS 构建要求 Intel 或 Apple Silicon Mac。首次构建可自动准备缺少的工具；使用 `--no-auto-install-deps` 跳过自动安装。`--prepare-only` 只复制当前源码并替换私有配置，不安装依赖、不编译。运行 `node build.mjs --help` 查看全部参数。
 
+## 内置配置地址脱敏
+
+统一构建前，修改 `custom-config/log-privacy.json`：
+
+```json
+{
+  "builtinProfile": {
+    "enabled": true
+  }
+}
+```
+
+`true` 开启，`false` 关闭，不要加引号。然后执行 `node build.mjs`，该设置会随编译写入客户端。开启后隐藏内置配置在客户端日志、复制、导出及错误提示中的服务器域名、端口和解析后的公网 IP，配置列表不返回内置服务器的域名及公网候选地址，内网 IP 保留；导入配置不受影响。`custom-config/` 示例和仓库默认配置均为关闭，需要时按上面的示例开启。
+
+直接运行平台打包或 Tauri 构建命令时，修改 `resources/settings/log-privacy.json`。修改配置后需要重新构建安装包。完整说明及脱敏范围见[自定义构建配置](../custom-config/README.md#内置配置地址脱敏)。
+
 ## 构建链与输出
 
 平台专用脚本分别保存在 `make/windows/` 和 `make/macos/`；`make/` 根目录只保留通用脚本。

@@ -18,6 +18,24 @@
 
 关闭内置配置的构建不要求提供 client.ovpn。内置配置须使用内嵌材料；运行时导入允许通过文件选择器补选外部 CA、客户端证书、未加密私钥、PKCS#12、账号文件和 TLS 静态密钥。`client-cert-not-required` 会兼容转换为 `setenv CLIENT_CERT 0`。
 
-域名和 IP 现在始终正常显示。旧 log-privacy.json 的 endpointAlias 必须为 null 或删除该字段；非空旧设置会让统一构建给出迁移提示。密码仍会脱敏。
+### 内置配置地址脱敏
+
+修改 [`log-privacy.json`](log-privacy.json) 中的 `builtinProfile.enabled`，然后执行 `node build.mjs`。配置带有中文 `_comment` 说明字段，它们是合法 JSON，程序会忽略。
+
+```json
+{
+  "builtinProfile": {
+    "enabled": true
+  }
+}
+```
+
+- `true`：开启。内置配置的服务器域名、端口和解析后的公网 IPv4/IPv6 在客户端日志窗口、复制、导出及错误提示中替换为 `[hidden]`，配置列表不返回域名及公网候选地址，内网 IP 保留。
+- `false`：关闭，正常展示真实地址。必须填写 JSON 布尔值，不要给 `true` 或 `false` 加引号。
+- 仅影响内置配置，运行时导入的配置不受影响；账号、隧道分配 IP、隧道网关及流量统计继续保留。
+
+本目录与仓库默认 `resources/settings/log-privacy.json` 均为关闭；需要脱敏时将 `builtinProfile.enabled` 改为 `true`。统一构建会把此配置复制到隔离源码，由 Rust 构建验证并编译为只读开关。修改后需要重新构建安装包；安装后不读取本文件。移除此文件时使用仓库默认配置。直接平台打包或 Tauri 构建请修改 `resources/settings/log-privacy.json`。
+
+旧 `endpointAlias` 不再作为开关；旧值为 `null` 或缺少新开关时保持关闭，非空旧值会提示改用 `builtinProfile.enabled`。脱敏只处理客户端展示和日志记录，不改写实际连接配置；临时 `.ovpn` 和原始引擎日志仍包含连接所需的真实地址。密码继续独立脱敏。
 
 本目录的私有 VPN 配置及证书不要提交到 Git。启用内置配置时，配置会编译进客户端，不会被加密；源码缓存、安装包与导入副本都应作为私有文件保存。

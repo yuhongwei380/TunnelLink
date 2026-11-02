@@ -5240,41 +5240,77 @@ dialog[data-closing='true']::backdrop {
   flex: 0 0 auto;
   position: relative;
   z-index: 3;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 6px;
+  padding: 6px 8px;
 }
 .logs-dialog .log-filters {
   flex: 0 0 auto;
+  gap: 2px;
+  padding: 2px;
 }
 .logs-dialog .log-filters button {
-  min-height: 38px;
-  padding: 0 10px;
+  min-height: 30px;
+  gap: 4px;
+  padding: 0 8px;
   font-size: 13px;
   white-space: nowrap;
 }
 .logs-dialog .log-search-field {
-  flex: 1 1 160px;
-  min-width: 0;
-  min-height: 40px;
+  flex: 1 1 180px;
+  min-width: 140px;
+  min-height: 34px;
+  gap: 6px;
   margin: 0;
+  padding-left: 9px;
 }
 .logs-dialog .log-search-field input {
+  padding: 7px 0;
   font-size: 13px;
+}
+.logs-dialog .log-search-field > svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+.logs-dialog .log-search-field button {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 30px;
 }
 .logs-dialog .logs-toolbar {
   flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
 }
 .logs-dialog .logs-toolbar button {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
+}
+.logs-dialog .logs-toolbar > button {
+  border-color: #dce7f5;
+  background: #f2f6fc;
+  color: #335d92;
+}
+.logs-dialog .logs-toolbar > button:hover:not(:disabled) {
+  border-color: #bcd0ee;
+  background: #eaf2ff;
+  color: #254f86;
+}
+.logs-dialog .logs-toolbar > button:active:not(:disabled) {
+  border-color: #a7c3eb;
+  background: #dceaff;
+  color: #1d4a82;
+}
+.logs-dialog .logs-toolbar > button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 .logs-dialog .logs-toolbar .logs-pause-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  width: auto;
-  padding: 0 10px;
+  width: 34px;
+  padding: 0;
   border-color: #dce7f5;
   background: #f2f6fc;
   color: #335d92;
@@ -5291,7 +5327,7 @@ dialog[data-closing='true']::backdrop {
   position: relative;
   display: flex;
   align-items: stretch;
-  height: 40px;
+  height: 34px;
   overflow: visible;
   border: 1px solid #dce7f5;
   border-radius: 8px;
@@ -5303,8 +5339,8 @@ dialog[data-closing='true']::backdrop {
   justify-content: space-between;
   gap: 5px;
   width: auto;
-  min-width: 82px;
-  height: 40px;
+  min-width: 68px;
+  height: 34px;
   margin: -1px 0 -1px -1px;
   padding: 0 9px 0 10px;
   border: 1px solid transparent;
@@ -5320,8 +5356,7 @@ dialog[data-closing='true']::backdrop {
   background: #eaf2ff;
   color: #254f86;
 }
-.logs-dialog .logs-toolbar .logs-range-button:focus-visible,
-.logs-dialog .logs-toolbar .logs-export-button:focus-visible {
+.logs-dialog .logs-toolbar button:focus-visible {
   position: relative;
   z-index: 1;
   outline: 2px solid #6e9dff;
@@ -5383,12 +5418,11 @@ dialog[data-closing='true']::backdrop {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  width: auto;
-  min-width: 72px;
-  height: 40px;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
   margin: -1px -1px -1px 0;
-  padding: 0 10px;
+  padding: 0;
   border: 1px solid transparent;
   border-left: 1px solid #dce7f5;
   border-radius: 0 8px 8px 0;
@@ -5453,7 +5487,7 @@ dialog[data-closing='true']::backdrop {
   padding: 7px 14px;
   font-size: 12px;
 }
-@media (max-width: 620px) {
+@media (max-width: 700px) {
   .logs-dialog .logs-controls {
     flex-wrap: wrap;
   }
@@ -5464,6 +5498,8 @@ dialog[data-closing='true']::backdrop {
   .logs-dialog .logs-toolbar {
     margin-left: auto;
   }
+}
+@media (max-width: 620px) {
   .logs-dialog .log-entry {
     grid-template-columns: 1fr auto;
     gap: 3px 8px;
