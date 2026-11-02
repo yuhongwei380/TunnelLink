@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readRelease } from './openvpn3-release.mjs';
+import { prepareAgreement } from './prepare-agreement.mjs';
 
 const rootDir = process.cwd();
 const pkgPath = path.join(rootDir, 'package.json');
@@ -45,7 +46,7 @@ if (defaultLocale !== 'CN' && defaultLocale !== 'EN') {
 
 const pkg = readJson(pkgPath);
 const release = await readRelease(rootDir);
-await import('./prepare-agreement.mjs');
+await prepareAgreement(rootDir, defaultLocale);
 pkg.version = release.version;
 if (packageName) {
   pkg.name = packageName;
@@ -57,6 +58,13 @@ tauri.productName = productName;
 tauri.version = pkg.version;
 tauri.app.windows[0].title = productName;
 writeJson(tauriPath, tauri);
+const windowsPath = path.join(rootDir, 'ui/src-tauri', 'tauri.windows.conf.json');
+const windows = readJson(windowsPath);
+// With both languages NSIS follows the OS locale, even if English is listed first.
+// Ship the selected brand language so installation and uninstallation agree with it.
+windows.bundle.windows.nsis.languages = [defaultLocale === 'EN' ? 'English' : 'SimpChinese'];
+windows.bundle.windows.nsis.displayLanguageSelector = false;
+writeJson(windowsPath, windows);
 const cargoPath = path.join(rootDir, 'ui/src-tauri', 'Cargo.toml');
 const cargo = fs
   .readFileSync(cargoPath, 'utf8')

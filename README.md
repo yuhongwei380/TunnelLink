@@ -19,7 +19,7 @@ Tunnel Link 是面向 Windows 和 macOS 的虚拟专网加密隧道客户端，�
 
 只准备源码和配置、不安装依赖或编译时执行 `node build.mjs --prepare-only`。已有工具链希望完全手动管理时，加上 `--no-auto-install-deps`；强制或跳过引擎编译分别使用 `--force-engine` 和 `--skip-engine`。私有配置会编译进客户端，请不要把 `custom-config/client.ovpn` 或生成的 `build_dist/` 内容提交到 Git。
 
-统一构建优先使用 `custom-config/app-branding.json`，在隔离构建目录中覆盖 `resources/settings/app-branding.json`。修改其中 `defaultLocale` 为 `CN` 或 `EN` 后重新构建，即可生成不同默认语言的安装包；手动切换过语言的用户仍使用其保存的选择。若该文件不存在，则使用 `resources/settings/app-branding.json`。
+统一构建优先使用 `custom-config/app-branding.json`，在隔离构建目录中覆盖 `resources/settings/app-branding.json`。修改其中 `defaultLocale` 为 `CN` 或 `EN` 后重新构建，即可生成不同语言的安装包：安装向导语言优先于系统语言（`EN` 在中文系统上也显示英文），协议展示与软件首次启动默认语言保持一致；手动切换过语言的用户仍使用其保存的选择。若该文件不存在，则使用 `resources/settings/app-branding.json`。
 
 `custom-config/` 保存本地构建输入，`resources/settings/` 保存仓库默认配置与依赖版本锁；前端和 Tauri 原生后端统一位于 `ui/`。`node build.mjs` 构建安装包，`npm run build` 只构建前端静态文件。目录职责与分步构建命令见[开发指南](docs/development.md#代码目录)和[构建与发布](docs/building.md)。
 

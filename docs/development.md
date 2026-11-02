@@ -83,7 +83,7 @@ npm run tauri:dev
 `client-features.json` 控制内置配置与导入功能；私有构建覆盖和发行示例见[客户端配置功能](building.md#客户端配置功能)。真实域名与 IP 始终展示，旧 endpointAlias 必须清空。
 
 - `resources/settings/client.ovpn`：可选内置配置；仅启用 builtinProfile 时编译进程序，修改后需要重新构建客户端。
-- `resources/settings/app-branding.json`：应用名称、标识与默认界面语言（`defaultLocale`：`CN` 默认中文 / `EN` 默认英文，仅影响首次启动，用户手动切换后记住用户选择）；直接构建时修改后运行 `npm run sync:branding`。统一构建优先使用 `custom-config/app-branding.json`，复制到隔离源码后参与构建；该文件不存在时使用 `resources/settings/` 下的默认值。
+- `resources/settings/app-branding.json`：应用名称、标识、安装向导语言与默认界面语言（`defaultLocale`：`CN` 中文 / `EN` 英文；安装向导语言优先于系统语言，协议展示与首次启动默认语言保持一致，用户手动切换后记住用户选择）；直接构建时修改后运行 `npm run sync:branding`。统一构建优先使用 `custom-config/app-branding.json`，复制到隔离源码后参与构建；该文件不存在时使用 `resources/settings/` 下的默认值。
 - `resources/settings/openvpn3-release.json`：OpenVPN 版本、标签和提交的唯一来源；升级流程见[构建与发布](building.md#版本与许可)。
 - `resources/settings/ui-copy.json`：新用户默认文案。已生成的用户文案文件不会被覆盖，修改方式见[使用说明中的文案配置](../README.md#修改连接页文案)。
 - `resources/settings/windows-tap-driver.json`、`resources/settings/windows-openssl.json`：Windows 驱动和 OpenSSL 构建依赖的下载地址、版本与校验值。

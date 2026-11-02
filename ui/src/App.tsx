@@ -397,6 +397,7 @@ export default function App() {
           setUninstallOpen(true);
         }}
         t={t}
+        locale={locale}
         onClose={() => setAboutOpen(false)}
         onAcceptAgreement={() => {
           localStorage.setItem('vpn-agreement-revision', AGREEMENT_REVISION);

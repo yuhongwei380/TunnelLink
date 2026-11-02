@@ -6,7 +6,7 @@
 
 内置配置请使用内嵌材料（`<ca>`、`<cert>`、`<key>`、`<tls-crypt>` 等）。客户端运行时会把内置配置写到临时文件，因此 `ca ca.crt`、`key client.key` 等外部文件引用不可用；外部文件引用只在运行时导入 `.ovpn` 时通过原生选择器补选。运行时导入遵循 OpenVPN 官方配置语法，支持多个 `<connection>`、官方 inline 块以及外部 CA、证书、私钥、PKCS#12、账号文件和 TLS 静态密钥转换；账号密码也可使用不带文件参数的 `auth-user-pass`，由客户端登录界面输入。
 
-统一构建时，本目录的 [`app-branding.json`](app-branding.json) 会覆盖隔离源码中的 `resources/settings/app-branding.json`；修改 `defaultLocale` 为 `CN` 或 `EN` 可构建不同默认语言的安装包。移除该文件时使用仓库默认品牌配置。入口不会改写当前工作树的默认配置，也不会把整个 `custom-config/` 复制到隔离源码中。
+统一构建时，本目录的 [`app-branding.json`](app-branding.json) 会覆盖隔离源码中的 `resources/settings/app-branding.json`；修改 `defaultLocale` 为 `CN` 或 `EN` 会同时指定安装向导语言与软件首次启动的默认语言。安装向导优先使用此配置，不跟随系统语言：`EN` 即使在中文系统上也显示英文。软件内手动切换过的语言仍会保留。移除该文件时使用仓库默认品牌配置。入口不会改写当前工作树的默认配置，也不会把整个 `custom-config/` 复制到隔离源码中。
 
 直接执行平台打包命令或 Tauri 构建命令时，使用 `resources/settings/`，不会读取本目录。默认界面文案请修改 [`resources/settings/ui-copy.json`](../resources/settings/ui-copy.json)，详见[开发指南](../docs/development.md#配置修改)。
 

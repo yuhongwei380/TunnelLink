@@ -3,6 +3,8 @@ import { Check, FileText, Info, Trash2, X } from 'lucide-react';
 import { AppLogo } from './AppLogo';
 import { useDialog } from '../hooks/useDialog';
 import type { Messages } from '../messages';
+import type { Locale } from '../ui-copy';
+import { selectAgreement } from '../agreement.mjs';
 import release from '../../../resources/settings/openvpn3-release.json';
 import agreement from '../../../resources/legal/USER-AGREEMENT.txt?raw';
 import notices from '../../../LICENSES/THIRD-PARTY-NOTICES.txt?raw';
@@ -15,6 +17,7 @@ type Props = {
   appTitle: string;
   clientVersion: string;
   t: Messages;
+  locale: Locale;
   onClose: () => void;
   onAcceptAgreement: () => void;
   canUninstall: boolean;
@@ -27,6 +30,7 @@ export function AboutDialog({
   appTitle,
   clientVersion,
   t,
+  locale,
   onClose,
   onAcceptAgreement,
   canUninstall,
@@ -92,7 +96,7 @@ export function AboutDialog({
         tabIndex={0}
         aria-label={legalPage === 'agreement' ? t.agreement : t.notices}
       >
-        {legalPage === 'agreement' ? agreement : notices}
+        {legalPage === 'agreement' ? selectAgreement(agreement, locale) : notices}
       </pre>
       {canUninstall && !agreementRequired && (
         <div className="about-uninstall">
