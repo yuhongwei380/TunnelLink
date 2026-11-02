@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">Tunnel Link</title>
+  <desc id="description">深色圆角矩形背景，中央为蓝青渐变的完整圆环。</desc>
+  <defs>
+    <linearGradient id="ring" x1="112" y1="400" x2="400" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#06B6D4" />
+      <stop offset="0.5" stop-color="#00C4E8" />
+      <stop offset="1" stop-color="#3B82F6" />
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="100" fill="#080E1B" />
+  <circle cx="256" cy="256" r="144" fill="none" stroke="url(#ring)" stroke-width="40" />
+</svg>
