@@ -494,17 +494,7 @@ impl Controller {
         cancel: &AtomicBool,
         generation: u64,
     ) -> Result<(), String> {
-        let directory = tempfile::Builder::new()
-            .prefix("openvpn-session-")
-            .tempdir()
-            .map_err(|e| e.to_string())?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            fs::set_permissions(directory.path(), fs::Permissions::from_mode(0o700))
-                .map_err(|e| e.to_string())?;
-        }
-        crate::profiles::private_directory(directory.path())?;
+        let directory = crate::profiles::private_tempdir("openvpn-session-")?;
         for name in [
             "request.json",
             "profile.ovpn",

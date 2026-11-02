@@ -205,6 +205,24 @@ pub fn private_directory(path: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Resolve the OS temporary root before creating our private directory. On
+/// macOS it commonly contains /var or /tmp aliases; profile paths themselves
+/// must still pass the strict no-symlink checks in regular().
+pub fn private_tempdir(prefix: &str) -> Result<tempfile::TempDir, String> {
+    private_tempdir_in(&std::env::temp_dir(), prefix)
+}
+
+fn private_tempdir_in(root: &Path, prefix: &str) -> Result<tempfile::TempDir, String> {
+    #[cfg(unix)]
+    let root = fs::canonicalize(root).map_err(|e| e.to_string())?;
+    let directory = tempfile::Builder::new()
+        .prefix(prefix)
+        .tempdir_in(root)
+        .map_err(|e| e.to_string())?;
+    private_directory(directory.path())?;
+    Ok(directory)
+}
+
 fn write_atomic(path: &Path, value: &[u8]) -> Result<(), String> {
     regular(path)?;
     let mut file = tempfile::NamedTempFile::new_in(path.parent().ok_or("Missing parent")?)
@@ -497,8 +515,7 @@ fn eval_message(result: &str) -> Option<String> {
 fn evaluate(parsed: &Parsed) -> Result<(), String> {
     use std::process::Stdio;
     use std::time::{Duration, Instant};
-    let dir = tempfile::tempdir().map_err(|e| e.to_string())?;
-    private_directory(dir.path())?;
+    let dir = private_tempdir("openvpn-eval-")?;
     // ovpncli's merge stage requires the input path to carry an `.ovpn`
     // extension, even when the profile contents are otherwise valid.
     let mut profile = tempfile::Builder::new()
@@ -519,8 +536,18 @@ fn evaluate(parsed: &Parsed) -> Result<(), String> {
     let mut child = command
         .arg(profile.path())
         .stdin(Stdio::null())
-        .stdout(stdout_log.as_file().try_clone().map_err(|e| e.to_string())?)
-        .stderr(stderr_log.as_file().try_clone().map_err(|e| e.to_string())?)
+        .stdout(
+            stdout_log
+                .as_file()
+                .try_clone()
+                .map_err(|e| e.to_string())?,
+        )
+        .stderr(
+            stderr_log
+                .as_file()
+                .try_clone()
+                .map_err(|e| e.to_string())?,
+        )
         .spawn()
         .map_err(|e| e.to_string())?;
     let start = Instant::now();
@@ -596,6 +623,55 @@ fn evaluate(parsed: &Parsed) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn private_temporary_directory_supports_profile_io() {
+        let dir = private_tempdir("openvpn-test-").unwrap();
+        let profile = dir.path().join("profile.ovpn");
+        write_atomic(&profile, b"remote office.test\n").unwrap();
+        assert_eq!(read_text(&profile, 1024).unwrap(), "remote office.test\n");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn temporary_root_alias_is_resolved_before_security_checks() {
+        use std::os::unix::fs::{symlink, PermissionsExt};
+        let base = private_tempdir("openvpn-test-").unwrap();
+        let actual = base.path().join("private-var");
+        fs::create_dir(&actual).unwrap();
+        let alias = base.path().join("var");
+        symlink(&actual, &alias).unwrap();
+        assert!(regular(&alias).is_err());
+
+        let session = private_tempdir_in(&alias, "openvpn-session-").unwrap();
+        assert_eq!(session.path().parent().unwrap(), actual);
+        assert_eq!(
+            fs::metadata(session.path()).unwrap().permissions().mode() & 0o777,
+            0o700
+        );
+        let profile = session.path().join("profile.ovpn");
+        write_atomic(&profile, b"remote office.test\n").unwrap();
+        assert_eq!(read_text(&profile, 1024).unwrap(), "remote office.test\n");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn profile_file_and_directory_symlinks_remain_rejected() {
+        use std::os::unix::fs::symlink;
+        let dir = private_tempdir("openvpn-test-").unwrap();
+        let profile = dir.path().join("profile.ovpn");
+        fs::write(&profile, b"remote office.test\n").unwrap();
+        let link = dir.path().join("linked.ovpn");
+        symlink(&profile, &link).unwrap();
+        assert!(read_text(&link, 1024).is_err());
+        assert!(write_atomic(&link, b"changed").is_err());
+
+        let linked_dir = dir.path().join("linked-directory");
+        symlink(dir.path(), &linked_dir).unwrap();
+        assert!(private_directory(&linked_dir).is_err());
+        assert!(read_text(&linked_dir.join("profile.ovpn"), 1024).is_err());
+        assert_eq!(fs::read_to_string(profile).unwrap(), "remote office.test\n");
+    }
     #[test]
     fn engine_validation_error_preserves_diagnostic_message() {
         let output = "EVAL PROFILE\nerror=1\nmessage=ERR_PROFILE_GENERIC: unsupported directive\nautologin=0\n";
@@ -614,7 +690,7 @@ mod tests {
         if !import_enabled() {
             return;
         }
-        let dir = tempfile::tempdir().unwrap();
+        let dir = private_tempdir("openvpn-test-").unwrap();
         let mut store = Store::new(dir.path().join("profiles")).unwrap();
         let parse = |server| {
             profile_import::parse(
@@ -648,7 +724,7 @@ mod tests {
         if !import_enabled() {
             return;
         }
-        let dir = tempfile::tempdir().unwrap();
+        let dir = private_tempdir("openvpn-test-").unwrap();
         let mut store = Store::new(dir.path().join("profiles")).unwrap();
         let p = store
             .add(

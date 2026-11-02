@@ -237,8 +237,7 @@ fn supervise(directory: &Path, log: &File) -> Result<i32, String> {
         return Err("Username and password are required".into());
     }
     // Execute only the already validated bytes, never reopen an imported path.
-    let profile_directory = tempfile::tempdir().map_err(|e| e.to_string())?;
-    crate::profiles::private_directory(profile_directory.path())?;
+    let profile_directory = crate::profiles::private_tempdir("openvpn-worker-")?;
     let profile = tempfile::Builder::new()
         .prefix("openvpn-profile-")
         .suffix(".ovpn")
