@@ -8,6 +8,8 @@
 
 统一构建时，本目录的 [`app-branding.json`](app-branding.json) 会覆盖隔离源码中的 `resources/settings/app-branding.json`；修改 `defaultLocale` 为 `CN` 或 `EN` 会同时指定安装向导语言与软件首次启动的默认语言。安装向导优先使用此配置，不跟随系统语言：`EN` 即使在中文系统上也显示英文。软件内手动切换过的语言仍会保留。移除该文件时使用仓库默认品牌配置。入口不会改写当前工作树的默认配置，也不会把整个 `custom-config/` 复制到隔离源码中。
 
+软件仅在用户手动切换语言时保存偏好，普通启动不会把打包默认语言记为用户选择。旧版语言缓存没有记录选择来源，升级后会先按打包配置初始化一次；之后手动选择的语言会在后续启动中保留。
+
 直接执行平台打包命令或 Tauri 构建命令时，使用 `resources/settings/`，不会读取本目录。默认界面文案请修改 [`resources/settings/ui-copy.json`](../resources/settings/ui-copy.json)，详见[开发指南](../docs/development.md#配置修改)。
 
 ### 客户端功能与地址展示

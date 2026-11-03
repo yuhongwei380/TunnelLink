@@ -14,23 +14,21 @@ import { LogsDialog } from './components/LogsDialog';
 import { UninstallDialog } from './components/UninstallDialog';
 import { useVpnConnection } from './hooks/useVpnConnection';
 import { getMessages } from './messages';
+import { getInitialLocale, saveLocalePreference } from './locale';
 import { mergeUiCopy, type Locale, type UiCopy } from './ui-copy';
 import release from '../../resources/settings/openvpn3-release.json';
 import defaultUiCopy from '../../resources/settings/ui-copy.json';
 import branding from '../../resources/settings/app-branding.json';
 
-const configuredLocale: Locale =
-  String(branding.defaultLocale || 'CN')
-    .trim()
-    .toUpperCase() === 'EN'
-    ? 'en'
-    : 'zh';
-
 export default function App() {
-  const [locale, setLocale] = useState<Locale>(() => {
-    const saved = localStorage.getItem('vpn-ui-locale');
-    return saved === 'zh' || saved === 'en' ? saved : configuredLocale;
-  });
+  const [locale, setLocale] = useState<Locale>(() =>
+    getInitialLocale(branding.defaultLocale, localStorage),
+  );
+  const toggleLocale = () => {
+    const nextLocale = locale === 'zh' ? 'en' : 'zh';
+    saveLocalePreference(nextLocale, localStorage);
+    setLocale(nextLocale);
+  };
   const [uiCopy, setUiCopy] = useState<UiCopy>(() => defaultUiCopy);
 
   const t = getMessages(locale, uiCopy);
@@ -104,7 +102,6 @@ export default function App() {
   const appTitle = t.appTitle;
 
   useEffect(() => {
-    localStorage.setItem('vpn-ui-locale', locale);
     document.documentElement.lang = locale === 'zh' ? 'zh-CN' : 'en';
   }, [locale]);
 
@@ -242,7 +239,7 @@ export default function App() {
         </div>
         <button
           className="language-button"
-          onClick={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
+          onClick={toggleLocale}
           aria-label={locale === 'zh' ? 'Switch to English' : '切换为中文'}
           title={locale === 'zh' ? 'Switch to English' : '切换为中文'}
         >
