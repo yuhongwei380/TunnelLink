@@ -46,6 +46,16 @@ if (args[0] === 'cargo') {
   command = process.execPath;
   commandArgs = [path.join(root, 'node_modules/@tauri-apps/cli/tauri.js'), ...args];
 }
+// Tauri's CI DMG mode skips Finder/AppleScript layout automation while
+// retaining the app and Applications link. Apply only to macOS packaging.
+if (
+  process.platform === 'darwin' &&
+  ['build', 'bundle'].includes(args[0]) &&
+  !args.includes('--no-bundle')
+) {
+  env.CI = 'true';
+  env.TAURI_BUNDLER_DMG_IGNORE_CI = 'false';
+}
 const result = spawnSync(command, commandArgs, {
   cwd: args[0] === 'cargo' ? root : path.join(root, 'ui'),
   env,

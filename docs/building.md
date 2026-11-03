@@ -169,6 +169,8 @@ npm run dist:mac
 
 引擎和动态库位于 `.cache/native/bin/macos/`。打包前校验依赖路径、架构及版本，修正链接和签名均在构建机完成；打包后再次检查运行库。`.app` 和 DMG 由 Tauri 生成，DMG 归集到 `build_dist/macos/`。终端用户不需要 Homebrew、`otool` 或 `install_name_tool`。
 
+macOS 打包默认使用 Tauri 的 CI DMG 模式（`CI=true`、`TAURI_BUNDLER_DMG_IGNORE_CI=false`），跳过调用 Finder 的 AppleScript，避免 AppleEvent 超时或自动化权限问题。DMG 仍包含应用和指向“应用程序”的拖拽入口；窗口大小、背景及图标位置不再通过 Finder 定制。`node build.mjs`、`npm run package:mac` 和 `npm run dist:mac` 均使用此模式。
+
 发布签名使用 `APPLE_SIGNING_IDENTITY`，公证凭据在 Mac 的 Tauri 构建环境中配置；未配置签名身份时只做本地 ad-hoc 签名。macOS 产物需要在 Mac 上完成构建和实机验证。
 
 交付给用户的 DMG 采用 macOS 常见的拖拽安装方式：用户可以把应用拖入“应用程序”后启动；如果从 DMG 直接打开，客户端会检测到应用尚未安装并显示复制提示。用户确认后，应用通过 macOS 的 `ditto` 复制到 `/Applications`，打开复制后的应用并退出当前实例。用户选择稍后时仍可继续查看协议，但下次从未安装位置启动仍会再次提示。
