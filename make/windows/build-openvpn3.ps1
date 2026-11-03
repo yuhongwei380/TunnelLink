@@ -6,6 +6,7 @@ param(
   [string]$Platform = "x64",
   [ValidateSet("tap0901", "tap_ovpnconnect")]
   [string]$TapComponentId = "tap0901",
+  [string]$WorkRoot = $env:OPENVPN_BUILD_WORK_ROOT,
   [string]$WorkDir = "",
   [switch]$KeepWorkDir,
   [switch]$Force,
@@ -25,8 +26,14 @@ $releaseLock = Get-Content -LiteralPath (Join-Path $ProjectRoot 'resources/setti
 if (-not $OpenVpn3Ref) { $OpenVpn3Ref = $releaseLock.ref }
 if ($OpenVpn3Ref -ne $releaseLock.ref) { throw 'OpenVpn3Ref must match resources/settings/openvpn3-release.json.' }
 if ([string]::IsNullOrWhiteSpace($WorkDir)) {
-  $cacheVariant = ($Generator + '-' + $Platform + '-' + $Configuration + '-' + $TapComponentId + '-' + $ScriptVersion) -replace '[^A-Za-z0-9_.-]', '_'
-  $WorkDir = Join-Path $ProjectRoot (".cache/work/windows/openvpn3-" + $releaseLock.commit + '-' + $cacheVariant)
+  $cacheVariant = $Generator + '-' + $Platform + '-' + $Configuration + '-' + $TapComponentId + '-' + $ScriptVersion
+  $cacheRoot = if ([string]::IsNullOrWhiteSpace($WorkRoot)) { Get-WindowsBuildWorkRoot $ProjectRoot } else { [IO.Path]::GetFullPath($WorkRoot) }
+  $sha = [Security.Cryptography.SHA256]::Create()
+  try {
+    $variantHash = ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($cacheVariant)))).Replace('-', '').ToLowerInvariant().Substring(0, 12)
+  }
+  finally { $sha.Dispose() }
+  $WorkDir = Join-Path $cacheRoot ('openvpn3-' + $releaseLock.commit.Substring(0, 12) + '-' + $variantHash)
 }
 
 $SrcDir = Join-Path $WorkDir "openvpn3"

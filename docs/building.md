@@ -23,9 +23,12 @@ node build.mjs
 构建默认优先检查本地缓存：
 
 - 原生引擎的版本、固定提交、架构、构建配置及哈希匹配时直接复用；Windows 同时检查 TAP 类型和 OpenSSL DLL。
-- 需要编译引擎时，优先使用 `.cache/work/<平台>/openvpn3-*` 下已检出的固定提交和 CMake 产物，源码命中时不访问上游。首次缺失才拉取锁定提交；失败后保留源码和编译缓存供重试。
+- 需要编译引擎时，优先使用仓库根目录 `.cache/work/<平台>/openvpn3-*` 下已检出的固定提交和 CMake 产物，与隔离源码 `source/` 同级。Windows 目录名使用源码提交和编译参数的短哈希，避免生成器名称等参数拉长路径；源码命中时不访问上游。首次缺失才拉取锁定提交；失败后保留源码和编译缓存供重试。
 - Node.js 依赖首次由锁文件安装并记录缓存标记，后续检查清单、锁文件、Node.js 版本、系统架构及已安装依赖记录；匹配时跳过 `npm ci`，不匹配时使用 `npm ci --prefer-offline`。
-- Rust 的 `.cache/cargo-target/`、npm 下载缓存和驱动缓存均跨次构建保留。这里只清理交付后的安装包副本，不清理编译缓存。
+- 统一构建的 Rust、npm、SWC、Vite 和临时目录分别位于仓库根目录 `.cache/work/<平台>/` 下的 `cargo-target/`、`npm/`、`swc/`、`vite/`、`tmp/`；OpenSSL SDK 位于同级的 `deps/`。子进程继承统一入口设置的 `OPENVPN_BUILD_WORK_ROOT`，不会再拼接 `source/.cache/work/<平台>/`。直接调用平台或前端脚本时沿用当前工作树的默认缓存位置；在生成的 `source/` 内调用时会自动识别并使用上层缓存目录。
+- 编译缓存、Node.js 依赖和驱动缓存均跨次构建保留。这里只清理交付后的安装包副本，不清理编译缓存。前端产物、引擎输出、协议和打包资源仍位于隔离源码内固定的 `.cache/` 子目录，不再创建隔离源码。禁止从生成的 `source/` 中再次运行统一构建，请回到原始仓库执行。
+
+升级后的首次引擎编译会建立新的短路径缓存。旧路径中的缓存不会自动迁移或删除，可在确认不再需要后手动处理。
 
 `node build.mjs --force-engine` 会复用本地源码并执行引擎的干净重编译；`--skip-engine` 要求已有引擎通过校验。直接调用 Windows 引擎脚本时可传 `-Force`；macOS 可设置 `FORCE_OPENVPN3_BUILD=1`。如需完全重新下载源码，可先将对应 `openvpn3-*` 缓存目录移走。Windows 的 `-KeepWorkDir` 和 macOS 的 `OPENVPN3_KEEP_WORKDIR` 兼容保留，工作目录现在默认保留。
 

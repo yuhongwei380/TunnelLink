@@ -11,8 +11,12 @@ OPENVPN3_KEEP_WORKDIR="${OPENVPN3_KEEP_WORKDIR:-0}"
 JOBS="${OPENVPN3_BUILD_JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
 MACOS_DEPLOYMENT_TARGET="${OPENVPN3_MACOS_DEPLOYMENT_TARGET:-11.0}"
 
-mkdir -p "$PROJECT_ROOT/.cache/work/macos"
-WORKDIR="${OPENVPN3_WORKDIR:-$PROJECT_ROOT/.cache/work/macos/openvpn3-$RELEASE_COMMIT-$(uname -m)-$MACOS_DEPLOYMENT_TARGET}"
+case "$PROJECT_ROOT" in
+  */.cache/work/macos/source) DEFAULT_WORK_ROOT="${PROJECT_ROOT%/source}" ;;
+  *) DEFAULT_WORK_ROOT="$PROJECT_ROOT/.cache/work/macos" ;;
+esac
+WORK_ROOT="${OPENVPN_BUILD_WORK_ROOT:-$DEFAULT_WORK_ROOT}"
+WORKDIR="${OPENVPN3_WORKDIR:-$WORK_ROOT/openvpn3-${RELEASE_COMMIT:0:12}-$(uname -m)-$MACOS_DEPLOYMENT_TARGET}"
 SRC_DIR="$WORKDIR/openvpn3"
 BUILD_DIR="$WORKDIR/build-openvpn3"
 OUTPUT_BIN="$PROJECT_ROOT/.cache/native/bin/macos/ovpncli"

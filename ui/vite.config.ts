@@ -2,12 +2,13 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react-swc';
 import { defineConfig } from 'vite';
 import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 
 const projectPath = (relative: string) => fileURLToPath(new URL(relative, import.meta.url));
 
 export default defineConfig({
   root: projectPath('./'),
-  cacheDir: projectPath('../.cache/vite'),
+  cacheDir: path.join(process.env.OPENVPN_BUILD_WORK_ROOT || projectPath('../.cache'), 'vite'),
   base: './',
   build: {
     target: ['chrome111', 'safari16.4'],

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { assertBuildRoot } from './lib/paths.mjs';
 import {
   assertBuildHost,
   buildPackage,
@@ -45,6 +46,7 @@ export async function runBuild(
     console.log(help);
     return;
   }
+  assertBuildRoot(root);
   if (Number(process.versions.node.split('.')[0]) < 22) {
     throw new Error('Node.js 22 or newer is required.');
   }
