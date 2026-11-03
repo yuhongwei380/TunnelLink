@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
+import { once } from 'node:events';
 import { createHash } from 'node:crypto';
 import {
   assertBuildHost,
@@ -521,6 +522,87 @@ test('concurrent builds are excluded and errors release the lock', async (t) => 
     /fixture failure/,
   );
   await assert.doesNotReject(withBuildLock(f.root, 'windows', async () => {}));
+});
+
+test(
+  'interrupted builds are recovered before preparing the next build',
+  { timeout: 15_000 },
+  async (t) => {
+    const f = await fixture(t);
+    const lockPath = path.join(f.root, '.cache/work/macos/build.lock');
+    const moduleUrl = new URL('../../lib/build.mjs', import.meta.url).href;
+    const owner = spawn(
+      process.execPath,
+      [
+        '--input-type=module',
+        '--eval',
+        `import { withBuildLock } from ${JSON.stringify(moduleUrl)};
+       await withBuildLock(${JSON.stringify(f.root)}, 'macos', () => new Promise(() => {
+         setInterval(() => {}, 1000);
+         process.send('locked');
+       }));`,
+      ],
+      { stdio: ['ignore', 'ignore', 'inherit', 'ipc'], windowsHide: true },
+    );
+    const exited = once(owner, 'exit');
+    try {
+      assert.deepEqual(await once(owner, 'message'), ['locked', undefined]);
+      const original = await fs.readFile(lockPath, 'utf8');
+      await assert.rejects(
+        withBuildLock(f.root, 'macos', async () => {}),
+        /already locked/,
+      );
+      assert.equal(await fs.readFile(lockPath, 'utf8'), original);
+      owner.kill('SIGKILL');
+      await exited;
+      // Killing the owner bypasses finally and leaves its real PID in the lock.
+      assert.equal(JSON.parse(await fs.readFile(lockPath, 'utf8')).pid, owner.pid);
+      await runBuild(['--platform', 'macos', '--prepare-only', '--profile', f.profileFile], {
+        root: f.root,
+      });
+      await assert.rejects(fs.access(lockPath), { code: 'ENOENT' });
+      assert.deepEqual(
+        await fs.readFile(
+          path.join(f.root, '.cache/work/macos/source/resources/settings/client.ovpn'),
+        ),
+        f.profile.contents,
+      );
+    } finally {
+      if (owner.exitCode === null && owner.signalCode === null) owner.kill('SIGKILL');
+      await exited;
+    }
+  },
+);
+
+test('incomplete locks are preserved while fresh and recovered after the writing grace period', async (t) => {
+  const f = await fixture(t);
+  const lockPath = path.join(f.root, '.cache/work/windows/build.lock');
+  await fs.mkdir(path.dirname(lockPath), { recursive: true });
+  for (const contents of ['', '{', '{"pid":0}', '{"pid":null}', '{"pid":2147483648}']) {
+    await fs.writeFile(lockPath, contents);
+    await assert.rejects(
+      withBuildLock(f.root, 'windows', async () => {}),
+      /already locked/,
+    );
+    assert.equal(await fs.readFile(lockPath, 'utf8'), contents);
+    const old = new Date(Date.now() - 60_000);
+    await fs.utimes(lockPath, old, old);
+    await withBuildLock(f.root, 'windows', async () => {
+      assert.equal(JSON.parse(await fs.readFile(lockPath, 'utf8')).pid, process.pid);
+    });
+    await assert.rejects(fs.access(lockPath), { code: 'ENOENT' });
+  }
+});
+
+test('releasing a build lock preserves a replacement owned by another build', async (t) => {
+  const f = await fixture(t);
+  const lockPath = path.join(f.root, '.cache/work/windows/build.lock');
+  const replacement = JSON.stringify({ pid: process.pid, startedAt: 'replacement' });
+  await withBuildLock(f.root, 'windows', async () => {
+    await fs.unlink(lockPath);
+    await fs.writeFile(lockPath, replacement);
+  });
+  assert.equal(await fs.readFile(lockPath, 'utf8'), replacement);
 });
 
 test('platform options are forwarded without shell interpolation', (t) => {

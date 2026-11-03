@@ -1,5 +1,5 @@
 import fs from 'node:fs/promises';
-import { createReadStream } from 'node:fs';
+import fsSync, { createReadStream } from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
@@ -262,27 +262,81 @@ export async function readLogPrivacy(file) {
   return contents;
 }
 
+function removeStaleBuildLock(lockPath) {
+  try {
+    const previous = fsSync.statSync(lockPath);
+    let pid;
+    try {
+      pid = JSON.parse(fsSync.readFileSync(lockPath, 'utf8'))?.pid;
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) throw error;
+    }
+    if (Number.isSafeInteger(pid) && pid > 0 && pid <= 0x7fff_ffff) {
+      try {
+        process.kill(pid, 0);
+        return false;
+      } catch (error) {
+        // Lack of permission does not mean that the owner has exited.
+        if (error.code === 'EPERM') return false;
+        if (error.code !== 'ESRCH') throw error;
+      }
+    } else if (Date.now() - previous.mtimeMs < 30_000) {
+      // Another process may still be writing its newly created lock metadata.
+      return false;
+    }
+    const current = fsSync.statSync(lockPath);
+    if (
+      current.dev !== previous.dev ||
+      current.ino !== previous.ino ||
+      current.mtimeMs !== previous.mtimeMs ||
+      current.size !== previous.size
+    )
+      return true;
+    fsSync.unlinkSync(lockPath);
+    console.log(`Removed stale build lock: ${lockPath}`);
+    return true;
+  } catch (error) {
+    // A competing build may have already released or recovered this lock.
+    if (error.code === 'ENOENT') return true;
+    throw error;
+  }
+}
+
 export async function withBuildLock(root, platform, action) {
   const directory = path.join(root, '.cache/work', platform);
   await fs.mkdir(directory, { recursive: true, mode: 0o700 });
   const lockPath = path.join(directory, 'build.lock');
   let lock;
-  try {
-    lock = await fs.open(lockPath, 'wx', 0o600);
-  } catch (error) {
-    if (error.code === 'EEXIST') {
-      throw new Error(
-        `A ${platform} build is already locked. If the previous process has exited, remove ${lockPath} and retry.`,
-      );
+  // Keep creation and metadata writing synchronous so concurrent calls in this
+  // process cannot observe an empty lock while its owner is being recorded.
+  for (;;) {
+    try {
+      lock = fsSync.openSync(lockPath, 'wx', 0o600);
+      break;
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+      if (!removeStaleBuildLock(lockPath)) {
+        throw new Error(
+          `A ${platform} build is already locked: ${lockPath}. Wait for the running build to exit and retry; interrupted builds are recovered automatically.`,
+        );
+      }
     }
-    throw error;
   }
   try {
-    await lock.writeFile(JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
+    fsSync.writeFileSync(
+      lock,
+      JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }),
+    );
     return await action();
   } finally {
-    await lock.close();
-    await fs.unlink(lockPath);
+    const owned = fsSync.fstatSync(lock);
+    fsSync.closeSync(lock);
+    try {
+      const current = fsSync.statSync(lockPath);
+      if (current.dev === owned.dev && current.ino === owned.ino) fsSync.unlinkSync(lockPath);
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
   }
 }
 
