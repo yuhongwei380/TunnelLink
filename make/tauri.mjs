@@ -6,6 +6,13 @@ import { buildEnvironment, prepareTauriLayout } from './lib/paths.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const env = buildEnvironment(root);
+if (process.platform === 'darwin') {
+  const config = JSON.parse(
+    fs.readFileSync(path.join(root, 'ui/src-tauri/tauri.macos.conf.json'), 'utf8'),
+  );
+  // Keep Rust and the app's declared minimum macOS version in sync.
+  env.MACOSX_DEPLOYMENT_TARGET = config.bundle.macOS.minimumSystemVersion;
+}
 prepareTauriLayout(root);
 const inheritedPath = process.env.PATH || process.env.Path || '';
 for (const key of Object.keys(env)) if (key.toLowerCase() === 'path') delete env[key];

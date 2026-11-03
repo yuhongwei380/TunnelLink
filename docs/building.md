@@ -144,17 +144,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File make/windows/install-tap-dri
 
 ## macOS
 
-构建机需要 Node.js、Rust stable、Git、CMake、Xcode Command Line Tools 及 OpenVPN 3 的原生开发依赖。客户端最低系统版本为 macOS 13.3。引擎、应用和所有非系统 dylib 必须匹配当前构建架构。
+构建机需要 Node.js、Rust stable、Git、CMake、Xcode Command Line Tools 及 OpenVPN 3 的原生开发依赖。客户端最低系统版本为 macOS 15；应用声明、Rust 编译和新编译引擎的默认部署目标统一读取 `ui/src-tauri/tauri.macos.conf.json` 的 `minimumSystemVersion`。引擎、应用和所有非系统 dylib 必须匹配当前构建架构。
 
 入口为 `make/macos/package.sh`，同目录的 `build-openvpn3.sh` 负责引擎编译，`verify-runtime.mjs` 负责运行库校验。
 
-一键构建：
+默认一键构建：
 
 ```sh
-npm run package:mac
+node build.mjs
 ```
 
-脚本会执行 `npm ci`，检查引擎版本和依赖，并按需编译引擎。可通过环境变量控制复用：
+在使用原生 arm64 构建环境的 M 系列 Mac 上，默认生成可供 M 系列芯片使用的 arm64 DMG，无需额外指定目标架构、部署版本或合并双架构二进制。统一入口自动准备依赖、应用 `custom-config/` 覆盖并完成打包，产物位于 `build_dist/macos/`。
+
+下层 `npm run package:mac` 脚本会按需执行 `npm ci`，检查引擎版本和依赖，并按需编译引擎。可通过环境变量控制复用：
 
 ```sh
 FORCE_OPENVPN3_BUILD=1 npm run package:mac

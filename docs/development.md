@@ -15,7 +15,7 @@ Node.js 仅用于前端开发、构建、资源准备和测试，不作为桌面
 需要 Node.js 22 或更新版本、npm 和 Rust stable；具体依赖版本由 `package-lock.json` 固定。以下命令均在仓库根目录执行。
 
 - Windows：Visual Studio C++ Build Tools、Windows SDK，使用 MSVC Rust 工具链。
-- macOS：Xcode Command Line Tools；当前桌面应用最低系统版本为 macOS 13.3。
+- macOS：Xcode Command Line Tools；当前桌面应用最低系统版本为 macOS 15。
 
 安装依赖：
 

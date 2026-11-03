@@ -9,7 +9,9 @@ OPENVPN3_REF="${OPENVPN3_REF:-$RELEASE_REF}"
 [[ "$OPENVPN3_REF" == "$RELEASE_REF" ]] || { echo 'OPENVPN3_REF must match resources/settings/openvpn3-release.json' >&2; exit 1; }
 OPENVPN3_KEEP_WORKDIR="${OPENVPN3_KEEP_WORKDIR:-0}"
 JOBS="${OPENVPN3_BUILD_JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
-MACOS_DEPLOYMENT_TARGET="${OPENVPN3_MACOS_DEPLOYMENT_TARGET:-11.0}"
+MACOS_DEPLOYMENT_TARGET="${OPENVPN3_MACOS_DEPLOYMENT_TARGET:-$(node -p \
+  'require(process.argv[1]).bundle.macOS.minimumSystemVersion' \
+  "$PROJECT_ROOT/ui/src-tauri/tauri.macos.conf.json")}"
 
 WORK_ROOT="${OPENVPN_ENGINE_WORK_ROOT:-$PROJECT_ROOT/.cache/work/macos}"
 mkdir -p "$WORK_ROOT"
