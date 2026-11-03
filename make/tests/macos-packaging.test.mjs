@@ -11,6 +11,7 @@ import {
   verifyMacRuntime,
   targetMacArchitectures,
 } from '../macos/verify-runtime.mjs';
+import { verifyMacPackage } from '../macos/verify-package.mjs';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -69,6 +70,7 @@ test('macOS DMG presents the standard Applications drag target', async () => {
   const config = JSON.parse(
     await fs.readFile(path.join(projectRoot, 'ui/src-tauri/tauri.macos.conf.json'), 'utf8'),
   );
+  assert.equal(config.bundle.macOS.signingIdentity, '-');
   assert.deepEqual(config.bundle.macOS.dmg, {
     windowSize: { width: 660, height: 400 },
     appPosition: { x: 180, y: 170 },
@@ -175,4 +177,88 @@ test('Tauri Mac packaging rejects missing engines before bundling', async (t) =>
     prepareTauri({ platform: 'darwin', arch: 'arm64', root: f.directory }),
     /ovpncli is missing/,
   );
+});
+
+function packageTools({ signature = 'Signature=adhoc', accepted = false, failure } = {}) {
+  const calls = [];
+  return {
+    calls,
+    run: (command, args) => {
+      calls.push({ command, args });
+      if (failure?.command === command && failure?.option === args[0]) return failure.result;
+      if (command === 'codesign' && args[0] === '--display')
+        return { status: 0, stdout: '', stderr: signature };
+      if (command === 'spctl')
+        return { status: accepted ? 0 : 3, stdout: '', stderr: accepted ? 'accepted' : 'rejected' };
+      return { status: 0, stdout: 'verified', stderr: '' };
+    },
+  };
+}
+
+const app = '/build/App With Spaces.app';
+const dmg = '/build/App With Spaces.dmg';
+
+test('valid ad-hoc signatures and disk images are not reported as Gatekeeper approved', () => {
+  const tools = packageTools();
+  const report = verifyMacPackage(app, [dmg], tools);
+  assert.equal(report.applicationSignature.valid, true);
+  assert.equal(report.applicationSignature.kind, 'ad-hoc');
+  assert.equal(report.gatekeeper.acceptedOnBuildMachine, false);
+  assert.equal(report.gatekeeper.details, 'rejected');
+  assert.deepEqual(report.diskImages, [{ file: 'App With Spaces.dmg', checksum: 'valid' }]);
+  assert.ok(tools.calls.every(({ command }) => !['osascript', 'open'].includes(command)));
+});
+
+test('Developer ID signatures still require a separate successful Gatekeeper assessment', () => {
+  for (const accepted of [true, false]) {
+    const tools = packageTools({
+      signature: 'Authority=Developer ID Application: Example (TEAMID)\nAuthority=Apple Root CA',
+      accepted,
+    });
+    const report = verifyMacPackage(app, [dmg], tools);
+    assert.equal(report.applicationSignature.kind, 'developer-id');
+    assert.equal(report.gatekeeper.acceptedOnBuildMachine, accepted);
+  }
+});
+
+test('invalid application signatures stop packaging before disk image assessment', () => {
+  const tools = packageTools({
+    failure: {
+      command: 'codesign',
+      option: '--verify',
+      result: { status: 1, stderr: 'a sealed resource is missing or invalid' },
+    },
+  });
+  assert.throws(
+    () => verifyMacPackage(app, [dmg], tools),
+    /Invalid macOS application signature.*sealed resource/,
+  );
+  assert.equal(tools.calls.length, 1);
+});
+
+test('damaged disk images stop packaging instead of producing a successful report', () => {
+  const tools = packageTools({
+    failure: {
+      command: 'hdiutil',
+      option: 'verify',
+      result: { status: 1, stderr: 'checksum verification failed' },
+    },
+  });
+  assert.throws(
+    () => verifyMacPackage(app, [dmg], tools),
+    /Invalid macOS disk image.*checksum verification failed/,
+  );
+  assert.ok(!tools.calls.some(({ command }) => command === 'spctl'));
+});
+
+test('missing tools and absent DMG outputs cannot pass package verification', () => {
+  assert.throws(() => verifyMacPackage(app, [], packageTools()), /No macOS DMG/);
+  const tools = packageTools({
+    failure: {
+      command: 'codesign',
+      option: '--verify',
+      result: { status: null, error: new Error('codesign was not found') },
+    },
+  });
+  assert.throws(() => verifyMacPackage(app, [dmg], tools), /codesign was not found/);
 });

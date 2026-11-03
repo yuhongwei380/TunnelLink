@@ -173,7 +173,30 @@ npm run dist:mac
 
 macOS 打包默认使用 Tauri 的 CI DMG 模式（`CI=true`、`TAURI_BUNDLER_DMG_IGNORE_CI=false`），跳过调用 Finder 的 AppleScript，避免 AppleEvent 超时或自动化权限问题。DMG 仍包含应用和指向“应用程序”的拖拽入口；窗口大小、背景及图标位置不再通过 Finder 定制。`node build.mjs`、`npm run package:mac` 和 `npm run dist:mac` 均使用此模式。
 
-发布签名使用 `APPLE_SIGNING_IDENTITY`，公证凭据在 Mac 的 Tauri 构建环境中配置；未配置签名身份时只做本地 ad-hoc 签名。macOS 产物需要在 Mac 上完成构建和实机验证。
+发布签名使用 `APPLE_SIGNING_IDENTITY`，公证凭据在 Mac 的 Tauri 构建环境中配置。默认 `tauri.macos.conf.json` 的 `signingIdentity` 为 `-`，给完整 `.app` 及内置引擎使用本地 ad-hoc 签名；这只能校验完整性，不代表 Apple 已认可开发者或完成公证。经浏览器、DingTalk 等渠道下载后，系统仍可能拒绝启动，甚至提示 `.app`“已损坏”。不能仅凭提示归因于构建机或目标机的系统版本。正式分发需使用 Developer ID Application 证书，设置 `APPLE_SIGNING_IDENTITY` 覆盖临时签名，并提供 Tauri 所需的公证凭据。macOS 产物需要在 Mac 上完成构建和实机验证。
+
+归集 DMG 前会验证整个 `.app` 的严格签名、DMG 校验和，并单独记录构建机上的 Gatekeeper 评估结果到 `build-verification.json` 的 `macosVerification`。统一构建入口还会将这些结果保留到最终交付目录的 `build-info.json`。无证书的本地构建允许生成安装包，但 Gatekeeper 拒绝时会明确输出提示；构建机评估通过也不等于所有目标机器都已验证。该过程不调用 Finder。
+
+没有开发者证书、仅测试自己构建的应用时，先将应用拖入“应用程序”，检查签名完整性：
+
+```sh
+codesign --verify --deep --strict --verbose=2 "/Applications/YueshuDemoTunnel.app"
+```
+
+将示例名称替换为自己的应用名称。只有上述检查通过、并确认是自己的可信构建后，才可移除这一个应用的下载隔离标记并启动：
+
+```sh
+xattr -dr com.apple.quarantine "/Applications/YueshuDemoTunnel.app"
+open "/Applications/YueshuDemoTunnel.app"
+```
+
+这只是该应用的本机测试处理，不会把安装包变成已公证的正式发行版。如果签名检查失败，应重新获取或重新打包，不能用移除隔离标记来当作修复。需要进一步区分签名、映像完整性和 Gatekeeper 问题时，可在 Mac 上运行：
+
+```sh
+node make/macos/verify-package.mjs "/Applications/YueshuDemoTunnel.app" "/path/to/Installer.dmg"
+```
+
+该命令输出三类检查结果；签名或映像校验失败会报错，Gatekeeper 未接受则退出码为 2。跨机器测试时也应对比原始 DMG 与下载后的 `shasum -a 256`，确认传输未改变文件。
 
 交付给用户的 DMG 采用 macOS 常见的拖拽安装方式：用户可以把应用拖入“应用程序”后启动；如果从 DMG 直接打开，客户端会检测到应用尚未安装并显示复制提示。用户确认后，应用通过 macOS 的 `ditto` 复制到 `/Applications`，打开复制后的应用并退出当前实例。用户选择稍后时仍可继续查看协议，但下次从未安装位置启动仍会再次提示。
 

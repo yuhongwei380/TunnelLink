@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { verifyMacRuntime } from './macos/verify-runtime.mjs';
+import { verifyMacPackage } from './macos/verify-package.mjs';
 
 export async function collectTauri(root, args, env) {
   const targetIndex = args.indexOf('--target');
@@ -18,6 +19,7 @@ export async function collectTauri(root, args, env) {
     await fs.readFile(path.join(root, 'resources/settings/app-branding.json'), 'utf8'),
   );
   const artifacts = [];
+  let macosVerification;
   if (process.platform === 'win32') {
     const directory = path.join(buildRoot, 'bundle/nsis');
     // Older releases remain in Cargo's output tree. Never relabel an old
@@ -37,9 +39,21 @@ export async function collectTauri(root, args, env) {
     const app = path.join(buildRoot, 'bundle/macos', `${branding.productName}.app`);
     await verifyMacRuntime(path.join(app, 'Contents/Resources/bin/macos/ovpncli'));
     const directory = path.join(buildRoot, 'bundle/dmg');
-    for (const file of (await fs.readdir(directory)).filter(
+    const files = (await fs.readdir(directory)).filter(
       (name) => name.startsWith(`${branding.productName}_${pkg.version}_`) && name.endsWith('.dmg'),
-    )) {
+    );
+    macosVerification = verifyMacPackage(
+      app,
+      files.map((file) => path.join(directory, file)),
+    );
+    if (!macosVerification.gatekeeper.acceptedOnBuildMachine) {
+      console.warn(
+        'macOS signature and DMG checks passed, but Gatekeeper rejected the app on this build machine. ' +
+          'Downloaded distribution requires Developer ID signing and notarization; ad-hoc signing is for local testing.\n' +
+          macosVerification.gatekeeper.details,
+      );
+    }
+    for (const file of files) {
       const destination = path.join(output, file);
       await fs.copyFile(path.join(directory, file), destination);
       artifacts.push(destination);
@@ -76,6 +90,7 @@ export async function collectTauri(root, args, env) {
   }
   const verification = {
     framework: 'Tauri 2',
+    ...(macosVerification ? { macosVerification } : {}),
     version: pkg.version,
     builtAt: new Date().toISOString(),
     artifacts: [],

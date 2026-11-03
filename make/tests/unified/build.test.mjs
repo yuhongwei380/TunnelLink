@@ -700,6 +700,31 @@ test('installer collection verifies hashes and yields a single copy under build_
   assert.ok(!manifest.includes('private.example.invalid'));
 });
 
+test('macOS installer collection preserves integrity and Gatekeeper results in the delivered report', async (t) => {
+  const f = await artifactFixture(t);
+  f.prepared.platform = 'macos';
+  const file = path.join(f.dist, 'Private Client.dmg');
+  await fs.rename(f.file, file);
+  const macosVerification = {
+    applicationSignature: { valid: true, kind: 'ad-hoc', authorities: [] },
+    diskImages: [{ file: path.basename(file), checksum: 'valid' }],
+    gatekeeper: { acceptedOnBuildMachine: false, details: 'rejected' },
+  };
+  await fs.writeFile(
+    path.join(f.dist, 'build-verification.json'),
+    JSON.stringify({
+      artifacts: [{ file, bytes: f.content.length, sha256: hash(f.content) }],
+      macosVerification,
+    }),
+  );
+  const result = await collectArtifacts(f);
+  const delivered = JSON.parse(
+    await fs.readFile(path.join(result.outputDir, 'build-info.json'), 'utf8'),
+  );
+  assert.deepEqual(delivered.macosVerification, macosVerification);
+  assert.deepEqual(await fs.readFile(path.join(result.outputDir, path.basename(file))), f.content);
+});
+
 test('tampered installers and paths outside the upstream dist directory are rejected', async (t) => {
   const f = await artifactFixture(t);
   await fs.writeFile(f.file, 'tampered package');

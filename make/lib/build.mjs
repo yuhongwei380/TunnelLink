@@ -641,6 +641,9 @@ export async function collectArtifacts({ root, prepared }) {
     upstream: prepared.upstream,
     profileSha256: prepared.profileSha256,
     clientFeatures: prepared.clientFeatures,
+    ...(prepared.platform === 'macos' && report.macosVerification
+      ? { macosVerification: report.macosVerification }
+      : {}),
     artifacts,
   };
   await fs.writeFile(
